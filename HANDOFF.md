@@ -30,4 +30,11 @@ NEXT BUILD in The Marker (Willy, 16 Oct 7:48 pm; build after 8:40 pm, not before
   the one played; scorer confirms; only signed-in accounts' verified readings replace the database
   copy (markerCourses) with source "verified picture"; the database never overwrites it again.
 - A spinning wheel while the picture is being read.
+- (Willy, 7:56 pm) The confirmation screen ("does this match the card?") must look appealing: laid
+  out like the club's card (holes across, one coloured row per tee, par and handicap rows, OUT/IN
+  totals), a clear tick per tee and per nine when everything adds up, red where it does not, one
+  large "This matches the card" button.
+- (Willy, 7:56 pm) Once confirmed, the confirmed course REPLACES the database copy in Saved courses:
+  one entry per course, no duplicates (today Royal Ontario shows twice: database copy and the hand
+  entry). Signed-in: replaces the shared course list too; no account: only on that phone.
 - The Scorecard side (recalculation, * on game scores, tee source field) waits for the freeze.
