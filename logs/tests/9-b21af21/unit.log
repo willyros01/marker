@@ -1,0 +1,200 @@
+
+> test
+> node --test test/unit/*.test.mjs
+
+TAP version 13
+# Subtest: U1 playing order wraps from the starting hole
+ok 1 - U1 playing order wraps from the starting hole
+  ---
+  duration_ms: 1.844206
+  type: 'test'
+  ...
+# Subtest: U2 course handicap matches The Scorecard's formula
+ok 2 - U2 course handicap matches The Scorecard's formula
+  ---
+  duration_ms: 0.3651
+  type: 'test'
+  ...
+# Subtest: U3 strokes received follow stroke index, including plus handicaps
+ok 3 - U3 strokes received follow stroke index, including plus handicaps
+  ---
+  duration_ms: 0.187399
+  type: 'test'
+  ...
+# Subtest: U4 net double bogey caps the adjusted score; no index caps at par plus five
+ok 4 - U4 net double bogey caps the adjusted score; no index caps at par plus five
+  ---
+  duration_ms: 0.786325
+  type: 'test'
+  ...
+# Subtest: U5 a picked-up hole counts as its cap
+ok 5 - U5 a picked-up hole counts as its cap
+  ---
+  duration_ms: 0.289249
+  type: 'test'
+  ...
+# Subtest: U6 scores outside 1-20 are refused
+ok 6 - U6 scores outside 1-20 are refused
+  ---
+  duration_ms: 0.589278
+  type: 'test'
+  ...
+# Subtest: U7 a full card: totals, net and completeness
+ok 7 - U7 a full card: totals, net and completeness
+  ---
+  duration_ms: 2.089364
+  type: 'test'
+  ...
+# Subtest: U8 posting rules: members, 18 holes, rated tee, every hole
+ok 8 - U8 posting rules: members, 18 holes, rated tee, every hole
+  ---
+  duration_ms: 0.498629
+  type: 'test'
+  ...
+# Subtest: U9 the round posted is The Scorecard's own shape, with the card and holes attached
+ok 9 - U9 the round posted is The Scorecard's own shape, with the card and holes attached
+  ---
+  duration_ms: 1.15347
+  type: 'test'
+  ...
+# Subtest: U10 the game is attached only to rounds in the game's group
+ok 10 - U10 the game is attached only to rounds in the game's group
+  ---
+  duration_ms: 0.544134
+  type: 'test'
+  ...
+# Subtest: U11 what is dropped off for posting carries members and scores only, never guests
+ok 11 - U11 what is dropped off for posting carries members and scores only, never guests
+  ---
+  duration_ms: 2.587522
+  type: 'test'
+  ...
+# Subtest: U12 the shared text lists every player and every hole
+ok 12 - U12 the shared text lists every player and every hole
+  ---
+  duration_ms: 0.552299
+  type: 'test'
+  ...
+# Subtest: W1 a member's card posts every golfer, in their own group, in one commit
+ok 13 - W1 a member's card posts every golfer, in their own group, in one commit
+  ---
+  duration_ms: 14.686716
+  type: 'test'
+  ...
+# Subtest: W2 the library's tee is used, not the phone's copy
+ok 14 - W2 the library's tee is used, not the phone's copy
+  ---
+  duration_ms: 2.284436
+  type: 'test'
+  ...
+# Subtest: W3 indexes come from the golfer records; picked-up holes count as net double bogey
+ok 15 - W3 indexes come from the golfer records; picked-up holes count as net double bogey
+  ---
+  duration_ms: 1.708394
+  type: 'test'
+  ...
+# Subtest: W4 windows, indexes, round counts and directory entries move with the rounds
+ok 16 - W4 windows, indexes, round counts and directory entries move with the rounds
+  ---
+  duration_ms: 1.279895
+  type: 'test'
+  ...
+# Subtest: W5 a new course goes into The Scorecard once; the same course and tee are reused
+ok 17 - W5 a new course goes into The Scorecard once; the same course and tee are reused
+  ---
+  duration_ms: 2.076378
+  type: 'test'
+  ...
+# Subtest: W6 an existing course without this tee gets the tee added
+ok 18 - W6 an existing course without this tee gets the tee added
+  ---
+  duration_ms: 1.220604
+  type: 'test'
+  ...
+# Subtest: W7 posting twice writes nothing twice
+ok 19 - W7 posting twice writes nothing twice
+  ---
+  duration_ms: 1.949132
+  type: 'test'
+  ...
+# Subtest: W8 a golfer changed by somebody else meanwhile: read again, post once
+ok 20 - W8 a golfer changed by somebody else meanwhile: read again, post once
+  ---
+  duration_ms: 1.777332
+  type: 'test'
+  ...
+# Subtest: W9 only the scorer can wake their card
+ok 21 - W9 only the scorer can wake their card
+  ---
+  duration_ms: 0.626577
+  type: 'test'
+  ...
+# Subtest: W10 cards that must not be posted are refused, with the reason, and nothing is written
+ok 22 - W10 cards that must not be posted are refused, with the reason, and nothing is written
+  ---
+  duration_ms: 6.466258
+  type: 'test'
+  ...
+# Subtest: W11 a game counts only for golfers of its group, and only on its day
+ok 23 - W11 a game counts only for golfers of its group, and only on its day
+  ---
+  duration_ms: 1.890242
+  type: 'test'
+  ...
+# Subtest: W12 the sweep posts a card whose wake-up never arrived, one per run
+ok 24 - W12 the sweep posts a card whose wake-up never arrived, one per run
+  ---
+  duration_ms: 1.727519
+  type: 'test'
+  ...
+# Subtest: W13 one card stays well inside the free plan's 50 requests
+ok 25 - W13 one card stays well inside the free plan's 50 requests
+  ---
+  duration_ms: 1.057971
+  type: 'test'
+  ...
+# Subtest: W14 a tee's numbers are checked
+ok 26 - W14 a tee's numbers are checked
+  ---
+  duration_ms: 0.995716
+  type: 'test'
+  ...
+# Subtest: L1 without an account: 10 searches a day each; members 100
+ok 27 - L1 without an account: 10 searches a day each; members 100
+  ---
+  duration_ms: 3.742723
+  type: 'test'
+  ...
+# Subtest: L2 all players without an account stop at 300 a day together
+ok 28 - L2 all players without an account stop at 300 a day together
+  ---
+  duration_ms: 0.232543
+  type: 'test'
+  ...
+# Subtest: L3 a course fetched once is saved for everybody and not counted again
+ok 29 - L3 a course fetched once is saved for everybody and not counted again
+  ---
+  duration_ms: 23.821315
+  type: 'test'
+  ...
+# Subtest: V1 a Firebase sign-in is checked properly
+ok 30 - V1 a Firebase sign-in is checked properly
+  ---
+  duration_ms: 39.202885
+  type: 'test'
+  ...
+# Subtest: R1 health, CORS for the app's site only, and nothing without a sign-in
+ok 31 - R1 health, CORS for the app's site only, and nothing without a sign-in
+  ---
+  duration_ms: 5.052374
+  type: 'test'
+  ...
+1..31
+# tests 31
+# suites 0
+# pass 31
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 298.983651
