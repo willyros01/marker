@@ -1,17 +1,15 @@
 rules_version = '2';
 
-/* THE MARKER ADDITIONS (Oct 16, 2026, approved by Willy). Everything below
- * marked "THE MARKER" is new; the rest is exactly The Scorecard's live rules.
- *   - cards/{cardId}: a foursome's scoring card, written by The Marker in the
- *     same batch as the rounds it posts. Immutable. Lets ANY member post for
- *     the golfers on the card, but only through a new card, only for golfers
- *     on the roster of a group the scorer belongs to.
- *   - markerCourses/{providerId}: course library with hole data (par, yards,
- *     stroke index), readable by any sign-in, anonymous included.
- *   - lookup/courseSearch: the course search key. Members may read it; an
- *     anonymous player only within 2 minutes of a counted search, at most
- *     10 searches per anonymous player per day and 300 for all of them.
- *   - anonSearch/{uid}, anonSearchDays/{day}: those counters.
+/* THE MARKER ADDITIONS (Oct 16, 2026, approved by Willy). Everything marked
+ * "THE MARKER" at the end is new; the rest is exactly The Scorecard's live rules.
+ * Phones never write live Scorecard data for The Marker: they only drop a card
+ * into markerSubmissions. A Cloudflare worker (service account, outside these
+ * rules) checks it and posts it.
+ *   - markerSubmissions/{cardId}: created once by its scorer (a real account),
+ *     never changed or removed by a phone; read by its scorer.
+ *   - markerCourses/{id}: the course library with holes; read by any sign-in.
+ *   - markerConfig/{id}: the worker's address; read by any sign-in.
+ *   - markerLimits/**: search counts, worker only.
  */
 
 /* LAST CHANGED FOR VERSION 2.0, PHASE D + GO-LIVE FIXES (Oct 1), PLUS PRIVATE GROUP REQUESTS (beta.3), PLUS COCKPIT AND AUTO APPLICATIONS (beta.4), PLUS THE DELETION LOCK (beta.9), PLUS ONE-TIME INVITATIONS (beta.10)
@@ -407,57 +405,6 @@ service cloud.firestore {
         && request.time < resource.data.enteredAt + duration.value(24, 'h');
     }
 
-    /* ---------------- THE MARKER: helpers ---------------- */
-
-    function anonymous() {
-      return request.auth != null
-        && request.auth.token.firebase.sign_in_provider == 'anonymous';
-    }
-
-    function cardPath(cardId) {
-      return /databases/$(database)/documents/cards/$(cardId);
-    }
-
-    /* A round The Marker posts for a foursome. Backed by a card created in the
-       SAME batch (it did not exist before, it does after) by the person signed
-       in, which names this golfer in this group. A card can never be written
-       again, so it cannot be reused to post more rounds later. */
-    function cardBackedRound(assocId) {
-      return request.resource.data.get('cardId', null) is string
-        && !exists(cardPath(request.resource.data.cardId))
-        && existsAfter(cardPath(request.resource.data.cardId))
-        && getAfter(cardPath(request.resource.data.cardId)).data.scorer == request.auth.uid
-        && getAfter(cardPath(request.resource.data.cardId)).data.groupOf.get(request.resource.data.golferId, '') == assocId
-        && exists(/databases/$(database)/documents/associations/$(assocId)/roster/$(request.resource.data.golferId));
-    }
-
-    /* Golfer number i on a new card: the scorer belongs to that golfer's group
-       and the golfer is on its roster. At most four golfers. */
-    function cardGolferOk(i) {
-      let c = request.resource.data;
-      return c.golferIds.size() <= i
-        || (c.groupOf.get(c.golferIds[i], '') is string
-            && isMember(c.groupOf[c.golferIds[i]])
-            && exists(/databases/$(database)/documents/associations/$(c.groupOf[c.golferIds[i]])/roster/$(c.golferIds[i])));
-    }
-
-    function anonSearchPath() {
-      return /databases/$(database)/documents/anonSearch/$(request.auth.uid);
-    }
-
-    function anonDayPath() {
-      return /databases/$(database)/documents/anonSearchDays/$(todayKey());
-    }
-
-    /* An anonymous player who has just made a counted search. */
-    function anonSearchAllowed() {
-      return anonymous()
-        && exists(anonSearchPath())
-        && get(anonSearchPath()).data.day == todayKey()
-        && get(anonSearchPath()).data.count <= 10
-        && request.time < get(anonSearchPath()).data.at + duration.value(2, 'm');
-    }
-
     /* ---------------- associations ---------------- */
 
     match /associations/{assocId} {
@@ -726,9 +673,7 @@ service cloud.firestore {
           && request.resource.data.enteredBy == request.auth.uid
           && request.resource.data.enteredAt == request.time
           && request.resource.data.assocId == assocId
-          && (isAdmin(assocId) || myGolfer(request.resource.data.golferId)
-              /* THE MARKER: any member, for a golfer on a new scoring card. */
-              || cardBackedRound(assocId));
+          && (isAdmin(assocId) || myGolfer(request.resource.data.golferId));
 
         /* Any member may correct any round for 24 hours after it was entered.
            This follows from "anyone can post for everybody" — the same people
@@ -1247,76 +1192,34 @@ service cloud.firestore {
 
     /* ======================= THE MARKER ======================= */
 
-    /* A foursome's scoring card. Written once, in the batch that posts its
-       rounds; never changed or removed by the app. Read by its scorer. The
-       index job (service account) marks it done. */
-    match /cards/{cardId} {
-      allow get: if (signedIn() && (resource == null || resource.data.scorer == request.auth.uid)) || groupCreator();
+    /* A finished card waiting for the worker. "Not there" answers its scorer
+       too, so the app can tell a card that never arrived from one it may not see. */
+    match /markerSubmissions/{cardId} {
+      allow get: if signedIn() && (resource == null || resource.data.scorer == request.auth.uid);
       allow create: if signedIn() && !deleting()
+        && request.resource.data.keys().hasOnly(['scorer', 'status', 'createdAt', 'card', 'app'])
         && request.resource.data.scorer == request.auth.uid
+        && request.resource.data.status == 'sent'
         && request.resource.data.createdAt == request.time
-        && request.resource.data.indexPending == true
-        && request.resource.data.golferIds is list
-        && request.resource.data.golferIds.size() >= 1
-        && request.resource.data.golferIds.size() <= 4
-        && request.resource.data.groupOf is map
-        && request.resource.data.groupOf.size() == request.resource.data.golferIds.size()
-        && request.resource.data.groupOf.keys().hasAll(request.resource.data.golferIds)
-        && cardGolferOk(0) && cardGolferOk(1) && cardGolferOk(2) && cardGolferOk(3);
+        && request.resource.data.card is map
+        && request.resource.data.card.players is list
+        && request.resource.data.card.players.size() >= 1
+        && request.resource.data.card.players.size() <= 4;
       allow update, delete: if false;
     }
 
-    /* Courses with their holes, shared by everybody using The Marker. */
-    match /markerCourses/{courseKey} {
+    match /markerCourses/{courseId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && !deleting()
-        && request.resource.data.keys().hasOnly(['providerId', 'name', 'where', 'tees', 'savedBy', 'savedAt'])
-        && request.resource.data.providerId == courseKey
-        && request.resource.data.savedBy == request.auth.uid
-        && request.resource.data.savedAt == request.time
-        && request.resource.data.name is string && request.resource.data.name.size() <= 200
-        && request.resource.data.where is string && request.resource.data.where.size() <= 300
-        && request.resource.data.tees is list && request.resource.data.tees.size() <= 40;
-      allow update, delete: if groupCreator();
+      allow write: if false;
     }
 
-    /* The course search key. Members read it; an anonymous player only right
-       after a counted search. Only Willy's account writes it. */
-    match /lookup/{docId} {
-      allow get: if docId == 'courseSearch' && (signedIn() || anonSearchAllowed());
-      allow create, update: if docId == 'courseSearch' && groupCreator()
-        && request.resource.data.keys().hasOnly(['key', 'updatedAt'])
-        && request.resource.data.key is string
-        && request.resource.data.updatedAt == request.time;
-    }
-
-    /* Each anonymous player's searches today: at most 10. */
-    match /anonSearch/{userId} {
-      allow get: if request.auth != null && request.auth.uid == userId;
-      allow create, update: if anonymous() && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly(['day', 'count', 'at'])
-        && request.resource.data.day == todayKey()
-        && request.resource.data.at == request.time
-        && request.resource.data.count == ((resource == null || resource.data.day != todayKey()) ? 1 : resource.data.count + 1)
-        && request.resource.data.count <= 10
-        && existsAfter(anonDayPath())
-        && getAfter(anonDayPath()).data.lastAt == request.time;
-    }
-
-    /* All anonymous searches today: at most 300. */
-    match /anonSearchDays/{dayKey} {
+    match /markerConfig/{docId} {
       allow get: if request.auth != null;
-      allow create: if anonymous() && dayKey == todayKey()
-        && request.resource.data.keys().hasOnly(['count', 'lastAt'])
-        && request.resource.data.count == 1
-        && request.resource.data.lastAt == request.time
-        && getAfter(anonSearchPath()).data.at == request.time;
-      allow update: if anonymous() && dayKey == todayKey()
-        && request.resource.data.keys().hasOnly(['count', 'lastAt'])
-        && request.resource.data.count == resource.data.count + 1
-        && request.resource.data.count <= 300
-        && request.resource.data.lastAt == request.time
-        && getAfter(anonSearchPath()).data.at == request.time;
+      allow write: if false;
+    }
+
+    match /markerLimits/{document=**} {
+      allow read, write: if false;
     }
   }
 }
