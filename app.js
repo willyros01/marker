@@ -31,9 +31,6 @@ const S = {
   view: null,              /* a finished card being looked at */
   share: null,             /* text for the share screen */
 };
-let heldKey = null;        /* the course search key, for one search only */
-let heldKeyAt = 0;
-const dropKey = () => { heldKey = null; heldKeyAt = 0; };
 
 const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
@@ -43,7 +40,7 @@ const first = (name) => String(name || "").split(" ")[0];
 const user = () => db.currentUser();
 const member = () => !!(user() && !user().anonymous);
 
-function go(screen) { S.screen = screen; S.error = ""; if (screen !== "course") dropKey(); render(); window.scrollTo(0, 0); }
+function go(screen) { S.screen = screen; S.error = ""; render(); window.scrollTo(0, 0); }
 function fail(e) { S.busy = ""; S.error = String((e && e.message) || e); render(); }
 
 /* Saving the card being played. Throws if the phone would not keep it. */
@@ -376,15 +373,17 @@ function screenStatus(c) {
   const rows = c.players.filter((p) => !p.guest).map((p) => {
     const t = card.totals(c, c.players.indexOf(p));
     return `<div class="item"><span class="txt"><span class="name">${esc(p.name)} · ${t.gross}</span><span class="meta">${esc(p.groupName)}</span></span>
-      <b style="color:${posted ? "var(--green)" : failed ? "var(--over)" : "#8A5A12"}">${posted ? "Posted ✓" : failed ? "Not posted" : "Waiting"}</b></div>`;
+      <b style="color:${posted ? "var(--green)" : failed ? "var(--over)" : "#8A5A12"}">${posted ? "Posted ✓" : failed ? "Not posted" : c.sent ? "Checking" : "Waiting"}</b></div>`;
   }).join("");
   const head = posted ? "Posted to The Scorecard"
     : failed ? "Not posted"
+    : c.sent ? "Sent to The Scorecard"
     : "Saved on this phone";
-  const text = posted ? "The rounds are in The Scorecard now. Handicap indexes update within about 15 minutes."
+  const text = posted ? "The rounds are in The Scorecard now, and the handicap indexes are up to date."
     : failed ? c.postError
-    : navigator.onLine === false ? "There is no signal right now. The rounds upload by themselves as soon as the phone is back online. You can close the app."
-    : "Posting… This takes a moment. If the signal drops, they upload by themselves later.";
+    : c.sent ? "The Scorecard is checking the card and posting it. This usually takes seconds, at most a few minutes. You can close the app."
+    : navigator.onLine === false ? "There is no signal right now. The card is sent by itself as soon as the phone is back online. You can close the app."
+    : "Sending… This takes a moment. If the signal drops, the card is sent by itself later.";
   return `${top("The Marker", "Posting")}
     <main class="body">${banner()}<h2>${esc(head)}</h2><p>${esc(text)}</p><div class="list">${rows}</div>
       <p class="muted">Each one shows "Posted" only once The Scorecard has actually saved it.</p></main>
@@ -398,7 +397,7 @@ function screenHistory() {
   return `${top("Your cards", "Kept on this phone")}
     <main class="body">${banner()}<div class="list">${cards.map((c) => `
       <button class="item" data-act="view" data-v="${esc(c.id)}"><span class="txt"><span class="name">${esc(c.course.name)}</span>
-        <span class="meta">${esc(niceDate(c.date))} · ${esc(c.players.map((p) => first(p.name)).join(", "))} · ${c.state === "posted" ? "posted" : c.state === "posting" ? "waiting to post" : c.state === "failed" ? "not posted" : "not posted"}</span></span></button>`).join("")}</div></main>
+        <span class="meta">${esc(niceDate(c.date))} · ${esc(c.players.map((p) => first(p.name)).join(", "))} · ${c.state === "posted" ? "posted" : c.state === "posting" ? (c.sent ? "being checked" : "waiting to send") : c.state === "failed" ? "not posted" : "not posted"}</span></span></button>`).join("")}</div></main>
     <footer class="foot"><button class="btn" data-act="home">← Back</button></footer>`;
 }
 
@@ -562,31 +561,19 @@ const actions = {
     S.cs.query = q; S.cs.error = ""; S.cs.results = [];
     if (q.length < 3) { S.cs.error = courses.explain("TOO_SHORT"); render(); return; }
     S.busy = "search"; render();
-    try {
-      heldKey = await db.searchKey();
-      heldKeyAt = Date.now();
-      S.cs.results = await courses.search(q, heldKey);
-    } catch (e) {
-      dropKey();
-      S.cs.error = courses.explain(e);
-    }
+    try { S.cs.results = await db.searchCourses(q); }
+    catch (e) { S.cs.error = courses.explain(e); }
     S.busy = ""; render();
   },
   async "pick-online"(el) {
     const found = S.cs.results[Number(el.dataset.v)];
-    if (!heldKey || Date.now() - heldKeyAt > 5 * 60 * 1000) {
-      try { heldKey = await db.searchKey(); heldKeyAt = Date.now(); }
-      catch (e) { S.cs.error = courses.explain(e); render(); return; }
-    }
     S.busy = "course"; S.cs.error = ""; S.flash = "Getting the holes…"; render();
     try {
-      const full = await courses.byId(found.providerId, heldKey);
-      dropKey();
+      const full = await db.courseById(found.providerId);
+      if (!full || !Array.isArray(full.tees) || !full.tees.length) throw new Error("NO_TEES");
       try { local.rememberCourse(full); } catch {}
-      db.saveCourse(full);
       chooseCourse(full);
     } catch (e) {
-      dropKey();
       S.busy = ""; S.cs.error = courses.explain(e); render();
     }
   },

@@ -110,13 +110,14 @@ test("U10 the game is attached only to rounds in the game's group", () => {
   assert.equal(card.roundFor(c, 1, { uid: "u", courseId: "C", teeId: "T" }).gameId, null);
 });
 
-test("U11 the card record carries members only, never guests", () => {
+test("U11 what is dropped off for posting carries members and scores only, never guests", async () => {
+  const store = await import("../../store.js");
   const c = fill(make());
-  const rec = card.cardRecord(c, { uid: "u1", rounds: { w: "R1", a: "R2" } });
-  assert.deepEqual(rec.golferIds, ["w", "a"]);
-  assert.deepEqual(rec.groupOf, { w: "G1", a: "G2" });
-  assert.equal(rec.indexPending, true);
-  assert.ok(!JSON.stringify(rec).includes("Tony"));
+  const sub = store.submissionCard(c);
+  assert.deepEqual(sub.players.map((p) => p.golferId), ["w", "a"]);
+  assert.ok(!JSON.stringify(sub).includes("Tony"));
+  assert.equal(Object.keys(sub.players[0].scores).length, 18);
+  assert.ok(!("index" in sub.players[0]) && !("ch" in sub.players[0]), "the worker works out indexes itself");
 });
 
 test("U12 the shared text lists every player and every hole", () => {

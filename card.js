@@ -200,24 +200,3 @@ export function roundFor(card, p, { uid, courseId, teeId, roundId = model.newId(
     }),
   };
 }
-
-/* The card record kept in Firebase (members only: guests' names stay on the
-   phone and in what is shared). */
-export function cardRecord(card, { uid, rounds }) {
-  const members = card.players.map((p, i) => ({ p, i })).filter((x) => !x.p.guest);
-  const groupOf = {};
-  for (const { p } of members) groupOf[p.golferId] = p.assocId;
-  return {
-    scorer: uid,
-    indexPending: true,
-    golferIds: members.map((x) => x.p.golferId),
-    groupOf,
-    date: card.date,
-    course: { providerId: card.course.providerId, name: card.course.name, tee: card.tee.name, rating: card.tee.rating, slope: card.tee.slope, par: card.tee.par },
-    players: members.map(({ p, i }) => {
-      const t = totals(card, i);
-      return { golferId: p.golferId, assocId: p.assocId, name: p.name, gross: t.gross, adjusted: t.adjusted, roundId: rounds[p.golferId] };
-    }),
-    app: "marker",
-  };
-}

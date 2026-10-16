@@ -41,7 +41,7 @@ export async function init() {
       user = u ? { uid: u.uid, email: u.email || "", anonymous: !!u.isAnonymous } : null;
       resolve();
       changed();
-      if (user && !user.anonymous) { syncSearchKey(); flush(); }
+      if (user && !user.anonymous) flush();
     });
   });
   addEventListener("online", () => flush());
@@ -157,89 +157,63 @@ export async function library() {
   }
 }
 
-export async function saveCourse(course) {
-  if (!course.providerId) return;
-  const { getDoc, setDoc, serverTimestamp } = fb.store;
+/* ---------------- the worker: course search and posting ---------------- */
+
+/* Its address is in markerConfig/public, written by the deploy job. Kept on
+   the phone so a card can still be sent after the address was read once. */
+async function workerUrl() {
   try {
-    const existing = await getDoc(ref("markerCourses", course.providerId));
-    if (existing.exists()) return;
-    await setDoc(ref("markerCourses", course.providerId), {
-      providerId: course.providerId, name: course.name, where: course.where || "",
-      tees: course.tees, savedBy: user.uid, savedAt: serverTimestamp(),
+    const snap = await fb.store.getDoc(ref("markerConfig", "public"));
+    const url = snap.exists() ? String(snap.data().workerUrl || "") : "";
+    if (/^https:\/\//.test(url)) { local.save("workerUrl", url); return url.replace(/\/+$/, ""); }
+  } catch { /* fall back to the saved one */ }
+  const saved = local.load("workerUrl", "");
+  if (saved) return saved.replace(/\/+$/, "");
+  throw new Error("NOT_SET_UP");
+}
+
+async function callWorker(path, { method = "GET", body = null } = {}) {
+  if (!fb || !fb.a.currentUser) throw new Error("UNREACHABLE");
+  if (typeof navigator !== "undefined" && navigator.onLine === false) throw new Error("OFFLINE");
+  const base = await workerUrl();
+  const token = await fb.a.currentUser.getIdToken();
+  let res;
+  try {
+    res = await fetch(base + path, {
+      method,
+      headers: { Authorization: `Bearer ${token}`, ...(body ? { "Content-Type": "application/json" } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
     });
-  } catch { /* the card works without the shared copy */ }
+  } catch { throw new Error("UNREACHABLE"); }
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 || res.status === 403) throw new Error("SIGN_IN");
+  if (!res.ok) throw new Error("UNREACHABLE");
+  if (data.error) throw new Error(data.error);
+  return data;
 }
 
-/* The search key, fetched for ONE search and handed back; never stored.
-   Without an account, each search is counted first (10 a day each, 300 a
-   day for everybody); the rules let the key be read only right after. */
-export async function searchKey() {
+/* Course search. The golf key stays on the worker; the phone never sees it. */
+export async function searchCourses(query) {
   if (!user) throw new Error("UNREACHABLE");
-  const { getDoc, writeBatch, serverTimestamp } = fb.store;
-  if (user.anonymous) {
-    const day = String(Math.floor(Date.now() / 86400000));
-    try {
-      const mine = await getDoc(ref("anonSearch", user.uid));
-      const all = await getDoc(ref("anonSearchDays", day));
-      const used = mine.exists() && mine.data().day === day ? Number(mine.data().count) || 0 : 0;
-      const total = all.exists() ? Number(all.data().count) || 0 : 0;
-      if (used >= 10 || total >= 300) throw new Error("LIMIT");
-      const b = writeBatch(fb.db);
-      b.set(ref("anonSearch", user.uid), { day, count: used + 1, at: serverTimestamp() });
-      b.set(ref("anonSearchDays", day), { count: total + 1, lastAt: serverTimestamp() });
-      await b.commit();
-    } catch (e) {
-      if (e && e.message === "LIMIT") throw e;
-      if (String(e && e.code).includes("permission")) throw new Error("LIMIT");
-      throw new Error("UNREACHABLE");
-    }
-  }
-  try {
-    const snap = await getDoc(ref("lookup", "courseSearch"));
-    const key = snap.exists() ? String(snap.data().key || "") : "";
-    if (key) return key;
-  } catch { /* fall through */ }
-  if (!user.anonymous) {
-    /* Not shared yet: a member's own group carries The Scorecard's key. */
-    for (const g of local.load("groups", { groups: [] }).groups || []) {
-      try {
-        const s = await getDoc(ref("associations", g.id));
-        const key = s.exists() ? String(s.data().lookupKey || "") : "";
-        if (key) return key;
-      } catch {}
-    }
-  }
-  throw new Error("NO_KEY");
+  return (await callWorker(`/search?q=${encodeURIComponent(query)}`)).courses || [];
 }
 
-/* Willy's account keeps the shared key in step with The Scorecard's, so
-   players without an account can search too. Quiet when anything fails. */
-async function syncSearchKey() {
-  try {
-    const { getDoc, setDoc, serverTimestamp } = fb.store;
-    const creator = await getDoc(ref("groupCreators", user.uid));
-    if (!creator.exists()) return;
-    const groups = await myGroups();
-    let key = "";
-    for (const g of groups) {
-      const s = await getDoc(ref("associations", g.id));
-      if (s.exists() && s.data().lookupKey) { key = String(s.data().lookupKey); break; }
-    }
-    if (!key) return;
-    const now = await getDoc(ref("lookup", "courseSearch"));
-    if (now.exists() && now.data().key === key) return;
-    await setDoc(ref("lookup", "courseSearch"), { key, updatedAt: serverTimestamp() });
-  } catch { /* not Willy, or no signal */ }
+/* One course with all its tees and holes (the worker also keeps it in the
+   library for everybody). */
+export async function courseById(id) {
+  if (!user) throw new Error("UNREACHABLE");
+  return (await callWorker(`/course?id=${encodeURIComponent(id)}`)).course;
 }
 
 /* ---------------- posting a finished card ---------------- */
 
-/* Queues the card for posting. The writes are built when there is signal,
-   because they need The Scorecard's course list and rosters. */
+/* The phone never writes The Scorecard's own records. A finished card is
+ * dropped off in markerSubmissions/{cardId}, and the worker is told; it checks
+ * the card again from scratch and posts it, or refuses it with the reason.
+ * The card here shows what that document says, nothing more:
+ *   sent -> "Checking"; posted -> "Posted"; refused -> "Not posted" + reason. */
 export function queuePost(c) {
-  const roundIds = {};
-  for (const p of c.players) if (!p.guest) roundIds[p.golferId] = model.newId();
-  const queued = { ...c, state: "posting", roundIds, postError: "" };
+  const queued = { ...c, state: "posting", sent: false, postError: "" };
   local.saveCurrent(queued);
   local.keepFinished(queued);
   const outbox = local.load("outbox", []).filter((id) => id !== c.id);
@@ -284,76 +258,67 @@ function updateCard(c, patch) {
   return next;
 }
 
-/* The Scorecard's course and tee for this card: the course with the same name
-   and a tee with the same rating and slope; failing that, a new course entry
-   written in the same batch. */
-async function scorecardCourse(c) {
-  const snap = await fb.store.getDocs(col("courses"));
-  const want = String(c.course.name).trim().toLowerCase();
-  const courses = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
-  const same = courses.filter((x) => String(x.name || "").trim().toLowerCase() === want);
-  for (const x of same) {
-    const t = (x.tees || []).find((t) => Number(t.rating) === Number(c.tee.rating) && Number(t.slope) === Number(c.tee.slope));
-    if (t) return { courseId: x.id, teeId: t.id, create: null };
-  }
-  if (same.length) return { courseId: same[0].id, teeId: model.newId(), create: null };
-  const created = model.buildCourse({
-    name: c.course.name, location: c.course.where || "",
-    tees: [{ name: c.tee.name, rating: c.tee.rating, slope: c.tee.slope, par: c.tee.par }],
-    createdBy: user.uid,
-  });
-  return { courseId: created.id, teeId: created.tees[0].id, create: created };
+/* What is dropped off: the members only (guests' names stay on the phone and
+   in what is shared), their hole scores, and the course as chosen. No totals
+   or indexes: the worker works those out itself. */
+export function submissionCard(c) {
+  const members = c.players.filter((p) => !p.guest);
+  return {
+    id: c.id, date: c.date, holes: c.holes, start: c.start, order: c.order.slice(),
+    course: { providerId: c.course.providerId || null, name: c.course.name, where: c.course.where || "" },
+    tee: {
+      name: c.tee.name, rating: c.tee.rating, slope: c.tee.slope, par: c.tee.par,
+      holes: (c.tee.holes || []).map((h) => ({ par: h.par, yards: h.yards == null ? null : h.yards, si: h.si == null ? null : h.si })),
+    },
+    game: c.game ? { id: c.game.id, name: c.game.name || "", assocId: c.game.assocId } : null,
+    players: members.map((p) => ({
+      golferId: p.golferId, assocId: p.assocId, name: p.name,
+      scores: Object.fromEntries(c.order.map((n) => [String(n), p.scores[n]])),
+    })),
+  };
+}
+
+function settle(c, status, reason) {
+  if (status === "posted") { updateCard(c, { state: "posted", sent: true, postError: "", postedAt: Date.now() }); return "posted"; }
+  if (status === "refused") { updateCard(c, { state: "failed", sent: true, postError: reason || "The Scorecard did not accept this card." }); return "failed"; }
+  if (!c.sent) updateCard(c, { sent: true });
+  return "waiting";
 }
 
 async function postOne(c) {
-  const { getDoc, writeBatch, serverTimestamp } = fb.store;
+  const { getDoc, setDoc, serverTimestamp } = fb.store;
   const check = card.postable(c);
   if (!check.ok) { updateCard(c, { state: "failed", postError: check.why }); return "failed"; }
 
-  /* Already there? (An earlier attempt landed but its answer was lost.) */
+  /* 1. Dropped off already? (Perhaps the answer was lost.) Otherwise drop it off. */
+  let status;
   try {
-    const existing = await getDoc(ref("cards", c.id));
-    if (existing.exists()) { updateCard(c, { state: "posted", postError: "", postedAt: Date.now() }); return "posted"; }
-  } catch (e) {
-    if (!String(e && e.code).includes("permission")) return "retry";
-  }
-
-  let target;
-  try {
-    target = await scorecardCourse(c);
-    for (const p of c.players) {
-      if (p.guest) continue;
-      const onRoster = await getDoc(ref("associations", p.assocId, "roster", p.golferId));
-      if (!onRoster.exists()) {
-        updateCard(c, { state: "failed", postError: `${p.name} is no longer on the roster of ${p.groupName || "their group"}, so the card cannot be posted. Share it instead, or ask an admin.` });
-        return "failed";
-      }
+    const snap = await getDoc(ref("markerSubmissions", c.id));
+    if (snap.exists()) {
+      status = snap.data().status;
+      if (status !== "sent") return settle(c, status, snap.data().reason);
+    } else {
+      await setDoc(ref("markerSubmissions", c.id), {
+        scorer: user.uid, status: "sent", createdAt: serverTimestamp(),
+        app: String(self.APP_VERSION || ""), card: submissionCard(c),
+      });
     }
-  } catch {
-    return "retry";
-  }
-
-  const b = writeBatch(fb.db);
-  if (target.create) b.set(ref("courses", target.create.id), target.create);
-  const rounds = {};
-  c.players.forEach((p, i) => {
-    if (p.guest) return;
-    const r = card.roundFor(c, i, { uid: user.uid, courseId: target.courseId, teeId: target.teeId, roundId: c.roundIds[p.golferId] });
-    rounds[p.golferId] = r.id;
-    b.set(ref("associations", p.assocId, "rounds", r.id), { ...r, enteredAt: serverTimestamp() });
-  });
-  b.set(ref("cards", c.id), { ...card.cardRecord(c, { uid: user.uid, rounds }), createdAt: serverTimestamp() });
-
-  try {
-    await b.commit();
-    updateCard(c, { state: "posted", postError: "", postedAt: Date.now() });
-    return "posted";
   } catch (e) {
     const code = String((e && e.code) || e);
     if (code.includes("permission")) {
-      updateCard(c, { state: "failed", postError: "The Scorecard refused this card. You may no longer be a member of one of these groups. The card is kept here; share it instead." });
+      updateCard(c, { state: "failed", postError: "The Scorecard refused this card from your account. It is kept here; share it instead." });
       return "failed";
     }
     return "retry";
+  }
+  if (!c.sent) c = updateCard(c, { sent: true });
+
+  /* 2. Wake the worker. If it cannot be reached, it finds the card by itself
+        within minutes; this phone looks again on its next try. */
+  try {
+    const r = await callWorker("/wake", { method: "POST", body: { cardId: c.id } });
+    return settle(c, r.status, r.reason);
+  } catch {
+    return "waiting";
   }
 }

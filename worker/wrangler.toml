@@ -1,0 +1,17 @@
+# The Marker's worker. Deployed only by .github/workflows/deploy-worker.yml.
+name = "marker"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[vars]
+PROJECT = "scorecard-f41b8"
+ORIGINS = "https://willyros01.github.io,capacitor://localhost,https://localhost"
+VERSION = "dev"
+
+[triggers]
+# One waiting card per run: a free-plan run may make 50 requests.
+crons = ["*/5 * * * *"]
+
+[observability]
+enabled = true

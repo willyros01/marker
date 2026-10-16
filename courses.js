@@ -1,7 +1,7 @@
 /* courses.js — course search at GolfCourseAPI, with the holes.
  *
- * The key is never kept here. The caller fetches it from Firebase for one
- * search, passes it in, and forgets it (Willy, Oct 16).
+ * Runs on the worker only (worker/src/search.js), where the key is a secret.
+ * The app uses explain() for the messages; it never holds the key.
  *
  * Search results carry no tees; the course record fetched by id has every
  * tee with its holes: par, yardage and "handicap" (the stroke index).
@@ -122,11 +122,14 @@ export async function byId(id, key) {
 
 export function explain(code) {
   switch (String(code && code.message ? code.message : code)) {
-    case "NO_KEY": return "Course search is not set up yet. Enter the course yourself — it takes a minute.";
+    case "NO_KEY":
+    case "NOT_SET_UP": return "Course search is not set up yet. Enter the course yourself — it takes a minute.";
+    case "SIGN_IN": return "Course search needs a moment of signal to sign in. Try again, or enter the course yourself.";
+    case "TRY_LATER": return "The course search is having a problem. Try again shortly, or enter the course yourself.";
     case "TOO_SHORT": return "Type at least three letters of the course or club name.";
     case "OFFLINE": return "No signal, so search is not available. Choose a saved course, or enter one yourself.";
     case "UNREACHABLE": return "The course search could not be reached. Try again, or enter the course yourself.";
-    case "BAD_KEY": return "The course search key was refused. Willy needs to check it in The Scorecard.";
+    case "BAD_KEY": return "The course search key was refused. Willy needs to check it.";
     case "RATE": return "The course search is busy or its daily limit is reached. Try later, or enter the course yourself.";
     case "NO_MATCH": return "No course matched. Try the club name, or just the town.";
     case "NO_TEES": return "That course has no tee details. Enter the course yourself.";
