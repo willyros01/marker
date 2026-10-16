@@ -408,30 +408,55 @@ test("X5 looking a course up after a withdrawal asks the database again and mark
 const p18 = [4, 4, 3, 5, 4, 4, 3, 4, 5, 4, 3, 5, 4, 4, 4, 3, 4, 5];
 const s18 = [7, 3, 15, 1, 11, 5, 17, 13, 9, 8, 14, 2, 6, 12, 4, 18, 16, 10];
 
-test("P1 what the model reads is kept only where it is believable; nothing is invented", () => {
-  const r = search.normalizeScan(JSON.stringify({ course: "Wack Wack East", pars: p18, si: s18, tees: [
-    { name: "Blue", rating: 72.4, slope: 131, yards: p18.map((p) => p * 95) },
-    { name: "White", rating: 700, slope: null, yards: [...p18.map((p) => p * 85).slice(0, 17), 9999] }] }));
-  assert.equal(r.course, "Wack Wack East");
-  assert.equal(r.tees.length, 2);
-  assert.equal(r.tees[0].rating, 72.4);
-  assert.equal(r.tees[0].holes[3].si, 1);
-  assert.equal(r.tees[1].rating, null, "700 is not a rating");
-  assert.equal(r.tees[1].holes[17].yards, null, "9999 yards is not a hole");
-  const bad = search.normalizeScan({ pars: p18, si: p18, tees: [] });
-  assert.equal(bad.tees[0].holes[0].si, null, "stroke indexes that repeat are a misread, so left empty");
-  assert.throws(() => search.normalizeScan("I cannot see a scorecard"), /SCAN_UNREADABLE/);
-  assert.throws(() => search.normalizeScan({ tees: [] }), /SCAN_UNREADABLE/);
+/* What the model answers for one table: holes 1-9 of Royal Ontario (the
+   answer the lab got from a real picture, trimmed to two tees). */
+const FRONT_PARS = [4, 3, 5, 4, 4, 4, 4, 3, 5], FRONT_HCP = [6, 10, 4, 8, 16, 2, 14, 18, 12];
+const FRONT_WHITE = [375, 143, 482, 363, 216, 385, 322, 124, 506], FRONT_BLUE = [394, 166, 502, 426, 239, 405, 332, 142, 542];
+const frontAnswer = (over = {}) => ({
+  course: "Royal Ontario Golf Club",
+  holes: FRONT_PARS.map((p, i) => ({ hole: i + 1, par: p, hcp: FRONT_HCP[i], yards: { BLUE: FRONT_BLUE[i], WHITE: FRONT_WHITE[i] } })),
+  tees: [{ name: "BLUE", rating: 71.5, slope: 136, out: 3148, in: null }, { name: "WHITE", rating: 69.7, slope: 130, out: 2916, in: null }],
+  parOut: 36, parIn: null, ...over,
 });
 
-test("P2 a photo goes to Cloudflare's AI once, counted; limits and failures are explained", async () => {
+test("P1 a table read by hole number: only those holes, totals checked, nothing invented", () => {
+  const r = search.normalizeScan("```json\n" + JSON.stringify(frontAnswer()) + "\n```");
+  assert.deepEqual(r.holesRead, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  const w = r.tees.find((t) => t.name === "WHITE");
+  assert.equal(w.rating, 69.7); assert.equal(w.slope, 130);
+  assert.deepEqual(w.holes.slice(0, 9).map((h) => h.yards), FRONT_WHITE);
+  assert.deepEqual(w.holes.slice(0, 9).map((h) => h.par), FRONT_PARS);
+  assert.deepEqual(w.holes.slice(0, 9).map((h) => h.si), FRONT_HCP);
+  assert.equal(w.holes[9].par, null, "hole 10 was not in the picture");
+  assert.deepEqual(w.doubt, { par: [], yards: [], si: [] });
+});
+
+test("P2 numbers that do not add up to the card's totals, or repeat, are flagged", () => {
+  const bad = frontAnswer();
+  bad.holes[2].par = 4;                 /* hole 3 misread: pars now add to 35, card says 36 */
+  bad.holes[0].yards.WHITE = 357;       /* white yards no longer add to 2916 */
+  bad.holes[4].hcp = 6;                 /* handicap 6 twice */
+  const w = search.normalizeScan(bad).tees.find((t) => t.name === "WHITE");
+  assert.deepEqual(w.doubt.par, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual(w.doubt.yards, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  assert.deepEqual(w.doubt.si, [1, 5]);
+  const b = search.normalizeScan(bad).tees.find((t) => t.name === "BLUE");
+  assert.deepEqual(b.doubt.yards, [], "blue still adds up");
+  assert.throws(() => search.normalizeScan("I cannot see a scorecard"), /SCAN_UNREADABLE/);
+  assert.throws(() => search.normalizeScan({ holes: [] }), /SCAN_UNREADABLE/);
+  assert.equal(search.normalizeScan({ ...frontAnswer(), holes: frontAnswer().holes.map((h) => ({ ...h, par: 9 })) }).tees[0].holes[0].par, null, "par 9 is not believable");
+  /* A chat-style answer (some models) is read the same way. */
+  assert.equal(search.normalizeScan({ choices: [{ message: { content: JSON.stringify(frontAnswer()) } }] }).holesRead.length, 9);
+});
+
+test("P2b a picture goes to Cloudflare's AI once, counted; limits and failures are explained", async () => {
   const fs = fakeFs();
   const calls = [];
-  const ai = { run: async (model, input) => { calls.push({ model, input }); return { response: { course: "X", pars: p18, si: s18, tees: [{ name: "Red", yards: p18.map(() => 300) }] } }; } };
+  const ai = { run: async (model, input) => { calls.push({ model, input }); return { response: frontAnswer() }; } };
   const img = "data:image/jpeg;base64,/9j/4AAQ";
   const who = { uid: "m1", anonymous: false };
   const r = await search.scan(fs, who, img, ai);
-  assert.equal(r.tees[0].name, "Red");
+  assert.equal(r.tees.length, 2);
   assert.equal(calls[0].model, search.SCAN_MODEL);
   assert.equal(calls[0].input.messages[0].content[1].image_url.url, img);
   await assert.rejects(search.scan(fs, who, "http://evil/x.jpg", ai), /SCAN_BAD_PHOTO/);
@@ -446,6 +471,6 @@ test("P2 a photo goes to Cloudflare's AI once, counted; limits and failures are 
 test("P3 all photos together stop at the day's total", async () => {
   const day = new Date().toISOString().slice(0, 10);
   const fs = fakeFs({ [`markerLimits/scans-${day}`]: { count: search.SCAN_LIMITS.total } });
-  const ai = { run: async () => ({ response: { pars: p18, tees: [] } }) };
+  const ai = { run: async () => ({ response: frontAnswer() }) };
   await assert.rejects(search.scan(fs, { uid: "m2", anonymous: false }, "data:image/png;base64,iVBO", ai), search.LimitReached);
 });
