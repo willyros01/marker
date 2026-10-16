@@ -15,7 +15,7 @@ jobs:
       - name: Try the models
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          MODELS: "@cf/meta/llama-4-scout-17b-16e-instruct,@cf/mistralai/mistral-small-3.1-24b-instruct,@cf/qwen/qwen3.8-27b,@cf/google/gemma-4-26b-a4b-it,@cf/moonshotai/kimi-k2.6"
+          MODELS: "@cf/meta/llama-4-scout-17b-16e-instruct,@cf/mistralai/mistral-small-3.1-24b-instruct,@cf/qwen/qwen3.8-27b,@cf/google/gemma-4-26b-a4b-it"
         run: |
           export ACC=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/accounts | jq -r '.result[0].id')
           node lab/scan-lab.mjs

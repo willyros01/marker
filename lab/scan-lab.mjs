@@ -48,16 +48,18 @@ const vision = (list.json.result || []).filter((m) => /vision|image-to-text|mult
 log("VISION-ISH MODELS:", vision.map((m) => m.name).join(", "));
 
 const MODELS = (process.env.MODELS || "").split(",").filter(Boolean);
-const IMAGES = ["lab/card1.jpg", "lab/card3.jpg", "lab/front.jpg", "lab/back.jpg"];
+const IMAGES = (process.env.IMAGES || "lab/card1.jpg,lab/front.jpg,lab/back.jpg").split(",");
 for (const model of MODELS) {
   for (const f of IMAGES) {
     const t0 = Date.now();
     const res = await api(`/ai/run/${model}`, {
-      messages: [{ role: "user", content: [{ type: "text", text: PROMPT }, { type: "image_url", image_url: { url: img(f) } }] }],
-      max_tokens: 4000, temperature: 0,
+      messages: [{ role: "user", content: [{ type: "text", text: PROMPT + (/qwen/.test(model) ? " /no_think" : "") }, { type: "image_url", image_url: { url: img(f) } }] }],
+      max_tokens: /gemma|qwen/.test(model) ? 9000 : 4000, temperature: 0,
+      ...(/gemma|qwen/.test(model) ? { chat_template_kwargs: { enable_thinking: false } } : {}),
     });
     const ms = Date.now() - t0;
-    let resp = res.json.result && (res.json.result.response ?? res.json.result);
+    const r0 = res.json.result || {};
+    let resp = r0.response ?? (r0.choices && r0.choices[0] && r0.choices[0].message && r0.choices[0].message.content) ?? r0;
     let parsed = resp;
     if (typeof resp === "string") { const m = resp.match(/\{[\s\S]*\}/); try { parsed = JSON.parse(m ? m[0] : resp); } catch { parsed = null; } }
     const usage = res.json.result && res.json.result.usage;
