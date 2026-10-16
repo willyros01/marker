@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>The Marker</title>
+<meta name="theme-color" content="#2E5541" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" href="./icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="./icon.svg" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="The Marker" />
+<link rel="stylesheet" href="./styles.css" />
+<script src="./version.js"></script>
+<script>
+  /* A start-up failure shows a message, never a blank screen. */
+  window.addEventListener("error", function (e) {
+    if (window.__markerBooted) return;
+    var a = document.getElementById("app");
+    if (!a || !e.message) return;
+    a.innerHTML = '<div class="body"><h2>The Marker could not start</h2><p>' +
+      String(e.message).replace(/[<>&]/g, "") + '</p><button class="btn primary" onclick="location.reload()">Try again</button>' +
+      '<p class="muted">Any scores you entered are kept on this phone.</p></div>';
+  });
+</script>
+<script type="module" src="./app.js"></script>
+</head>
+<body>
+<div id="app"><div class="body"><p class="muted">Loading The Marker…</p></div></div>
+</body>
+</html>

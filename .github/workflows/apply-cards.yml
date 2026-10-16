@@ -1,0 +1,54 @@
+name: Update handicaps after Marker cards
+
+# Every 15 minutes: brings the handicap index of every golfer on a newly
+# posted Marker card up to date (see .github/scripts/apply-cards.mjs).
+# Signs in to Google without any stored key (Workload Identity Federation),
+# limited by Google to this workflow on main of willyros01/marker, as the
+# service account marker-index, which can only read and write Firestore.
+# Nobody runs it by hand; it also runs when this file or the script changes.
+on:
+  schedule:
+    - cron: "4,19,34,49 * * * *"
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-cards.yml
+      - .github/scripts/apply-cards.mjs
+      - model.js
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write    # only to keep this schedule switched on (GitHub turns off idle schedules)
+  id-token: write   # keyless sign-in to Google
+
+concurrency:
+  group: apply-cards
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Keyless sign-in to Google
+        id: auth
+        uses: google-github-actions/auth@v3.0.0
+        with:
+          workload_identity_provider: projects/811267714235/locations/global/workloadIdentityPools/scorecard-github/providers/marker-provider
+          service_account: marker-index@scorecard-f41b8.iam.gserviceaccount.com
+          token_format: access_token
+      - name: Update handicaps for new cards
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          PROJECT: scorecard-f41b8
+        run: node .github/scripts/apply-cards.mjs
+      - name: Keep the schedule switched on
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/apply-cards.yml/enable" || true

@@ -1,0 +1,14 @@
+{
+  "name": "the-marker",
+  "private": true,
+  "type": "module",
+  "description": "The Marker — hole-by-hole foursome scorecard that posts to The Scorecard",
+  "scripts": {
+    "test": "node --test test/unit/*.test.mjs",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-marker 'node --test test/rules.test.mjs'"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "3.0.4",
+    "firebase": "10.12.0"
+  }
+}
