@@ -11,9 +11,10 @@ import * as W from "../../withdrawn.js";
 import { setWrite } from "./firestore.js";
 
 export const LIMITS = { anon: 10, member: 100, anonTotal: 300 };
-/* Reading a scorecard photo uses Cloudflare's free AI allowance (10,000 units
-   a day, about 150-250 a photo), so photos have their own, smaller limits. */
-export const SCAN_LIMITS = { anon: 3, member: 10, total: 40 };
+/* Reading a scorecard picture uses Cloudflare's free AI allowance (10,000
+   units a day, about 350-500 a picture), so pictures have their own limits:
+   20 a day in all is about 10 courses, two pictures each. */
+export const SCAN_LIMITS = { anon: 2, member: 8, total: 20 };
 export class LimitReached extends Error {}
 
 const day = (now = Date.now()) => new Date(now).toISOString().slice(0, 10);
@@ -90,68 +91,105 @@ export async function course(fs, who, id, key) {
 
 /* ---------------- reading a scorecard photo ---------------- */
 
-export const SCAN_MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
+/* Chosen by testing four models on a real card (Royal Ontario, 16 Oct 2026):
+   Qwen read every par, handicap number and yardage of a table, and did best
+   on the whole page too. It costs about 350-500 of the 10,000 free units a
+   day per picture, hence the limits below. Its "thinking" is switched off:
+   it costs far more and read no better. */
+export const SCAN_MODEL = "@cf/qwen/qwen3.8-27b";
 const MAX_IMAGE = 1_500_000;   /* characters of the data address: about 1.1 MB of picture */
 
-const SCAN_SCHEMA = {
-  type: "object",
-  properties: {
-    course: { type: "string" },
-    tees: { type: "array", items: { type: "object", properties: {
-      name: { type: "string" }, rating: { type: ["number", "null"] }, slope: { type: ["number", "null"] },
-      pars: { type: "array", items: { type: ["number", "null"] } },
-      yards: { type: "array", items: { type: ["number", "null"] } },
-      si: { type: "array", items: { type: ["number", "null"] } },
-    }, required: ["name", "pars"] } },
-    si: { type: "array", items: { type: ["number", "null"] } },
-    pars: { type: "array", items: { type: ["number", "null"] } },
-  },
-  required: ["tees"],
-};
+/* The model is asked for every number by its hole column, so a card that
+   prints holes 10-18 above 1-9, or only one nine per picture, is read right.
+   Tested on a real card (Royal Ontario, 16 Oct 2026): one table per picture
+   read every par, handicap number and yardage correctly; a whole screenshot
+   with both nines and photos around them did not. Hence the app asks for one
+   table at a time, and the totals printed on the card are checked here. */
+const PROMPT = `This picture shows a golf course scorecard (a photo or a screenshot, possibly with other things around it).
+The scorecard table has one COLUMN per hole; the hole numbers are in the header row (often labelled HOLE). Some cards print holes 10-18 in a separate table, sometimes above holes 1-9.
+Each tee is one ROW of yardages, usually named by a colour (Black, Gold, Blue, White, Red...); next to the name there may be "rating / slope", e.g. "69.7 / 130". There is a row for PAR and a row for HANDICAP (or HCP, Hdcp, S.I., Index).
+Read every table and answer with JSON only, in this shape:
+{"course": "<course name or empty>",
+ "holes": [ { "hole": <hole number>, "par": <par>, "hcp": <handicap number>, "yards": { "<tee name>": <yards>, ... } }, ... one entry per hole column shown ],
+ "tees": [ { "name": "<tee name>", "rating": <number or null>, "slope": <number or null>, "out": <OUT total or null>, "in": <IN total or null> } ],
+ "parOut": <par OUT total or null>, "parIn": <par IN total or null> }
+Read each number from the column of its own hole. Use null for anything you cannot read. Never guess. Do not include OUT, IN or TOTAL columns as holes.
+For holes 10-18, a tee row may not be named; it is the same tee as the row in the same position (same colour) in the holes 1-9 table; if there is no holes 1-9 table, name it by its colour.`;
 
-const PROMPT = `This is a photo of a golf course scorecard. Read it and answer with JSON only.
-- "course": the course or club name printed on the card, or "" if none.
-- "tees": one entry per tee (row of yardages), with "name" (the tee name or colour), "rating" and "slope" if printed for that tee (else null), "yards" (18 numbers, hole 1 to 18), and "pars" and "si" if that tee has its own par or handicap row (else empty arrays).
-- "pars": the par of holes 1 to 18 (18 numbers), from the row marked Par.
-- "si": the stroke index of holes 1 to 18 (18 numbers), from the row marked Handicap, HCP, Hdcp, S.I. or Index.
-Use null for anything you cannot read. Never guess a number. Leave out totals (Out, In, Total).`;
-
-const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
+const num = (v) => { const n = Number(v); return v !== null && v !== "" && Number.isFinite(n) ? n : null; };
 const within = (v, lo, hi) => (v != null && v >= lo && v <= hi ? v : null);
-const eighteen = (arr, lo, hi, whole = true) => {
-  const a = Array.isArray(arr) ? arr.map(num) : [];
-  if (a.length < 18) return null;
-  const out = a.slice(0, 18).map((v) => within(whole && v != null ? Math.round(v) : v, lo, hi));
-  return out;
-};
+const whole = (v, lo, hi) => { const n = num(v); return n != null && Number.isInteger(n) ? within(n, lo, hi) : null; };
+const FRONT = [1, 2, 3, 4, 5, 6, 7, 8, 9], BACK = [10, 11, 12, 13, 14, 15, 16, 17, 18];
+const teeKey = (name) => String(name || "").trim().toLowerCase().replace(/[^a-z]/g, "");
 
-/* What the model said, made safe: only believable numbers survive, anything
-   else is left empty for the scorer to fill in. Never invents a value. */
+/* What the model said, made safe:
+ *   - only believable numbers survive, nothing is invented;
+ *   - holes not in the picture are simply absent (holesRead), so a second
+ *     picture of the other nine can complete the course;
+ *   - a nine whose pars or yards do not add up to the totals printed on the
+ *     card is flagged (doubt), and so are repeated handicap numbers.
+ * Returns { course, holesRead: [n...], tees: [{ name, rating, slope,
+ *   holes: [18 x { par, yards, si }], doubt: { par:[n], yards:[n], si:[n] } }] }. */
 export function normalizeScan(raw) {
   let r = raw;
+  if (r && typeof r === "object" && !Array.isArray(r) && r.choices) r = r.choices[0] && r.choices[0].message && r.choices[0].message.content;
   if (typeof r === "string") {
     const m = r.match(/\{[\s\S]*\}/);
     try { r = JSON.parse(m ? m[0] : r); } catch { r = null; }
   }
   if (!r || typeof r !== "object") throw new Error("SCAN_UNREADABLE");
-  const pars = eighteen(r.pars, 3, 6);
-  let si = eighteen(r.si, 1, 18);
-  if (si && si.every((v) => v != null) && new Set(si).size !== 18) si = null;   /* a misread: two holes the same */
-  const tees = (Array.isArray(r.tees) ? r.tees : []).slice(0, 8).map((t) => {
-    const tp = eighteen(t && t.pars, 3, 6) || pars;
-    let ts = eighteen(t && t.si, 1, 18) || si;
-    if (ts && ts.every((v) => v != null) && new Set(ts).size !== 18) ts = null;
-    const yards = eighteen(t && t.yards, 50, 800) || Array(18).fill(null);
+  const byHole = {};
+  for (const h of Array.isArray(r.holes) ? r.holes : []) {
+    const n = whole(h && h.hole, 1, 18);
+    if (n != null && !byHole[n]) byHole[n] = h;
+  }
+  const holesRead = Object.keys(byHole).map(Number).sort((a, b) => a - b);
+  if (!holesRead.length) throw new Error("SCAN_UNREADABLE");
+
+  /* Tee names: from the tee list, then any extra names used in the yardages. */
+  const named = new Map();
+  for (const t of Array.isArray(r.tees) ? r.tees : []) if (t && teeKey(t.name)) named.set(teeKey(t.name), t);
+  for (const n of holesRead) for (const k of Object.keys((byHole[n] && byHole[n].yards) || {})) if (teeKey(k) && !named.has(teeKey(k))) named.set(teeKey(k), { name: k });
+
+  const pars = Array.from({ length: 18 }, (_, i) => (byHole[i + 1] ? whole(byHole[i + 1].par, 3, 6) : null));
+  let si = Array.from({ length: 18 }, (_, i) => (byHole[i + 1] ? whole(byHole[i + 1].hcp, 1, 18) : null));
+  const siSeen = {};
+  si.forEach((v) => { if (v != null) siSeen[v] = (siSeen[v] || 0) + 1; });
+  const siDoubt = si.map((v, i) => (v != null && siSeen[v] > 1 ? i + 1 : null)).filter(Boolean);
+
+  const parDoubt = [];
+  const checkSum = (holes, total, values, out) => {
+    const t = num(total);
+    if (t == null || !holes.every((n) => byHole[n])) return;
+    const got = holes.map((n) => values[n - 1]);
+    if (got.some((v) => v == null) || got.reduce((a, b) => a + b, 0) !== t) out.push(...holes);
+  };
+  checkSum(FRONT, r.parOut, pars, parDoubt);
+  checkSum(BACK, r.parIn, pars, parDoubt);
+
+  const tees = [...named.values()].slice(0, 8).map((t) => {
+    const k = teeKey(t.name);
+    const yards = Array.from({ length: 18 }, (_, i) => {
+      const y = (byHole[i + 1] && byHole[i + 1].yards) || {};
+      const key = Object.keys(y).find((x) => teeKey(x) === k);
+      return key ? whole(y[key], 50, 800) : null;
+    });
+    const yardDoubt = [];
+    checkSum(FRONT, t.out, yards, yardDoubt);
+    checkSum(BACK, t.in, yards, yardDoubt);
     return {
-      name: String((t && t.name) || "Tee").trim().slice(0, 40) || "Tee",
-      rating: within(num(t && t.rating), 55, 85),
-      slope: within(num(t && t.slope) == null ? null : Math.round(num(t.slope)), 55, 155),
-      holes: Array.from({ length: 18 }, (_, i) => ({ par: tp ? tp[i] : null, yards: yards[i], si: ts ? ts[i] : null })),
+      name: String(t.name || "Tee").trim().slice(0, 40) || "Tee",
+      rating: within(num(t.rating), 55, 85),
+      slope: whole(t.slope, 55, 155),
+      holes: Array.from({ length: 18 }, (_, i) => ({ par: pars[i], yards: yards[i], si: si[i] })),
+      doubt: { par: parDoubt, yards: yardDoubt, si: siDoubt },
     };
-  }).filter((t) => t.holes.some((h) => h.par != null || h.yards != null));
-  if (!tees.length && pars) tees.push({ name: "Tee", rating: null, slope: null, holes: pars.map((p, i) => ({ par: p, yards: null, si: si ? si[i] : null })) });
-  if (!tees.length) throw new Error("SCAN_UNREADABLE");
-  return { course: String(r.course || "").trim().slice(0, 120), tees };
+  }).filter((t) => t.holes.some((h) => h.yards != null));
+  if (!tees.length) {
+    if (!pars.some((p) => p != null)) throw new Error("SCAN_UNREADABLE");
+    tees.push({ name: "Tee", rating: null, slope: null, holes: pars.map((p, i) => ({ par: p, yards: null, si: si[i] })), doubt: { par: parDoubt, yards: [], si: siDoubt } });
+  }
+  return { course: String(r.course || "").trim().slice(0, 120), holesRead, tees };
 }
 
 export async function scan(fs, who, image, ai) {
@@ -162,9 +200,9 @@ export async function scan(fs, who, image, ai) {
   let out;
   try {
     out = await ai.run(SCAN_MODEL, {
-      messages: [{ role: "user", content: [{ type: "text", text: PROMPT }, { type: "image_url", image_url: { url: image } }] }],
-      max_tokens: 2500, temperature: 0,
-      response_format: { type: "json_schema", json_schema: SCAN_SCHEMA },
+      messages: [{ role: "user", content: [{ type: "text", text: PROMPT + " /no_think" }, { type: "image_url", image_url: { url: image } }] }],
+      max_tokens: 6000, temperature: 0,
+      chat_template_kwargs: { enable_thinking: false },
     });
   } catch (e) {
     const m = String((e && e.message) || e);
@@ -172,5 +210,5 @@ export async function scan(fs, who, image, ai) {
     if (/limit|quota|neurons|capacity|429/i.test(m)) throw new Error("SCAN_BUSY");
     throw new Error("SCAN_FAILED");
   }
-  return normalizeScan(out && (out.response !== undefined ? out.response : out));
+  return normalizeScan(out && out.response !== undefined ? out.response : out);
 }

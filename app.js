@@ -192,6 +192,7 @@ function screenManualCourse() {
   const photo = `
       ${S.busy === "scan" ? `<div class="btn dashed">Reading the photo…</div>` : `
       <span class="label">Read it from a picture of the club's scorecard</span>
+      <p class="muted">For the best reading, take one table at a time: holes 1 to 9, then holes 10 to 18. Lay the card flat, in good light.</p>
       <div class="row2">
         <label class="btn dashed" style="position:relative">📷 Take a photo
           <input type="file" id="scanfile" accept="image/*" capture="environment" ${S.busy ? "disabled" : ""}
@@ -204,7 +205,13 @@ function screenManualCourse() {
       ${sc && sc.tees.length > 1 && !sc.applied ? `<span class="label">The photo shows ${sc.tees.length} tees. Which one are you playing?</span>
         <div class="list">${sc.tees.map((t, i) => `<button class="item" data-act="scan-pick" data-v="${i}"><span class="txt"><span class="name">${esc(t.name)}</span>
           <span class="meta">${t.rating && t.slope ? `${t.rating} / ${t.slope}` : "No rating read"}</span></span></button>`).join("")}</div>` : ""}
-      ${sc && sc.applied ? `<div class="banner ok">Read from the photo${sc.missing ? `; ${sc.missing} value${sc.missing === 1 ? " was" : "s were"} not readable and ${sc.missing === 1 ? "is" : "are"} marked in red for you to fill in` : ""}. Check every value against the card before using it.</div>` : ""}`;
+      ${sc && sc.applied ? (() => {
+        const got = m.scanned || [];
+        const nines = [[1, 9], [10, 18]].filter(([a, b]) => Array.from({ length: b - a + 1 }, (_, k) => a + k).every((n) => got.includes(n)));
+        const done = nines.map(([a, b]) => `holes ${a} to ${b}`).join(" and ") || "some holes";
+        const next = nines.length === 1 ? ` Now take a picture of holes ${nines[0][0] === 1 ? "10 to 18" : "1 to 9"}.` : "";
+        return `<div class="banner ${sc.missing ? "warn" : "ok"}">Read ${done} from the picture.${sc.totalsOff ? " Some numbers do not add up to the totals printed on the card; those holes are marked in red." : ""}${sc.missing ? ` ${sc.missing} value${sc.missing === 1 ? " is" : "s are"} marked in red: fill in or check ${sc.missing === 1 ? "it" : "them"}.` : ""} Check every value against the card before using it.${next}</div>`;
+      })() : ""}`;
   return `${top("Enter a course", "From the scorecard at the club")}
     <main class="body">${banner()}${photo}
       <label class="field"><span class="label">Course name</span><input class="input" id="m-name" value="${esc(m.name)}"></label>
@@ -216,7 +223,7 @@ function screenManualCourse() {
       <span class="label">Each hole: par, yards and handicap number (HCP)</span>
       <div class="hole-rows"><div class="hole-row hd"><span>Hole</span><span>Par</span><span>Yards</span><span>HCP</span></div>${m.pars.map((p, i) => `<div class="hole-row"><b>${i + 1}</b>
         <select data-hole="${i}"${red(miss.par.includes(i))} aria-label="Par of hole ${i + 1}">${[3, 4, 5, 6].map((v) => `<option ${v === p ? "selected" : ""}>${v}</option>`).join("")}</select>
-        <input class="input" data-yds="${i}" inputmode="numeric" value="${m.yards && m.yards[i] != null ? esc(m.yards[i]) : ""}" placeholder="–" aria-label="Yards of hole ${i + 1}">
+        <input class="input" data-yds="${i}"${red((miss.yards || []).includes(i))} inputmode="numeric" value="${m.yards && m.yards[i] != null ? esc(m.yards[i]) : ""}" placeholder="–" aria-label="Yards of hole ${i + 1}">
         <select data-si="${i}"${red(miss.si.includes(i))} aria-label="Handicap number of hole ${i + 1}"><option value="">–</option>${Array.from({ length: 18 }, (_, k) => k + 1).map((v) => `<option ${v === m.sis[i] ? "selected" : ""}>${v}</option>`).join("")}</select></div>`).join("")}</div>
       <p class="muted">The handicap number of each hole is on the club's scorecard, marked HCP, Handicap or S.I. (1 is the hardest hole). It decides where strokes are given. Yards are optional.</p>
     </main>
@@ -910,30 +917,51 @@ async function readPhoto(file) {
     S.busy = "";
     S.cs.scan = { ...result, applied: false };
     if (result.course && !S.cs.manual.name) S.cs.manual.name = result.course;
-    if (result.tees.length === 1) applyScan(result.tees[0]);
+    /* A second picture (the other nine) goes on the tee chosen from the first. */
+    const key = (n) => String(n || "").toLowerCase().replace(/[^a-z]/g, "");
+    const same = S.cs.manual.scanned && result.tees.find((t) => key(t.name) && key(t.name) === key(S.cs.manual.tee));
+    if (same) applyScan(same);
+    else if (result.tees.length === 1) applyScan(result.tees[0]);
     else render();
   } catch (e) {
     S.busy = ""; S.cs.error = courses.explain(e); render();
   }
 }
 
-/* Fills the hand-entry screen from one tee read off the photo. Anything not
-   read is left as it was (par 4, stroke index empty) and counted as missing. */
+/* Fills the hand-entry screen from one tee read off the picture: only the
+   holes the picture shows, so the other nine can come from a second picture.
+   Anything not read, or not adding up to the card's own totals, is marked red. */
 function applyScan(t) {
   const m = S.cs.manual;
   if (!m || !t) return;
-  let missing = 0;
-  m.miss = { rating: t.rating == null, slope: t.slope == null, par: [], si: [] };
+  const sc = S.cs.scan || {};
+  const read = sc.holesRead && sc.holesRead.length ? sc.holesRead : Array.from({ length: 18 }, (_, i) => i + 1);
+  const first = !m.scanned;
+  if (first || !m.miss) m.miss = { rating: false, slope: false, par: [], si: [], yards: [] };
+  if (!m.miss.yards) m.miss.yards = [];
+  const doubt = t.doubt || { par: [], yards: [], si: [] };
   m.tee = t.name || m.tee;
-  /* Rating and slope not read are emptied, never left from an earlier course. */
-  m.rating = t.rating != null ? String(t.rating) : ""; if (t.rating == null) missing++;
-  m.slope = t.slope != null ? String(t.slope) : ""; if (t.slope == null) missing++;
-  t.holes.forEach((h, i) => {
-    if (h.par != null) m.pars[i] = h.par; else { missing++; m.miss.par.push(i); }
-    if (h.si != null) m.sis[i] = h.si; else { m.sis[i] = ""; missing++; m.miss.si.push(i); }
+  /* Rating and slope: taken when read; on the first picture an unread one is
+     emptied (never left from an earlier course) and marked. */
+  if (t.rating != null) { m.rating = String(t.rating); m.miss.rating = false; }
+  else if (first) { m.rating = ""; m.miss.rating = true; }
+  if (t.slope != null) { m.slope = String(t.slope); m.miss.slope = false; }
+  else if (first) { m.slope = ""; m.miss.slope = true; }
+  const drop = (list, i) => list.filter((x) => x !== i);
+  for (const n of read) {
+    const i = n - 1, h = t.holes[i] || {};
+    m.miss.par = drop(m.miss.par, i); m.miss.si = drop(m.miss.si, i); m.miss.yards = drop(m.miss.yards, i);
+    if (h.par != null) m.pars[i] = h.par; else m.miss.par.push(i);
+    if (h.si != null) m.sis[i] = h.si; else { m.sis[i] = ""; m.miss.si.push(i); }
     m.yards[i] = h.yards == null ? null : h.yards;
-  });
-  S.cs.scan = { ...S.cs.scan, applied: true, missing };
+    if (doubt.par.includes(n) && !m.miss.par.includes(i)) m.miss.par.push(i);
+    if (doubt.si.includes(n) && !m.miss.si.includes(i)) m.miss.si.push(i);
+    if (doubt.yards.includes(n)) m.miss.yards.push(i);
+  }
+  m.scanned = [...new Set([...(m.scanned || []), ...read])].sort((a, b) => a - b);
+  const missing = m.miss.par.length + m.miss.si.length + m.miss.yards.length + (m.miss.rating ? 1 : 0) + (m.miss.slope ? 1 : 0);
+  const totalsOff = doubt.par.length + doubt.yards.length > 0;
+  S.cs.scan = { ...sc, applied: true, missing, totalsOff };
   render();
 }
 
