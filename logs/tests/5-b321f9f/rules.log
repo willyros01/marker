@@ -1,0 +1,178 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: firestore
+[36m[1mi  emulators:[22m[39m Detected demo project ID "demo-marker", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+[33m[1m⚠ [22m[39m It appears you are running in a CI environment. You can avoid downloading the Firestore Emulator repeatedly by caching the /home/runner/.cache/firebase/emulators directory.
+[36m[1mi  firestore:[22m[39m downloading cloud-firestore-emulator-v1.22.0.jar...
+
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m✔  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m✔  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnode --test test/rules.test.mjs[22m
+TAP version 13
+# Subtest: M1 a regular member posts a card and rounds for golfers in two of their groups
+ok 1 - M1 a regular member posts a card and rounds for golfers in two of their groups
+  ---
+  duration_ms: 4138.923172
+  type: 'test'
+  ...
+# [2026-10-16T16:38:46.265Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa56c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, false for 'create' @ L725
+# Subtest: M2 a regular member may NOT post for somebody else without a card (Scorecard rule unchanged)
+ok 2 - M2 a regular member may NOT post for somebody else without a card (Scorecard rule unchanged)
+  ---
+  duration_ms: 181.417024
+  type: 'test'
+  ...
+# [2026-10-16T16:38:46.485Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa56f error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, false for 'create' @ L725
+# Subtest: M3 a card cannot be reused to post another round later
+ok 3 - M3 a card cannot be reused to post another round later
+  ---
+  duration_ms: 219.282016
+  type: 'test'
+  ...
+# [2026-10-16T16:38:46.633Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa571 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1255:24 for 'create' @ L1255, false for 'update' @ L1266, evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, false for 'create' @ L1255
+# Subtest: M4 a card naming a golfer from a group the scorer is not in is refused
+ok 4 - M4 a card naming a golfer from a group the scorer is not in is refused
+  ---
+  duration_ms: 148.519131
+  type: 'test'
+  ...
+# [2026-10-16T16:38:46.783Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa573 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1255:24 for 'create' @ L1255, false for 'update' @ L1266, evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, false for 'create' @ L1255
+# Subtest: M5 a card naming a golfer who is not on that group's roster is refused
+ok 5 - M5 a card naming a golfer who is not on that group's roster is refused
+  ---
+  duration_ms: 150.179827
+  type: 'test'
+  ...
+# [2026-10-16T16:38:46.899Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa575 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1255:24 for 'create' @ L1255, false for 'update' @ L1266, evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, false for 'create' @ L1255, false for 'create' @ L725
+# Subtest: M6 a round whose card puts the golfer in a different group is refused
+ok 6 - M6 a round whose card puts the golfer in a different group is refused
+  ---
+  duration_ms: 115.376935
+  type: 'test'
+  ...
+# [2026-10-16T16:38:47.017Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa577 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1255:24 for 'create' @ L1255, false for 'update' @ L1266, evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, false for 'create' @ L1255
+# Subtest: M7 a card cannot name somebody else as the scorer
+ok 7 - M7 a card cannot name somebody else as the scorer
+  ---
+  duration_ms: 117.518153
+  type: 'test'
+  ...
+# [2026-10-16T16:38:47.165Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa57a error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'update' @ L1266
+# Subtest: M8 a card can never be changed or deleted, and only its scorer reads it
+ok 8 - M8 a card can never be changed or deleted, and only its scorer reads it
+  ---
+  duration_ms: 284.238051
+  type: 'test'
+  ...
+# [2026-10-16T16:38:47.478Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa581 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1255:24 for 'create' @ L1255, false for 'update' @ L1266, evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, evaluation error at L725:26 for 'create' @ L725, evaluation error at L740:26 for 'update' @ L740, false for 'create' @ L725, false for 'create' @ L725, false for 'create' @ L1255
+# Subtest: M9 more than four golfers on a card is refused
+ok 9 - M9 more than four golfers on a card is refused
+  ---
+  duration_ms: 177.426367
+  type: 'test'
+  ...
+# [2026-10-16T16:38:47.562Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa583 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L1255, false for 'update' @ L1266
+# Subtest: M10 an anonymous player cannot post a card
+ok 10 - M10 an anonymous player cannot post a card
+  ---
+  duration_ms: 83.461685
+  type: 'test'
+  ...
+# Subtest: S1 Scorecard unchanged: an admin still posts for anybody, a member for themselves
+ok 11 - S1 Scorecard unchanged: an admin still posts for anybody, a member for themselves
+  ---
+  duration_ms: 100.784984
+  type: 'test'
+  ...
+# Subtest: C1 an anonymous player reads and adds Marker courses, but not Scorecard courses
+ok 12 - C1 an anonymous player reads and adds Marker courses, but not Scorecard courses
+  ---
+  duration_ms: 152.548791
+  type: 'test'
+  ...
+# [2026-10-16T16:38:47.916Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa58c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1272:24 for 'create' @ L1272, false for 'update' @ L1280, false for 'update' @ L1280
+# [2026-10-16T16:38:47.946Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa58d error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1272:24 for 'create' @ L1272, evaluation error at L1280:32 for 'update' @ L1280, false for 'update' @ L1280
+# Subtest: C2 a Marker course cannot be overwritten except by Willy's account
+ok 13 - C2 a Marker course cannot be overwritten except by Willy's account
+  ---
+  duration_ms: 160.953212
+  type: 'test'
+  ...
+# [2026-10-16T16:38:48.067Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa590 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1272:24 for 'create' @ L1272, false for 'update' @ L1280, false for 'create' @ L1272
+# [2026-10-16T16:38:48.091Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa591 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1272:24 for 'create' @ L1272, false for 'update' @ L1280, false for 'create' @ L1272
+# Subtest: C3 a Marker course with a mismatched id or extra fields is refused
+ok 14 - C3 a Marker course with a mismatched id or extra fields is refused
+  ---
+  duration_ms: 113.827527
+  type: 'test'
+  ...
+# Subtest: K1 members read the search key; an anonymous player only right after a counted search
+ok 15 - K1 members read the search key; an anonymous player only right after a counted search
+  ---
+  duration_ms: 141.626832
+  type: 'test'
+  ...
+# [2026-10-16T16:38:48.535Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa598 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1296:32 for 'create' @ L1296, evaluation error at L1296:32 for 'update' @ L1296, evaluation error at L1309:24 for 'create' @ L1309, evaluation error at L1314:24 for 'update' @ L1314, false for 'update' @ L1314, false for 'update' @ L1296
+# Subtest: K2 an anonymous player gets 10 searches a day, the 11th is refused
+ok 16 - K2 an anonymous player gets 10 searches a day, the 11th is refused
+  ---
+  duration_ms: 301.921616
+  type: 'test'
+  ...
+# [2026-10-16T16:38:48.605Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa59a error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1296:32 for 'create' @ L1296, evaluation error at L1296:32 for 'update' @ L1296, false for 'create' @ L1296
+# [2026-10-16T16:38:48.620Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa59b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1296:32 for 'create' @ L1296, evaluation error at L1296:32 for 'update' @ L1296, evaluation error at L1309:24 for 'create' @ L1309, evaluation error at L1314:24 for 'update' @ L1314, false for 'create' @ L1309, false for 'create' @ L1296
+# [2026-10-16T16:38:48.627Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa59c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L1296, false for 'update' @ L1296
+# Subtest: K3 the counters cannot be skipped, faked or written for somebody else
+ok 17 - K3 the counters cannot be skipped, faked or written for somebody else
+  ---
+  duration_ms: 92.76463
+  type: 'test'
+  ...
+# [2026-10-16T16:38:48.739Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa5a0 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1296:32 for 'create' @ L1296, evaluation error at L1296:32 for 'update' @ L1296, evaluation error at L1309:24 for 'create' @ L1309, evaluation error at L1314:24 for 'update' @ L1314, false for 'update' @ L1314
+# Subtest: K4 all anonymous players together stop at 300 a day
+ok 18 - K4 all anonymous players together stop at 300 a day
+  ---
+  duration_ms: 112.440152
+  type: 'test'
+  ...
+# [2026-10-16T16:38:48.818Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa5a2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1287:32 for 'create' @ L1287, evaluation error at L1287:32 for 'update' @ L1287, false for 'update' @ L1287
+# [2026-10-16T16:38:48.843Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x5c5aa5a3 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L1287, false for 'update' @ L1287
+# Subtest: K5 only Willy's account writes the search key
+ok 19 - K5 only Willy's account writes the search key
+  ---
+  duration_ms: 123.725598
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7197.754556
+[32m[1m✔ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
