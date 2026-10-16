@@ -40,7 +40,7 @@ export CLOUDSDK_CORE_PROJECT="${PROJECT_ID}"
 export GOOGLE_CLOUD_PROJECT="${PROJECT_ID}"
 
 MODE="${1:-apply}"
-COMMIT="__PIN__"                                   # willyros01/marker, tested: the rules
+COMMIT="1d2eebf49c5fedc245b068282506d49d55c810af"                                 # willyros01/marker, tested: the rules
 RAW="https://raw.githubusercontent.com/willyros01/marker"
 STATE="$(pwd)/marker-mk1-backup"
 RULES_API="https://firebaserules.googleapis.com/v1"

@@ -37,12 +37,19 @@ jobs:
           node-version: "22"
       - name: Keyless sign-in to Google
         id: auth
+        # Until bash mk1.txt has been run, Google refuses this sign-in. The job
+        # then says so and stops quietly, instead of failing every 15 minutes.
+        continue-on-error: true
         uses: google-github-actions/auth@v3.0.0
         with:
           workload_identity_provider: projects/811267714235/locations/global/workloadIdentityPools/scorecard-github/providers/marker-provider
           service_account: marker-index@scorecard-f41b8.iam.gserviceaccount.com
           token_format: access_token
+      - name: Not set up yet
+        if: steps.auth.outcome != 'success'
+        run: echo "::warning title=Not set up yet::Google refused the keyless sign-in. Run bash mk1.txt in Cloud Shell first."
       - name: Update handicaps for new cards
+        if: steps.auth.outcome == 'success'
         env:
           ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           PROJECT: scorecard-f41b8
