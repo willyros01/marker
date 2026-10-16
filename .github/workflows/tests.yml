@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # only to save the test log to the ci-logs branch
 
 jobs:
   tests:
@@ -26,6 +26,22 @@ jobs:
           npm install -g firebase-tools@15.31.0
           npm install --no-audit --no-fund
       - name: App logic tests
-        run: npm test
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee unit.log
       - name: Firebase rules tests (emulator)
-        run: npm run -s test:rules
+        run: |
+          set -o pipefail
+          npm run -s test:rules 2>&1 | tee rules.log
+      - name: Save the logs to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/tests/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp unit.log rules.log "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "Test logs ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
