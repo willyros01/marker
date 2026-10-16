@@ -133,3 +133,21 @@ test("E4 the timer finds a card whose wake-up was lost", async () => {
   assert.equal(r.posted, 1);
   assert.equal((await fs.get(`markerSubmissions/${c.id}`)).data.status, "posted");
 });
+
+test("E5 after a withdrawal: the withdrawn details are refused, a hand entry becomes a new course", async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), "courses", "K"), { name: "Wack Wack — East", tees: [{ id: "t", name: "White (M)", rating: 68.8, slope: 133, par: 72 }], withdrawn: true, createdBy: "x" });
+  });
+  const c1 = finishedCard();
+  await dropOff(c1);
+  assert.equal((await processSubmission(fs, c1.id, { today: "2026-10-16" })).status, "refused");
+  let c2 = finishedCard();
+  c2 = { ...c2, id: c2.id + "b", course: { providerId: null, name: "Wack Wack — East", where: "" }, tee: { ...tee, rating: 69.4, slope: 128 } };
+  await dropOff(c2);
+  const r = await processSubmission(fs, c2.id, { today: "2026-10-16" });
+  assert.equal(r.status, "posted", r.reason);
+  const round = await fs.get(`associations/G1/rounds/${r.rounds.A}`);
+  assert.notEqual(round.data.courseId, "K");
+  assert.equal((await fs.get("courses/K")).data.tees.length, 1, "the withdrawn course is never changed");
+  assert.equal((await fs.get(`markerCourses/m-${round.data.courseId}`)).data.manual, true);
+});

@@ -3,10 +3,13 @@
  *   GET  /health             -> { ok, version }
  *   GET  /search?q=...       -> { courses: [...] }       any sign-in, counted
  *   GET  /course?id=...      -> { course: {...} }        any sign-in, counted, saved to the library
+ *   GET  /withdrawn          -> { courses: [...] }       withdrawn courses: names, tee figures, ids
+ *   POST /scan  {image}      -> { scan: {course, tees} } any sign-in, counted: reads a scorecard photo
  *   POST /wake  {cardId}     -> { status, reason?, rounds? }   the card's own scorer only
  *   every 5 minutes          -> posts a card still waiting (one per run)
  *
  * Secrets: SA_KEY (marker-worker service-account key, JSON), GOLF_KEY.
+ * Binding: AI (Cloudflare Workers AI, free allowance) for /scan.
  * Vars:    PROJECT, ORIGINS (comma-separated), VERSION.
  */
 import { client } from "./firestore.js";
@@ -59,6 +62,14 @@ export default {
       if (url.pathname === "/course" && req.method === "GET") {
         try { return reply({ course: await search.course(fs, who, url.searchParams.get("id"), env.GOLF_KEY) }, 200, h); }
         catch (e) { return reply({ error: e instanceof search.LimitReached ? "LIMIT" : e.message }, 200, h); }
+      }
+      if (url.pathname === "/withdrawn" && req.method === "GET") {
+        return reply({ courses: await search.withdrawnList(fs) }, 200, h);
+      }
+      if (url.pathname === "/scan" && req.method === "POST") {
+        const body = await req.json().catch(() => ({}));
+        try { return reply({ scan: await search.scan(fs, who, body.image, env.AI) }, 200, h); }
+        catch (e) { return reply({ error: e instanceof search.LimitReached ? "SCAN_LIMIT" : e.message }, 200, h); }
       }
       if (url.pathname === "/wake" && req.method === "POST") {
         if (who.anonymous) return reply({ error: "SIGN_IN" }, 403, h);

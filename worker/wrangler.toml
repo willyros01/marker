@@ -9,6 +9,10 @@ PROJECT = "scorecard-f41b8"
 ORIGINS = "https://willyros01.github.io,capacitor://localhost,https://localhost"
 VERSION = "dev"
 
+# Cloudflare's AI, for reading scorecard photos (free daily allowance).
+[ai]
+binding = "AI"
+
 [triggers]
 # One waiting card per run: a free-plan run may make 50 requests.
 crons = ["*/5 * * * *"]

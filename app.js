@@ -8,6 +8,7 @@ import * as card from "./card.js";
 import * as courses from "./courses.js";
 import * as local from "./storage.js";
 import * as db from "./store.js";
+import * as W from "./withdrawn.js";
 
 const VERSION = self.APP_VERSION || "dev";
 const app = document.getElementById("app");
@@ -25,7 +26,7 @@ const S = {
   picked: [],              /* players chosen: { name, golferId, assocId, groupName, index } */
   guestName: "",
   /* course choice */
-  cs: { query: "", results: [], library: [], error: "", manual: null },
+  cs: { query: "", results: [], library: [], error: "", manual: null, withdrawn: [], scan: null },
   /* play */
   typing: false, typed: "", typeError: "",
   view: null,              /* a finished card being looked at */
@@ -125,7 +126,9 @@ function screenSetup() {
         <div class="stepper"><button data-act="date" data-v="-1" aria-label="Day before">−</button><div class="val">${esc(niceDate(s.date))}</div><button data-act="date" data-v="1" aria-label="Day after">+</button></div></div>
       <div class="field"><span class="label">Course</span>
         <button class="btn" style="justify-content:flex-start" data-act="go-course">${c ? esc(c.name) : "Choose a course"} ▸</button></div>
-      ${c ? `<div class="field"><span class="label">Tee</span><div class="list">${tees.map((t, i) => `
+      ${c ? `<div class="field"><span class="label">Tee</span><div class="list">${tees.map((t, i) => t.withdrawn ? `
+        <button class="item" disabled><span class="box"></span>
+          <span class="txt"><span class="name">${esc(t.name)} · withdrawn</span><span class="meta">These details were withdrawn from The Scorecard and cannot be used.</span></span></button>` : `
         <button class="item ${s.tee && s.tee.name === t.name && s.tee.rating === t.rating ? "on" : ""}" data-act="tee" data-v="${i}">
           <span class="box">${s.tee && s.tee.name === t.name && s.tee.rating === t.rating ? "✓" : ""}</span>
           <span class="txt"><span class="name">${esc(t.name)}</span><span class="meta">${t.rating && t.slope ? `${esc(t.rating)} / ${esc(t.slope)}` : "No rating"} · par ${esc(t.par)}${(t.holes || []).length ? "" : " · no hole details"}</span></span></button>`).join("")}</div></div>` : ""}
@@ -166,8 +169,14 @@ function screenCourse() {
       ${cs.results.length ? `<span class="label">Found online</span><div class="list">${cs.results.map((c, i) => `
         <button class="item" data-act="pick-online" data-v="${i}"><span class="txt"><span class="name">${esc(c.name)}</span><span class="meta">${esc(c.where)}</span></span></button>`).join("")}</div>` : ""}
       <span class="label">Saved courses</span>
-      ${saved.length ? `<div class="list">${saved.map((c) => `
-        <button class="item" data-act="pick-saved" data-v="${esc(c.providerId || "manual:" + c.name)}"><span class="txt"><span class="name">${esc(c.name)}</span><span class="meta">${esc(c.where || "")} · ${c.tees.length} tee${c.tees.length === 1 ? "" : "s"}</span></span></button>`).join("")}</div>`
+      ${saved.length ? `<div class="list">${saved.map((c) => {
+        const st = courseState(c);
+        const meta = st === "blocked" ? "Withdrawn · cannot be used"
+          : st === "check" ? "Withdrawn in The Scorecard · tap to look for corrected details"
+          : `${esc(c.where || "")} · ${c.tees.length} tee${c.tees.length === 1 ? "" : "s"}`;
+        return `
+        <button class="item" data-act="pick-saved" data-v="${esc(c.providerId || "manual:" + c.name)}"><span class="txt"><span class="name">${esc(c.name)}</span><span class="meta"${st ? ' style="color:var(--over)"' : ""}>${meta}</span></span></button>`;
+      }).join("")}</div>`
         : `<p class="muted">${q ? "No saved course matches. Search online, or enter the course yourself." : "No saved courses yet. Search online, or enter the course yourself."}</p>`}
       <button class="btn dashed" data-act="manual">Enter a course yourself</button>
     </main>
@@ -176,18 +185,30 @@ function screenCourse() {
 
 function screenManualCourse() {
   const m = S.cs.manual;
+  const sc = S.cs.scan;
+  const miss = m.miss || { par: [], si: [] };
+  const red = (on) => (on ? ' style="outline:3px solid var(--over);outline-offset:1px"' : "");
+  const photo = `
+      <label class="btn dashed" style="position:relative">${S.busy === "scan" ? "Reading the photo…" : "📷 Read it from a photo of the scorecard"}
+        <input type="file" id="scanfile" accept="image/*" capture="environment" ${S.busy ? "disabled" : ""}
+          style="position:absolute;inset:0;opacity:0;width:100%;height:100%"></label>
+      ${S.cs.error ? `<div class="banner warn">${esc(S.cs.error)}</div>` : ""}
+      ${sc && sc.tees.length > 1 && !sc.applied ? `<span class="label">The photo shows ${sc.tees.length} tees. Which one are you playing?</span>
+        <div class="list">${sc.tees.map((t, i) => `<button class="item" data-act="scan-pick" data-v="${i}"><span class="txt"><span class="name">${esc(t.name)}</span>
+          <span class="meta">${t.rating && t.slope ? `${t.rating} / ${t.slope}` : "No rating read"}</span></span></button>`).join("")}</div>` : ""}
+      ${sc && sc.applied ? `<div class="banner ok">Read from the photo${sc.missing ? `; ${sc.missing} value${sc.missing === 1 ? " was" : "s were"} not readable and ${sc.missing === 1 ? "is" : "are"} marked in red for you to fill in` : ""}. Check every value against the card before using it.</div>` : ""}`;
   return `${top("Enter a course", "From the scorecard at the club")}
-    <main class="body">${banner()}
+    <main class="body">${banner()}${photo}
       <label class="field"><span class="label">Course name</span><input class="input" id="m-name" value="${esc(m.name)}"></label>
       <label class="field"><span class="label">Tee</span><input class="input" id="m-tee" value="${esc(m.tee)}" placeholder="e.g. White"></label>
       <div class="row2">
-        <label class="field"><span class="label">Rating</span><input class="input" id="m-rating" inputmode="decimal" value="${esc(m.rating)}" placeholder="e.g. 70.1"></label>
-        <label class="field"><span class="label">Slope</span><input class="input" id="m-slope" inputmode="numeric" value="${esc(m.slope)}" placeholder="e.g. 125"></label></div>
+        <label class="field"><span class="label">Rating</span><input class="input" id="m-rating"${red(miss.rating)} inputmode="decimal" value="${esc(m.rating)}" placeholder="e.g. 70.1"></label>
+        <label class="field"><span class="label">Slope</span><input class="input" id="m-slope"${red(miss.slope)} inputmode="numeric" value="${esc(m.slope)}" placeholder="e.g. 125"></label></div>
       <p class="muted">Rating and slope are needed only to post rounds to The Scorecard.</p>
       <span class="label">Each hole: par, and stroke index (SI)</span>
       <div class="holes-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr))">${m.pars.map((p, i) => `<label>${i + 1}
-        <select data-hole="${i}" aria-label="Par of hole ${i + 1}">${[3, 4, 5, 6].map((v) => `<option ${v === p ? "selected" : ""}>${v}</option>`).join("")}</select>
-        <select data-si="${i}" aria-label="Stroke index of hole ${i + 1}"><option value="">SI</option>${Array.from({ length: 18 }, (_, k) => k + 1).map((v) => `<option ${v === m.sis[i] ? "selected" : ""}>${v}</option>`).join("")}</select></label>`).join("")}</div>
+        <select data-hole="${i}"${red(miss.par.includes(i))} aria-label="Par of hole ${i + 1}">${[3, 4, 5, 6].map((v) => `<option ${v === p ? "selected" : ""}>${v}</option>`).join("")}</select>
+        <select data-si="${i}"${red(miss.si.includes(i))} aria-label="Stroke index of hole ${i + 1}"><option value="">SI</option>${Array.from({ length: 18 }, (_, k) => k + 1).map((v) => `<option ${v === m.sis[i] ? "selected" : ""}>${v}</option>`).join("")}</select></label>`).join("")}</div>
       <p class="muted">The stroke index is on the club's scorecard, usually marked HCP or SI. It decides where strokes are given.</p>
     </main>
     <footer class="foot"><button class="btn primary" data-act="manual-save">Use this course</button><button class="btn" data-act="manual-cancel">← Back</button></footer>`;
@@ -530,13 +551,17 @@ const actions = {
   },
   resume() { const c = local.currentCard(); go(c.state === "finished" ? "finish" : "play"); },
   date(el) { S.setup.date = shiftDate(S.setup.date, Number(el.dataset.v)); S.setup.game = null; render(); loadGames(); },
-  "go-course"() { S.cs.error = ""; S.cs.results = []; go("course"); db.library().then((l) => { S.cs.library = l; if (S.screen === "course" && !S.cs.manual) render(); }); },
+  "go-course"() {
+    S.cs.error = ""; S.cs.results = []; S.cs.withdrawn = db.withdrawnSaved(); go("course");
+    db.library().then((l) => { S.cs.library = l; if (S.screen === "course" && !S.cs.manual) render(); });
+    db.withdrawnCourses().then((w) => { S.cs.withdrawn = w; if (S.screen === "course" && !S.cs.manual) render(); });
+  },
   "back-setup"() { S.cs.manual = null; go("setup"); },
   tee(el) {
     const t = S.setup.course.tees[Number(el.dataset.v)];
     if (!(t.holes || []).length) {
       /* The provider has no holes for this tee: take them off the club's card. */
-      S.cs.manual = { name: S.setup.course.name, tee: t.name, rating: t.rating == null ? "" : String(t.rating), slope: t.slope == null ? "" : String(t.slope), pars: Array(18).fill(4), sis: Array(18).fill(""), providerId: S.setup.course.providerId || null, where: S.setup.course.where || "" };
+      S.cs.manual = { name: S.setup.course.name, tee: t.name, rating: t.rating == null ? "" : String(t.rating), slope: t.slope == null ? "" : String(t.slope), pars: Array(18).fill(4), sis: Array(18).fill(""), yards: Array(18).fill(null), providerId: S.setup.course.providerId || null, where: S.setup.course.where || "" };
       S.flash = "This tee has no hole details. Copy the par and stroke index of each hole from the club's scorecard.";
       go("course");
       return;
@@ -577,19 +602,30 @@ const actions = {
       S.busy = ""; S.cs.error = courses.explain(e); render();
     }
   },
-  "pick-saved"(el) {
+  async "pick-saved"(el) {
     const id = el.dataset.v;
     const all = [...S.cs.library, ...local.recentCourses()];
     const c = all.find((x) => (x.providerId || "manual:" + x.name) === id);
     if (!c) return;
+    const st = courseState(c);
+    if (st === "blocked") { needHandEntry(c.name); return; }
+    if (st === "check") {
+      /* Withdrawn in The Scorecard: ask the golf course database again, its
+         details may have been corrected since. */
+      S.busy = "course"; S.flash = "Looking for corrected details…"; render();
+      try { chooseCourse(await db.courseById(c.providerId)); }
+      catch (e) { S.busy = ""; S.cs.error = courses.explain(e); render(); }
+      return;
+    }
     try { local.rememberCourse(c); } catch {}
     chooseCourse(c);
   },
   manual() {
-    S.cs.manual = { name: S.cs.query || "", tee: "White", rating: "", slope: "", pars: Array(18).fill(4), sis: Array(18).fill(""), providerId: null, where: "" };
+    S.cs.manual = newManual(S.cs.query || ""); S.cs.error = ""; S.cs.scan = null;
     render();
   },
-  "manual-cancel"() { S.cs.manual = null; render(); },
+  "manual-cancel"() { S.cs.manual = null; S.cs.scan = null; render(); },
+  "scan-pick"(el) { applyScan(S.cs.scan.tees[Number(el.dataset.v)]); },
   "manual-save"() {
     const m = S.cs.manual;
     m.name = document.getElementById("m-name").value.trim();
@@ -610,8 +646,15 @@ const actions = {
       S.error = "The rating is usually between 60 and 80, and the slope between 55 and 155. Check them, or leave both empty.";
       render(); return;
     }
-    const course = { providerId: null, name: m.name, where: m.where || "Entered by hand",
-      tees: [{ name: m.tee, rating, slope, par: m.pars.reduce((a, b) => a + b, 0), holes: m.pars.map((p, i) => ({ par: p, yards: null, si: m.sis[i] === "" ? null : m.sis[i] })) }] };
+    const par = m.pars.reduce((a, b) => a + b, 0);
+    if (rating != null && slope != null && W.teeWithdrawn(S.cs.withdrawn, m.name, { rating, slope, par })) {
+      S.error = "These are the details that were withdrawn from The Scorecard, so they cannot be used. Copy the rating and slope from the club's current scorecard.";
+      render(); return;
+    }
+    const yards = m.yards || [];
+    const course = { providerId: m.providerId && !W.scorecardIdOf(m.providerId) ? m.providerId : null, name: m.name, where: m.where || "Entered by hand",
+      tees: [{ name: m.tee, rating, slope, par, holes: m.pars.map((p, i) => ({ par: p, yards: yards[i] == null ? null : yards[i], si: m.sis[i] === "" ? null : m.sis[i] })) }] };
+    S.cs.scan = null;
     try { local.rememberCourse(course); } catch {}
     S.cs.manual = null;
     chooseCourse(course);
@@ -709,14 +752,100 @@ const actions = {
   view(el) { S.view = local.finishedCards().find((c) => c.id === el.dataset.v) || null; go("view"); },
 };
 
+/* A course in a list: "" usable, "check" withdrawn in The Scorecard but the
+   golf course database may have corrected details, "blocked" never usable. */
+function courseState(c) {
+  const list = S.cs.withdrawn || [];
+  const own = W.scorecardIdOf(c.providerId);
+  if (own) return list.some((w) => w.id === own) ? "blocked" : "";
+  if (!c.providerId) return (c.tees || []).length && c.tees.every((t) => W.teeWithdrawn(list, c.name, t)) ? "blocked" : "";
+  return W.nameWithdrawn(list, c.name) ? "check" : "";
+}
+
+function newManual(name) {
+  return { name, tee: "White", rating: "", slope: "", pars: Array(18).fill(4), sis: Array(18).fill(""), yards: Array(18).fill(null), providerId: null, where: "" };
+}
+
+function needHandEntry(name) {
+  S.busy = "";
+  S.cs.manual = newManual(name);
+  go("course");
+  S.error = `${name} has been withdrawn from The Scorecard because its details may be wrong, and it cannot be used. Enter the course from the club's scorecard: type it in, or read it from a photo.`;
+  render();
+}
+
 function chooseCourse(c) {
+  const list = S.cs.withdrawn || [];
+  c = { ...c, tees: (c.tees || []).map((t) => ({ ...t, withdrawn: !!t.withdrawn || W.teeWithdrawn(list, c.name, t) })) };
+  if (c.tees.length && c.tees.every((t) => t.withdrawn)) { needHandEntry(c.name); return; }
   S.busy = "";
   S.setup.course = c;
-  S.setup.tee = c.tees.length === 1 ? c.tees[0] : null;
+  const usable = c.tees.filter((t) => !t.withdrawn);
+  S.setup.tee = usable.length === 1 ? usable[0] : null;
   if (S.setup.tee && (S.setup.tee.holes || []).length && S.setup.tee.holes.length < 18) S.setup.holes = "front";
   S.setup.start = card.holeOrder(S.setup.holes, S.setup.start)[0];
   S.cs.results = [];
   go("setup");
+}
+
+/* ---------------- a photo of the club's scorecard ---------------- */
+
+/* The picture is made smaller on the phone first (long side 1600 pixels),
+   which is plenty to read a scorecard and quick to send. */
+function shrink(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+        const cv = document.createElement("canvas");
+        cv.width = Math.max(1, Math.round(img.naturalWidth * k));
+        cv.height = Math.max(1, Math.round(img.naturalHeight * k));
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        resolve(cv.toDataURL("image/jpeg", 0.85));
+      } catch { reject(new Error("SCAN_BAD_PHOTO")); }
+      finally { URL.revokeObjectURL(url); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("SCAN_BAD_PHOTO")); };
+    img.src = url;
+  });
+}
+
+async function readPhoto(file) {
+  if (!file || !S.cs.manual) return;
+  S.cs.error = ""; S.error = ""; S.cs.scan = null; S.busy = "scan"; render();
+  try {
+    const image = await shrink(file);
+    const result = await db.scanCard(image);
+    S.busy = "";
+    S.cs.scan = { ...result, applied: false };
+    if (result.course && !S.cs.manual.name) S.cs.manual.name = result.course;
+    if (result.tees.length === 1) applyScan(result.tees[0]);
+    else render();
+  } catch (e) {
+    S.busy = ""; S.cs.error = courses.explain(e); render();
+  }
+}
+
+/* Fills the hand-entry screen from one tee read off the photo. Anything not
+   read is left as it was (par 4, stroke index empty) and counted as missing. */
+function applyScan(t) {
+  const m = S.cs.manual;
+  if (!m || !t) return;
+  let missing = 0;
+  m.miss = { rating: t.rating == null, slope: t.slope == null, par: [], si: [] };
+  m.tee = t.name || m.tee;
+  /* Rating and slope not read are emptied, never left from an earlier course. */
+  m.rating = t.rating != null ? String(t.rating) : ""; if (t.rating == null) missing++;
+  m.slope = t.slope != null ? String(t.slope) : ""; if (t.slope == null) missing++;
+  t.holes.forEach((h, i) => {
+    if (h.par != null) m.pars[i] = h.par; else { missing++; m.miss.par.push(i); }
+    if (h.si != null) m.sis[i] = h.si; else { m.sis[i] = ""; missing++; m.miss.si.push(i); }
+    m.yards[i] = h.yards == null ? null : h.yards;
+  });
+  S.cs.scan = { ...S.cs.scan, applied: true, missing };
+  render();
 }
 
 function confirmLeave(cur) {
@@ -726,6 +855,7 @@ function confirmLeave(cur) {
 
 /* Typing straight into a score box in "all four" mode. */
 document.addEventListener("change", (e) => {
+  if (e.target.id === "scanfile") { readPhoto(e.target.files && e.target.files[0]); e.target.value = ""; return; }
   const m = S.cs.manual;
   if (m && e.target.dataset.hole != null) m.pars[Number(e.target.dataset.hole)] = Number(e.target.value);
   if (m && e.target.dataset.si != null) m.sis[Number(e.target.dataset.si)] = e.target.value ? Number(e.target.value) : "";

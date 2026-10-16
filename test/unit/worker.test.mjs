@@ -200,7 +200,7 @@ test("W10 cards that must not be posted are refused, with the reason, and nothin
   await refusedFor("twice", { card: { players: [player("A", "G1", "Ana"), player("A", "G1", "Ana")] } }, /twice/);
   await refusedFor("five", { card: { players: ["A", "B", "C", "A", "B"].map((g) => player(g, "G1", g)) } }, /one to four/);
   await refusedFor("future", { card: { date: "2026-10-20" } }, /future/);
-  await refusedFor("course withdrawn in The Scorecard", { seed: { "courses/K": { name: "Royal Ontario", tees: [], withdrawn: true, withdrawnReason: "wrong slope" } } }, /withdrawn.*wrong slope/);
+  await refusedFor("the withdrawn details", { seed: { "courses/K": { name: "Royal Ontario", tees: [{ id: "t", name: "White", rating: 70.1, slope: 125, par: 72 }], withdrawn: true } } }, /withdrawn from The Scorecard.*Enter the course yourself/);
   await refusedFor("course withdrawn in the library", { seed: { "markerCourses/123": { name: "Royal Ontario", tees: [libTee], withdrawn: true } } }, /withdrawn/);
   await refusedFor("hand-entered tee without a slope", { card: { course: { providerId: null, name: "Home Course" }, tee: { name: "W", rating: 70, slope: null, par: 72, holes } } }, /slope/);
   await refusedFor("account being deleted", { seed: { [`accountDeletions/${SCORER}`]: { at: 1 } } }, /being deleted/);
@@ -326,4 +326,126 @@ test("R1 health, CORS for the app's site only, and nothing without a sign-in", a
   }
   const w = await worker.fetch(new Request("https://w/wake", { method: "POST", body: "{}" }), env);
   assert.equal(w.status, 401);
+});
+
+/* ---------------- withdrawn courses (Willy, 16 Oct 2026) ---------------- */
+
+const withdrawnK = { "courses/K": { name: "Royal Ontario", tees: [{ id: "t", name: "White", rating: 70.1, slope: 125, par: 72 }], withdrawn: true, createdBy: "x" } };
+const handTee = (rating, slope) => ({ name: "White", rating, slope, par: 72, holes });
+const handCard = (rating, slope) => ({ course: { providerId: null, name: "Royal Ontario", where: "" }, tee: handTee(rating, slope), players: [player("A", "G1", "Ana Cruz")] });
+const scorecardCourses = (fs) => [...fs.docs.keys()].filter((k) => /^courses\/[^/]+$/.test(k));
+
+test("X1 a course entered by hand after a withdrawal is accepted as a new course, and shared in the course list", async () => {
+  const fs = world(withdrawnK);
+  submission(fs, "c1", handCard(71.4, 129));
+  const r = await post(fs, "c1");
+  assert.equal(r.status, "posted", r.reason);
+  assert.equal(scorecardCourses(fs).length, 2, "the withdrawn one stays, untouched");
+  assert.deepEqual(fs.data("courses/K").tees.length, 1);
+  const round = roundsIn(fs, "G1")[0];
+  assert.notEqual(round.courseId, "K");
+  assert.equal(round.rating, 71.4);
+  const lib = fs.data(`markerCourses/m-${round.courseId}`);
+  assert.equal(lib.manual, true);
+  assert.equal(lib.tees[0].holes.length, 18);
+  /* The next card picks it from the list ("m-" id) and posts to that same course. */
+  submission(fs, "c2", { course: { providerId: `m-${round.courseId}`, name: "Royal Ontario" }, tee: handTee(71.4, 129), players: [player("B", "G1", "Ben Reyes")] });
+  assert.equal((await post(fs, "c2")).status, "posted");
+  assert.equal(scorecardCourses(fs).length, 2);
+  assert.equal(roundsIn(fs, "G1").find((x) => x.golferId === "B").courseId, round.courseId);
+});
+
+test("X2 the withdrawn details are refused however they come: typed in by hand, or from the database", async () => {
+  const fs = world(withdrawnK);
+  submission(fs, "c1", handCard(70.1, 125));
+  assert.equal((await post(fs, "c1")).status, "refused");
+  const fs2 = world(withdrawnK);
+  submission(fs2, "c1");   /* the library still holds the old 70.1 / 125 */
+  const r = await post(fs2, "c1");
+  assert.equal(r.status, "refused");
+  assert.match(r.reason, /can never be used again/);
+});
+
+test("X3 corrected details from the golf course database are accepted after a withdrawal", async () => {
+  const fs = world({ ...withdrawnK, "markerCourses/123": { providerId: "123", name: "Royal Ontario", tees: [{ ...libTee, rating: 71.0, slope: 131 }] } });
+  submission(fs, "c1");
+  const r = await post(fs, "c1");
+  assert.equal(r.status, "posted", r.reason);
+  assert.equal(roundsIn(fs, "G1")[0].rating, 71.0);
+  assert.notEqual(roundsIn(fs, "G1")[0].courseId, "K");
+  assert.equal(fs.data("markerCourses/m-" + roundsIn(fs, "G1")[0].courseId), null, "a database course is not copied as a hand entry");
+});
+
+test("X4 a hand-entered course that is itself withdrawn later is refused", async () => {
+  const fs = world({ "courses/M": { name: "Home Course", tees: [{ id: "t", name: "W", rating: 69, slope: 120, par: 72 }], withdrawn: true },
+    "markerCourses/m-M": { providerId: "m-M", name: "Home Course", tees: [handTee(69, 120)], manual: true } });
+  submission(fs, "c1", { course: { providerId: "m-M", name: "Home Course" }, tee: handTee(69, 120), players: [player("A", "G1", "Ana")] });
+  assert.equal((await post(fs, "c1")).status, "refused");
+});
+
+test("X5 looking a course up after a withdrawal asks the database again and marks withdrawn tees", async () => {
+  search.forgetWithdrawn();
+  const fs = world(withdrawnK);
+  const real = globalThis.fetch;
+  let hits = 0;
+  globalThis.fetch = async () => {
+    hits++;
+    return new Response(JSON.stringify({ course: { id: 123, club_name: "Royal Ontario", tees: { male: [
+      { tee_name: "White", course_rating: 70.1, slope_rating: 125, par_total: 72, holes },
+      { tee_name: "Blue", course_rating: 72.2, slope_rating: 133, par_total: 72, holes }] } } }), { status: 200 });
+  };
+  try {
+    const c = await search.course(fs, { uid: "m1", anonymous: false }, "123", "K");
+    assert.equal(hits, 1, "asked again even though the library had it");
+    assert.deepEqual(c.tees.map((t) => [t.name, t.withdrawn]), [["White (M)", true], ["Blue (M)", false]]);
+    assert.equal(fs.data("markerCourses/123").tees.length, 2, "the library copy is replaced");
+    assert.deepEqual((await search.withdrawnList(fs)).map((w) => w.id), ["K"]);
+  } finally { globalThis.fetch = real; search.forgetWithdrawn(); }
+});
+
+/* ---------------- reading a scorecard photo ---------------- */
+
+const p18 = [4, 4, 3, 5, 4, 4, 3, 4, 5, 4, 3, 5, 4, 4, 4, 3, 4, 5];
+const s18 = [7, 3, 15, 1, 11, 5, 17, 13, 9, 8, 14, 2, 6, 12, 4, 18, 16, 10];
+
+test("P1 what the model reads is kept only where it is believable; nothing is invented", () => {
+  const r = search.normalizeScan(JSON.stringify({ course: "Wack Wack East", pars: p18, si: s18, tees: [
+    { name: "Blue", rating: 72.4, slope: 131, yards: p18.map((p) => p * 95) },
+    { name: "White", rating: 700, slope: null, yards: [...p18.map((p) => p * 85).slice(0, 17), 9999] }] }));
+  assert.equal(r.course, "Wack Wack East");
+  assert.equal(r.tees.length, 2);
+  assert.equal(r.tees[0].rating, 72.4);
+  assert.equal(r.tees[0].holes[3].si, 1);
+  assert.equal(r.tees[1].rating, null, "700 is not a rating");
+  assert.equal(r.tees[1].holes[17].yards, null, "9999 yards is not a hole");
+  const bad = search.normalizeScan({ pars: p18, si: p18, tees: [] });
+  assert.equal(bad.tees[0].holes[0].si, null, "stroke indexes that repeat are a misread, so left empty");
+  assert.throws(() => search.normalizeScan("I cannot see a scorecard"), /SCAN_UNREADABLE/);
+  assert.throws(() => search.normalizeScan({ tees: [] }), /SCAN_UNREADABLE/);
+});
+
+test("P2 a photo goes to Cloudflare's AI once, counted; limits and failures are explained", async () => {
+  const fs = fakeFs();
+  const calls = [];
+  const ai = { run: async (model, input) => { calls.push({ model, input }); return { response: { course: "X", pars: p18, si: s18, tees: [{ name: "Red", yards: p18.map(() => 300) }] } }; } };
+  const img = "data:image/jpeg;base64,/9j/4AAQ";
+  const who = { uid: "m1", anonymous: false };
+  const r = await search.scan(fs, who, img, ai);
+  assert.equal(r.tees[0].name, "Red");
+  assert.equal(calls[0].model, search.SCAN_MODEL);
+  assert.equal(calls[0].input.messages[0].content[1].image_url.url, img);
+  await assert.rejects(search.scan(fs, who, "http://evil/x.jpg", ai), /SCAN_BAD_PHOTO/);
+  await assert.rejects(search.scan(fs, who, "data:image/jpeg;base64," + "A".repeat(1_600_000), ai), /SCAN_TOO_BIG/);
+  for (let i = 1; i < search.SCAN_LIMITS.member; i++) await search.scan(fs, who, img, ai);
+  await assert.rejects(search.scan(fs, who, img, ai), search.LimitReached);
+  await assert.rejects(search.scan(fakeFs(), who, img, { run: async () => { throw new Error("You must agree to the license"); } }), /AI_LICENCE/);
+  await assert.rejects(search.scan(fakeFs(), who, img, { run: async () => { throw new Error("daily free allocation of neurons exceeded"); } }), /SCAN_BUSY/);
+  await assert.rejects(search.scan(fakeFs(), who, img, null), /NOT_SET_UP/);
+});
+
+test("P3 all photos together stop at the day's total", async () => {
+  const day = new Date().toISOString().slice(0, 10);
+  const fs = fakeFs({ [`markerLimits/scans-${day}`]: { count: search.SCAN_LIMITS.total } });
+  const ai = { run: async () => ({ response: { pars: p18, tees: [] } }) };
+  await assert.rejects(search.scan(fs, { uid: "m2", anonymous: false }, "data:image/png;base64,iVBO", ai), search.LimitReached);
 });

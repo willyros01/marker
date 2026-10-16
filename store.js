@@ -205,6 +205,25 @@ export async function courseById(id) {
   return (await callWorker(`/course?id=${encodeURIComponent(id)}`)).course;
 }
 
+/* The withdrawn courses, kept on the phone so they are marked even with no
+   signal. Every course list and the tee choice checks them. */
+export async function withdrawnCourses() {
+  try {
+    const list = (await callWorker("/withdrawn")).courses || [];
+    local.save("withdrawn", list);
+    return list;
+  } catch {
+    return local.load("withdrawn", []);
+  }
+}
+export const withdrawnSaved = () => local.load("withdrawn", []);
+
+/* A photo of the club's scorecard, read by the worker (Cloudflare's AI). */
+export async function scanCard(image) {
+  if (!user) throw new Error("UNREACHABLE");
+  return (await callWorker("/scan", { method: "POST", body: { image } })).scan;
+}
+
 /* ---------------- posting a finished card ---------------- */
 
 /* The phone never writes The Scorecard's own records. A finished card is

@@ -18,6 +18,7 @@
  */
 import * as model from "../../model.js";
 import * as card from "../../card.js";
+import * as W from "../../withdrawn.js";
 import { setWrite, updateWrite } from "./firestore.js";
 
 export const STATUS = { SENT: "sent", POSTED: "posted", REFUSED: "refused" };
@@ -94,7 +95,7 @@ async function teeFor(fs, c) {
   if (pid && /^[A-Za-z0-9_-]{1,64}$/.test(pid)) {
     const lib = await fs.get(`markerCourses/${pid}`);
     if (lib) {
-      if (lib.data.withdrawn === true || lib.data.deleted === true) refuse(withdrawnWhy(lib.data, c.course.name));
+      if (W.isWithdrawnCourse(lib.data)) refuse(withdrawnWhy(c.course.name));
       const t = (lib.data.tees || []).find((x) => lower(x.name) === lower(c.tee && c.tee.name));
       if (t) return checkTee(t);
     }
@@ -102,16 +103,15 @@ async function teeFor(fs, c) {
   return checkTee(c.tee);
 }
 
-const withdrawnWhy = (course, name) =>
-  `${course.name || name} has been withdrawn from The Scorecard${course.withdrawnReason || course.deleteReason ? ` (${course.withdrawnReason || course.deleteReason})` : ""} and cannot take rounds until it is put right. The card is kept; share it instead.`;
-const isWithdrawn = (c) => c.withdrawn === true || c.deleted === true || !!c.deletedAt;
+const withdrawnWhy = (name, teeName) =>
+  `The details of ${name}${teeName ? ` (${teeName})` : ""} have been withdrawn from The Scorecard because they may be wrong, and can never be used again. Enter the course yourself from the club's scorecard, then post again. The card is kept.`;
+const isWithdrawn = W.isWithdrawnCourse;
 
 /* The Scorecard course and tee to post against. Same name (any case) and same
-   rating and slope is the same tee. A course withdrawn by an admin is never used. */
+   rating and slope is the same tee. Withdrawn courses are never used or
+   changed: when only withdrawn ones carry the name, a new course is made. */
 export function matchCourse(courses, name, tee) {
-  const same = courses.filter((x) => lower(x.data.name) === lower(name));
-  const usable = same.filter((x) => !isWithdrawn(x.data));
-  if (same.length && !usable.length) refuse(withdrawnWhy(same[0].data, name));
+  const usable = courses.filter((x) => lower(x.data.name) === lower(name) && !isWithdrawn(x.data));
   for (const x of usable) {
     const t = (x.data.tees || []).find((t) => Number(t.rating) === tee.rating && Number(t.slope) === tee.slope);
     if (t) return { course: x, teeId: t.id, addTee: null };
@@ -166,7 +166,16 @@ export async function plan(fs, sub, today) {
 
   const tee = await teeFor(fs, c);
   const courses = await fs.query("", "courses", [], 1000);
-  const matched = matchCourse(courses, c.course.name, tee);
+  const withdrawn = W.summary(courses);
+  if (W.teeWithdrawn(withdrawn, c.course.name, tee)) refuse(withdrawnWhy(c.course.name, tee.name));
+
+  /* A course entered by hand earlier and kept in the library ("m-" + its
+     Scorecard id) posts to that same course, unless it was withdrawn since. */
+  const ownId = W.scorecardIdOf(c.course.providerId);
+  const own = ownId ? courses.find((x) => x.id === ownId) : null;
+  if (own && isWithdrawn(own.data)) refuse(withdrawnWhy(c.course.name, tee.name));
+  const fromDatabase = !!c.course.providerId && !ownId;
+  const matched = own ? matchCourse([own], own.data.name, tee) : matchCourse(courses, c.course.name, tee);
 
   const writes = [];
   let courseId, teeId;
@@ -186,6 +195,14 @@ export async function plan(fs, sub, today) {
     teeId = created.tees[0].id;
     const { id, ...data } = created;
     writes.push(setWrite(fs, `courses/${id}`, { ...data, createdVia: "marker" }, { exists: false }));
+    /* Entered by hand: kept in The Marker's course list too, holes and all,
+       so other scorers can pick it instead of typing it again. */
+    if (!fromDatabase) {
+      writes.push(setWrite(fs, `markerCourses/m-${id}`, {
+        providerId: `m-${id}`, name: data.name, where: data.location || "Entered by hand", manual: true,
+        scorecardCourseId: id, tees: [tee], savedBy: scorer,
+      }, { exists: false, now: ["savedAt"] }));
+    }
   }
 
   /* The card as the worker sees it: trusted tee, members only, fresh indexes. */

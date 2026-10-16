@@ -134,6 +134,13 @@ export function explain(code) {
     case "NO_MATCH": return "No course matched. Try the club name, or just the town.";
     case "NO_TEES": return "That course has no tee details. Enter the course yourself.";
     case "LIMIT": return "Today's searches without an account are used up. Choose a saved course, or enter one yourself.";
+    case "SCAN_LIMIT": return "Today's photo readings are used up. Type the course in below.";
+    case "SCAN_BUSY": return "Photo reading has reached its free allowance for today. Type the course in below.";
+    case "SCAN_UNREADABLE": return "The photo could not be read. Try again with the whole card flat, in good light and in focus, or type it in below.";
+    case "SCAN_BAD_PHOTO": return "That file is not a photo the app can read. Take a picture of the card instead.";
+    case "SCAN_TOO_BIG": return "That photo is too large. Take a new picture of the card.";
+    case "SCAN_FAILED": return "Reading the photo did not work this time. Try again, or type the course in below.";
+    case "AI_LICENCE": return "Photo reading is not switched on yet. Willy needs to finish setting it up. Type the course in below.";
     case "BAD_RESPONSE": return "The course search sent something unreadable. Try again, or enter the course yourself.";
     default: return `Course search did not work (${String(code && code.message ? code.message : code)}). Enter the course yourself.`;
   }
