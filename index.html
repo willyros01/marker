@@ -10,8 +10,7 @@
 <link rel="apple-touch-icon" href="./icon.svg" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="The Marker" />
-<link rel="stylesheet" href="./styles.css" />
-<script src="./version.js"></script>
+<link rel="stylesheet" id="css" href="./styles.css" />
 <script>
   /* A start-up failure shows a message, never a blank screen. */
   window.addEventListener("error", function (e) {
@@ -23,7 +22,35 @@
       '<p class="muted">Any scores you entered are kept on this phone.</p></div>';
   });
 </script>
-<script type="module" src="./app.js"></script>
+<script>
+  /* Always the newest version. GitHub Pages lets a browser keep a file for
+   * ten minutes, so an update could be missed on reload. The version is read
+   * fresh every time (a new address each load), and every file of the app is
+   * then fetched under that version's own address, so a reload after an
+   * update gets every new file, and nothing old mixes in. */
+  (function () {
+    var FILES = ["app", "store", "card", "courses", "storage", "withdrawn", "model", "firebase-config"];
+    function start(v) {
+      var q = v ? "?v=" + encodeURIComponent(v) : "";
+      var map = { imports: {} };
+      FILES.forEach(function (f) { map.imports["./" + f + ".js"] = "./" + f + ".js" + q; });
+      var im = document.createElement("script");
+      im.type = "importmap";
+      im.textContent = JSON.stringify(map);
+      document.head.appendChild(im);
+      if (q) document.getElementById("css").href = "./styles.css" + q;
+      var m = document.createElement("script");
+      m.type = "module";
+      m.src = "./app.js" + q;
+      document.head.appendChild(m);
+    }
+    var s = document.createElement("script");
+    s.src = "./version.js?t=" + Date.now();
+    s.onload = function () { start(self.APP_BUILD || ""); };
+    s.onerror = function () { start(""); };
+    document.head.appendChild(s);
+  })();
+</script>
 </head>
 <body>
 <div id="app"><div class="body"><p class="muted">Loading The Marker…</p></div></div>
