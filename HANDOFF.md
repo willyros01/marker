@@ -23,3 +23,11 @@ Workers AI, Llama 4 Scout; 10 a day per member, 3 without an account, 40 a day i
 The Scorecard marks a withdrawn course with withdrawn: true (its next build, after the freeze).
 
 Later, with Willy's OK: copy the rules into the scorecard repo; iPhone/Android builds.
+
+NEXT BUILD in The Marker (Willy, 16 Oct 7:48 pm; build after 8:40 pm, not before):
+- Verified scorecard pictures (design doc section "Related Scorecard decision: verified scorecard
+  pictures correct course data"): strict criteria; EVERY tee on the card must be complete, not only
+  the one played; scorer confirms; only signed-in accounts' verified readings replace the database
+  copy (markerCourses) with source "verified picture"; the database never overwrites it again.
+- A spinning wheel while the picture is being read.
+- The Scorecard side (recalculation, * on game scores, tee source field) waits for the freeze.
