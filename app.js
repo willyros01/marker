@@ -132,6 +132,7 @@ function screenSetup() {
         <button class="item ${s.tee && s.tee.name === t.name && s.tee.rating === t.rating ? "on" : ""}" data-act="tee" data-v="${i}">
           <span class="box">${s.tee && s.tee.name === t.name && s.tee.rating === t.rating ? "✓" : ""}</span>
           <span class="txt"><span class="name">${esc(t.name)}</span><span class="meta">${t.rating && t.slope ? `${esc(t.rating)} / ${esc(t.slope)}` : "No rating"} · par ${esc(t.par)}${(t.holes || []).length ? "" : " · no hole details"}</span></span></button>`).join("")}</div></div>` : ""}
+      ${c && s.tee && (s.tee.holes || []).length ? `<button class="btn" data-act="check-holes">Check the holes (par, yards, handicap)</button>` : ""}
       <div class="field"><span class="label">Holes</span><div class="row3">${holeBtn("18", "18 holes")}${holeBtn("front", "Front 9")}${holeBtn("back", "Back 9")}</div></div>
       <div class="field"><span class="label">Starting hole</span>
         <div class="stepper"><button data-act="start" data-v="-1" aria-label="Earlier hole">−</button><div class="val">${esc(s.start)}</div><button data-act="start" data-v="1" aria-label="Later hole">+</button></div>
@@ -205,11 +206,12 @@ function screenManualCourse() {
         <label class="field"><span class="label">Rating</span><input class="input" id="m-rating"${red(miss.rating)} inputmode="decimal" value="${esc(m.rating)}" placeholder="e.g. 70.1"></label>
         <label class="field"><span class="label">Slope</span><input class="input" id="m-slope"${red(miss.slope)} inputmode="numeric" value="${esc(m.slope)}" placeholder="e.g. 125"></label></div>
       <p class="muted">Rating and slope are needed only to post rounds to The Scorecard.</p>
-      <span class="label">Each hole: par, and stroke index (SI)</span>
-      <div class="holes-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr))">${m.pars.map((p, i) => `<label>${i + 1}
+      <span class="label">Each hole: par, yards and handicap number (HCP)</span>
+      <div class="hole-rows"><div class="hole-row hd"><span>Hole</span><span>Par</span><span>Yards</span><span>HCP</span></div>${m.pars.map((p, i) => `<div class="hole-row"><b>${i + 1}</b>
         <select data-hole="${i}"${red(miss.par.includes(i))} aria-label="Par of hole ${i + 1}">${[3, 4, 5, 6].map((v) => `<option ${v === p ? "selected" : ""}>${v}</option>`).join("")}</select>
-        <select data-si="${i}"${red(miss.si.includes(i))} aria-label="Stroke index of hole ${i + 1}"><option value="">SI</option>${Array.from({ length: 18 }, (_, k) => k + 1).map((v) => `<option ${v === m.sis[i] ? "selected" : ""}>${v}</option>`).join("")}</select></label>`).join("")}</div>
-      <p class="muted">The stroke index is on the club's scorecard, usually marked HCP or SI. It decides where strokes are given.</p>
+        <input class="input" data-yds="${i}" inputmode="numeric" value="${m.yards && m.yards[i] != null ? esc(m.yards[i]) : ""}" placeholder="–" aria-label="Yards of hole ${i + 1}">
+        <select data-si="${i}"${red(miss.si.includes(i))} aria-label="Handicap number of hole ${i + 1}"><option value="">–</option>${Array.from({ length: 18 }, (_, k) => k + 1).map((v) => `<option ${v === m.sis[i] ? "selected" : ""}>${v}</option>`).join("")}</select></div>`).join("")}</div>
+      <p class="muted">The handicap number of each hole is on the club's scorecard, marked HCP, Handicap or S.I. (1 is the hardest hole). It decides where strokes are given. Yards are optional.</p>
     </main>
     <footer class="foot"><button class="btn primary" data-act="manual-save">Use this course</button><button class="btn" data-act="manual-cancel">← Back</button></footer>`;
 }
@@ -250,10 +252,10 @@ function screenPlayers() {
 function holeHeader(c, n) {
   const h = card.holeInfo(c, n);
   const pos = c.order.indexOf(n) + 1;
-  return `<header class="top"><div class="row"><div class="sub">${esc(c.course.name)} · hole ${pos} of ${c.order.length}</div>
-      <div class="row"><span class="pill">✓ Saved</span><button class="pill light" data-act="share-card">Share</button></div></div>
+  return `<header class="top"><div class="row"><div class="sub">${esc(c.course.name)} · ${esc(c.tee.name)} · hole ${pos} of ${c.order.length}</div>
+      <div class="row"><span class="pill">✓ Saved</span><button class="pill light" data-act="menu">Menu</button></div></div>
     <div class="hole-title"><span class="big">Hole ${n}</span><span class="par">Par ${h.par}</span></div>
-    <div class="hole-meta">${h.yards ? `${h.yards} yds · ` : ""}${h.si ? `Stroke index ${h.si}` : "No stroke index"}</div></header>`;
+    <div class="hole-meta"><span>${h.yards ? `${h.yards} yards` : "Yards not known"}</span><span>${h.si ? `Handicap ${h.si}` : "No handicap number"}</span></div></header>`;
 }
 
 function playerNote(c, pi, n) {
@@ -263,7 +265,7 @@ function playerNote(c, pi, n) {
   const cap = card.holeCap(h.par, pl.ch, h.si);
   const guest = pl.guest ? (c.mode === "member" ? "Guest · not posted · " : "") : "";
   if (pl.ch == null) return `${guest}No index · handicap limit ${cap}`;
-  const strokes = !h.si ? `About ${k} stroke${k === 1 ? "" : "s"} a hole (no stroke index)` : k === 0 ? "No stroke here" : k > 0 ? `Gets ${k} stroke${k === 1 ? "" : "s"} here` : `Gives ${-k} stroke back here`;
+  const strokes = !h.si ? `About ${k} stroke${k === 1 ? "" : "s"} a hole (no handicap numbers)` : k === 0 ? "No stroke here" : k > 0 ? `Gets ${k} stroke${k === 1 ? "" : "s"} here` : `Gives ${-k} stroke back here`;
   return `${guest}${strokes} · handicap limit ${cap}`;
 }
 
@@ -333,11 +335,43 @@ function screenPlayAll(c) {
     <p class="muted">Tap + to start at par. Tap a number to type it; X means picked up.</p></main>${footPlay(c, n)}`;
 }
 
+/* ---------------- the round's menu ---------------- */
+
+function screenMenu(c) {
+  const other = c.entry === "all" ? "one" : "all";
+  return `${top("Menu", `${c.course.name} · ${c.tee.name} · hole ${c.order[c.pos]}`)}
+    <main class="body">${banner()}
+      <button class="btn tall" data-act="switch-entry"><span>${other === "all" ? "Switch to all four together" : "Switch to one golfer at a time"}</span><small>The scores already entered stay as they are.</small></button>
+      <button class="btn tall" data-act="card"><span>See the whole card</span><small>Every hole, with par, yards and handicap number. Tap a hole to go to it.</small></button>
+      <button class="btn tall" data-act="share-card"><span>Share the card</span><small>WhatsApp, email or text message.</small></button>
+      <button class="btn tall" data-act="to-start"><span>Go to the start screen</span><small>The round stays on this phone. "Continue your round" brings you back to this hole.</small></button>
+      <button class="btn tall" data-act="end-round" style="color:var(--over)"><span>End this round without posting</span><small>The card is kept under "Your cards" and is never posted.</small></button>
+    </main>
+    <footer class="foot"><button class="btn primary" data-act="back-play">Back to hole ${esc(c.order[c.pos])} →</button></footer>`;
+}
+
+/* The chosen tee's holes, to check against the club's card before playing. */
+function screenHoles() {
+  const s = S.setup;
+  const t = s.tee;
+  const holes = Array.from({ length: 18 }, (_, i) => (t.holes || [])[i] || null);
+  const rows = holes.map((h, i) => `<div class="crow ${i % 2 ? "zebra" : "plain"}"><div style="font-weight:800">${i + 1}</div>
+      <div>${h ? h.par : "?"}</div><div>${h && h.yards ? h.yards : ""}</div><div>${h && h.si ? h.si : ""}</div></div>`).join("");
+  return `${top("Check the holes", `${s.course.name} · ${t.name}`)}
+    <main class="body" style="padding:10px">${banner()}
+      <p class="muted">Compare with the club's scorecard: the par, yards and handicap number (HCP) of every hole.</p>
+      <div class="cgrid" style="--n:0"><div class="crow"><div class="hd">HOLE</div><div class="hd">PAR</div><div class="hd">YDS</div><div class="hd">HCP</div></div>${rows}
+        <div class="crow total"><div style="grid-column: span 2">Par ${t.par}</div><div style="grid-column: span 2">${t.rating && t.slope ? `${t.rating} / ${t.slope}` : "No rating"}</div></div></div>
+    </main>
+    <footer class="foot"><button class="btn primary" data-act="holes-ok">All correct ✓</button>
+      <button class="btn" data-act="holes-fix">Something is wrong: correct it</button></footer>`;
+}
+
 /* ---------------- 4 · the whole card ---------------- */
 
 function cardGrid(c, interactive) {
   const cur = c.order[c.pos];
-  const head = `<div class="crow"><div class="hd">HOLE</div><div class="hd">PAR</div><div class="hd">SI</div>${c.players.map((p) => `<div class="hd">${esc(first(p.name).toUpperCase())}</div>`).join("")}</div>`;
+  const head = `<div class="crow"><div class="hd">HOLE</div><div class="hd">PAR</div><div class="hd">YDS</div><div class="hd">HCP</div>${c.players.map((p) => `<div class="hd">${esc(first(p.name).toUpperCase())}</div>`).join("")}</div>`;
   const rows = c.order.map((n, k) => {
     const h = card.holeInfo(c, n);
     const cls = interactive && n === cur ? "now-row" : k % 2 ? "zebra" : "plain";
@@ -347,12 +381,12 @@ function cardGrid(c, interactive) {
       const col = card.isEntered(s) && s !== card.PICKED_UP ? (s < h.par ? "under" : s > h.par ? "over" : "") : "";
       return `<div class="${col}" style="font-weight:700">${esc(t)}</div>`;
     }).join("");
-    const inner = `<div style="font-weight:800">${n}</div><div>${h.par}</div><div style="color:var(--ink-3)">${h.si || ""}</div>${cells}`;
+    const inner = `<div style="font-weight:800">${n}</div><div>${h.par}</div><div style="color:var(--ink-3)">${h.yards || ""}</div><div style="color:var(--ink-3)">${h.si || ""}</div>${cells}`;
     return interactive ? `<button class="crow ${cls}" data-act="jump" data-v="${k}" aria-label="Go to hole ${n}">${inner}</button>` : `<div class="crow ${cls}">${inner}</div>`;
   }).join("");
   const tot = c.players.map((p, i) => { const t = card.totals(c, i); return `<div>${t.done ? card.formatToPar(t.toPar) : "–"}</div>`; }).join("");
   const done = Math.max(...c.players.map((p, i) => card.totals(c, i).done));
-  return `<div class="cgrid" style="--n:${c.players.length}">${head}${rows}<div class="crow total"><div style="grid-column: span 3">Thru ${done}</div>${tot}</div></div>`;
+  return `<div class="cgrid" style="--n:${c.players.length}">${head}${rows}<div class="crow total"><div style="grid-column: span 4">Thru ${done}</div>${tot}</div></div>`;
 }
 
 function screenCard(c) {
@@ -466,6 +500,8 @@ function render() {
     case "players": html = screenPlayers(); break;
     case "play": html = c ? (c.entry === "all" ? screenPlayAll(c) : screenPlayOne(c)) : screenStart(); break;
     case "card": html = c ? screenCard(c) : screenStart(); break;
+    case "menu": html = c ? screenMenu(c) : screenStart(); break;
+    case "holes": html = S.setup && S.setup.tee ? screenHoles() : screenSetup(); break;
     case "finish": html = c ? screenFinish(c) : screenStart(); break;
     case "status": html = c ? screenStatus(c) : screenStart(); break;
     case "history": html = screenHistory(); break;
@@ -562,7 +598,7 @@ const actions = {
     if (!(t.holes || []).length) {
       /* The provider has no holes for this tee: take them off the club's card. */
       S.cs.manual = { name: S.setup.course.name, tee: t.name, rating: t.rating == null ? "" : String(t.rating), slope: t.slope == null ? "" : String(t.slope), pars: Array(18).fill(4), sis: Array(18).fill(""), yards: Array(18).fill(null), providerId: S.setup.course.providerId || null, where: S.setup.course.where || "" };
-      S.flash = "This tee has no hole details. Copy the par and stroke index of each hole from the club's scorecard.";
+      S.flash = "This tee has no hole details. Copy the par, yards and handicap number of each hole from the club's scorecard.";
       go("course");
       return;
     }
@@ -634,9 +670,11 @@ const actions = {
     m.slope = document.getElementById("m-slope").value.trim();
     document.querySelectorAll("[data-hole]").forEach((s) => { m.pars[Number(s.dataset.hole)] = Number(s.value); });
     document.querySelectorAll("[data-si]").forEach((s) => { m.sis[Number(s.dataset.si)] = s.value ? Number(s.value) : ""; });
+    if (!m.yards) m.yards = Array(18).fill(null);
+    document.querySelectorAll("[data-yds]").forEach((el) => { const v = Number(el.value); m.yards[Number(el.dataset.yds)] = el.value.trim() && Number.isInteger(v) && v >= 50 && v <= 800 ? v : null; });
     const given = m.sis.filter((x) => x !== "");
     if (given.length && (given.length !== 18 || new Set(given).size !== 18)) {
-      S.error = "Each stroke index from 1 to 18 is used once. Fill in all 18, or leave them all empty.";
+      S.error = "Each handicap number from 1 to 18 is used once. Fill in all 18, or leave them all empty.";
       render(); return;
     }
     if (m.name.length < 2) { S.error = "Type the course name."; render(); return; }
@@ -726,6 +764,37 @@ const actions = {
   next() { S.typing = false; updateCard((c) => ({ ...c, pos: Math.min(c.order.length - 1, c.pos + 1), who: 0 })); window.scrollTo(0, 0); },
   prev() { S.typing = false; updateCard((c) => ({ ...c, pos: Math.max(0, c.pos - 1), who: 0 })); window.scrollTo(0, 0); },
   card() { go("card"); },
+  menu() { S.typing = false; go("menu"); },
+  "switch-entry"() {
+    const c = local.currentCard();
+    const entry = c.entry === "all" ? "one" : "all";
+    updateCard((x) => ({ ...x, entry, who: 0 }));
+    try { local.savePrefs({ entry }); } catch {}
+    go("play");
+  },
+  "to-start"() { go("start"); },
+  "end-round"() {
+    const c = local.currentCard();
+    if (!c) { go("start"); return; }
+    if (!window.confirm(`End the round at ${c.course.name} without posting? The card is kept under "Your cards".`)) return;
+    try { local.keepFinished({ ...c, state: "ended" }); local.clearCurrent(); }
+    catch (e) { fail(e); return; }
+    go("start");
+  },
+  "check-holes"() { go("holes"); },
+  "holes-ok"() { go("setup"); },
+  "holes-fix"() {
+    /* The holes are copied into the hand-entry screen; whatever is corrected
+       there becomes a course entered by hand, which is posted as entered. */
+    const s = S.setup, t = s.tee;
+    const hs = Array.from({ length: 18 }, (_, i) => (t.holes || [])[i] || {});
+    S.cs.manual = { ...newManual(s.course.name), tee: t.name, rating: t.rating == null ? "" : String(t.rating), slope: t.slope == null ? "" : String(t.slope),
+      pars: hs.map((h) => Number(h.par) || 4), sis: hs.map((h) => (h.si ? Number(h.si) : "")), yards: hs.map((h) => (h.yards ? Number(h.yards) : null)), where: s.course.where || "" };
+    S.cs.scan = null; S.cs.error = "";
+    go("course");
+    S.flash = "Correct what is wrong, then tap Use this course.";
+    render();
+  },
   "back-play"() { const c = local.currentCard(); go(c && c.state === "finished" && card.cardComplete(c) ? "finish" : "play"); },
   jump(el) { updateCard((c) => ({ ...c, pos: Number(el.dataset.v), who: 0, state: "playing" })); go("play"); },
   finish() { updateCard((c) => ({ ...c, state: "finished" })); go("finish"); },
@@ -882,6 +951,11 @@ document.addEventListener("input", (e) => {
     if (e.target.id === "m-tee") m.tee = e.target.value;
     if (e.target.id === "m-rating") m.rating = e.target.value;
     if (e.target.id === "m-slope") m.slope = e.target.value;
+    if (e.target.dataset && e.target.dataset.yds != null) {
+      const v = Number(e.target.value);
+      if (!m.yards) m.yards = Array(18).fill(null);
+      m.yards[Number(e.target.dataset.yds)] = e.target.value.trim() && Number.isInteger(v) && v >= 50 && v <= 800 ? v : null;
+    }
   }
 });
 document.addEventListener("keydown", (e) => {

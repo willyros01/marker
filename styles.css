@@ -27,7 +27,7 @@ a { color: var(--green); }
 .hole-title { display: flex; align-items: baseline; gap: 14px; }
 .hole-title .big { font-family: var(--serif); font-size: 44px; font-weight: 600; line-height: 1; }
 .hole-title .par { font-size: 26px; font-weight: 800; }
-.hole-meta { font-size: 17px; font-weight: 600; }
+.hole-meta { font-size: 20px; font-weight: 700; display: flex; gap: 18px; flex-wrap: wrap; margin-top: 4px; }
 
 .body { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
 .foot { padding: 12px 16px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; }
@@ -117,3 +117,10 @@ p { margin: 0; line-height: 1.45; }
 .holes-grid select { min-height: 44px; font-size: 18px; border-radius: 8px; border: 1px solid var(--line); background: #fff; padding: 0 6px; }
 .links { display: flex; justify-content: center; gap: 18px; font-size: 16px; flex-wrap: wrap; }
 .spin { opacity: .6; }
+
+/* Hand entry: one row per hole (par, yards, handicap number). */
+.hole-rows { display: flex; flex-direction: column; gap: 6px; }
+.hole-row { display: grid; grid-template-columns: 44px 1fr 1.2fr 1fr; gap: 8px; align-items: center; background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 6px 10px; }
+.hole-row.hd { background: none; border: none; padding: 0 10px; font-size: 14px; font-weight: 800; letter-spacing: .06em; color: var(--ink-3); text-transform: uppercase; }
+.hole-row b { font-size: 20px; }
+.hole-row select, .hole-row .input { height: 48px; font-size: 19px; min-width: 0; width: 100%; }
