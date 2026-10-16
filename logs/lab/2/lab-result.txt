@@ -1,0 +1,663 @@
+VISION-ISH MODELS: @cf/moonshotai/kimi-k2.7-code, @cf/llava-hf/llava-1.5-7b-hf, @cf/zai-org/glm-5.3-flash, @cf/moonshotai/kimi-k2.6, @cf/cloudflare/clef, @cf/microsoft/resnet-50, @cf/swiss-ai/apertus-v1.5-8b, @cf/cloudflare/clef-omni, @cf/google/gemma-4-26b-a4b-it, @cf/mistralai/mistral-small-3.1-24b-instruct, @cf/meta/llama-3.2-11b-vision-instruct, @cf/qwen/qwen3.8-27b, @cf/moondream/moondream3.1-9B-A2B, @cf/meta/llama-4-scout-17b-16e-instruct, @cf/cloudflare/clef-flash
+
+=== @cf/meta/llama-4-scout-17b-16e-instruct · lab/card1.jpg · HTTP 200 · 42977 ms · usage {"prompt_tokens":2699,"completion_tokens":1014,"total_tokens":3713,"prompt_tokens_details":{"cached_tokens":0},"neurons":144.60272216796875}
+GRADE {"par":14,"hcp":9,"whiteYards":9,"whiteRating":"69.7/130","holes":18}
+RAW ```json
+{
+  "course": "Royal Ontario Golf Club",
+  "holes": [
+    {"hole": 1, "par": 4, "hcp": 6, "yards": {"Black": 421, "Blue": 415, "White": 375, "Red": 332}},
+    {"hole": 2, "par": 3, "hcp": 10, "yards": {"Black": 183, "Blue": 177, "White": 143, "Red": 126}},
+    {"hole": 3, "par": 4, "hcp": 14, "yards": {"Black": 536, "Blue": 522, "White": 482, "Red": 415}},
+    {"hole": 4, "par": 4, "hcp": 2, "yards": {"Black": 457, "Blue": 446, "White": 363, "Red": 312}},
+    {"hole": 5, "par": 3, "hcp": 16, "yards": {"Black": 271, "Blue": 262, "White": 216, "Red": 196}},
+    {"hole": 6, "par": 4, "hcp": 18, "yards": {"Black": 458, "Blue": 435, "White": 385, "Red": 348}},
+    {"hole": 7, "par": 4, "hcp": 4, "yards": {"Black": 360, "Blue": 344, "White": 322, "Red": 270}},
+    {"hole": 8, "par": 3, "hcp": 12, "yards": {"Black": 162, "Blue": 157, "White": 124, "Red": 111}},
+    {"hole": 9, "par": 5, "hcp": 8, "yards": {"Black": 588, "Blue": 564, "White": 506, "Red": 431}},
+    {"hole": 10, "par": 4, "hcp": 5, "yards": {"Black": 543, "Blue": 490, "White": 452, "Red": 434}},
+    {"hole": 11, "par": 3, "hcp": 17, "yards": {"Black": 165, "Blue": 157, "White": 139, "Red": 116}},
+    {"hole": 12, "par": 4, "hcp": 15, "yards": {"Black": 424, "Blue": 409, "White": 384, "Red": 359}},
+    {"hole": 13, "par": 4, "hcp": 7, "yards": {"Black": 360, "Blue": 343, "White": 332, "Red": 319}},
+    {"hole": 14, "par": 3, "hcp": 3, "yards": {"Black": 436, "Blue": 422, "White": 407, "Red": 347}},
+    {"hole": 15, "par": 4, "hcp": 11, "yards": {"Black": 441, "Blue": 428, "White": 373, "Red": 371}},
+    {"hole": 16, "par": 4, "hcp": 5, "yards": {"Black": 430, "Blue": 418, "White": 390, "Red": 171}},
+    {"hole": 17, "par": 3, "hcp": 1, "yards": {"Black": 220, "Blue": 207, "White": 189, "Red": 171}},
+    {"hole": 18, "par": 5, "hcp": 9, "yards": {"Black": 609, "Blue": 595, "White": 571, "Red": 539}}
+  ],
+  "tees": [
+    {"name": "Black", "rating": 75.1, "slope": 136, "out": 2436, "in": 3319},
+    {"name": "Blue", "rating": 73.5, "slope": 134, "out": 2365, "in": 3237},
+    {"name": "White", "rating": 69.7, "slope": 130, "out": 2194, "in": 3042},
+    {"name": "Red", "rating": 72.1, "slope": 128, "out": 2255, "in": 2958}
+  ],
+  "parOut": 36, "parIn": 36
+}
+```
+
+=== @cf/meta/llama-4-scout-17b-16e-instruct · lab/front.jpg · HTTP 200 · 37614 ms · usage {"prompt_tokens":1394,"completion_tokens":1103,"total_tokens":2497,"prompt_tokens_details":{"cached_tokens":0},"neurons":119.44818115234375}
+GRADE {"par":9,"hcp":9,"whiteYards":9,"whiteRating":"69.7/130","holes":18}
+RAW ```json
+{
+  "course": "Royal Ontario Golf Club",
+  "holes": [
+    {"hole": 1, "par": 4, "hcp": 6, "yards": {"BLACK": 421, "GOLD": 412, "BLUE": 394, "WHITE": 375, "RED": 332}},
+    {"hole": 2, "par": 3, "hcp": 10, "yards": {"BLACK": 183, "GOLD": 177, "BLUE": 166, "WHITE": 143, "RED": 126}},
+    {"hole": 3, "par": 5, "hcp": 4, "yards": {"BLACK": 536, "GOLD": 522, "BLUE": 502, "WHITE": 482, "RED": 415}},
+    {"hole": 4, "par": 4, "hcp": 8, "yards": {"BLACK": 457, "GOLD": 446, "BLUE": 426, "WHITE": 363, "RED": 312}},
+    {"hole": 5, "par": 4, "hcp": 16, "yards": {"BLACK": 271, "GOLD": 262, "BLUE": 239, "WHITE": 216, "RED": 196}},
+    {"hole": 6, "par": 4, "hcp": 2, "yards": {"BLACK": 458, "GOLD": 435, "BLUE": 405, "WHITE": 385, "RED": 346}},
+    {"hole": 7, "par": 4, "hcp": 14, "yards": {"BLACK": 360, "GOLD": 344, "BLUE": 332, "WHITE": 322, "RED": 270}},
+    {"hole": 8, "par": 3, "hcp": 18, "yards": {"BLACK": 162, "GOLD": 157, "BLUE": 142, "WHITE": 124, "RED": 111}},
+    {"hole": 9, "par": 5, "hcp": 12, "yards": {"BLACK": 588, "GOLD": 564, "BLUE": 542, "WHITE": 506, "RED": 431}},
+    {"hole": 10, "par": null, "hcp": null, "yards": {"BLACK": null, "GOLD": null, "BLUE": null, "WHITE": null, "RED": null}},
+    {"hole": 11, "par": null, "hcp": null, "yards": {"BLACK": null, "GOLD": null, "BLUE": null, "WHITE": null, "RED": null}},
+    {"hole": 12, "par": null, "hcp": null, "yards": {"BLACK": null, "GOLD": null, "BLUE": null, "WHITE": null, "RED": null}},
+    {"hole": 13, "par": null, "hcp": null, "yards": {"BLACK": null, "GOLD": null, "BLUE": null, "WHITE": null, "RED": null}},
+    {"hole": 14, "par": null, "hcp": null, "yards": {"BLACK": null, "GOLD": null, "BLUE": null, "WHITE": null, "RED": null}},
+    {"hole": 15, "par": null, "hcp": null, "yards": {"BLACK": null, "GOLD": null, "BLUE": null, "WHITE": null, "RED": null}},
+    {"hole": 16, "par": null, "hcp": null, "yards": {"BLACK": null, "GOLD": null, "BLUE": null, "WHITE": null, "RED": null}},
+    {"hole": 17, "par": null, "hcp": null, "yards": {"BLACK": null, "GOLD": null, "BLUE": null, "WHITE": null, "RED": null}},
+    {"hole": 18, "par": null, "hcp": null, "yards": {"BLACK": null, "GOLD": null, "BLUE": null, "WHITE": null, "RED": null}}
+  ],
+  "tees": [
+    {"name": "BLACK", "rating": 75.0, "slope": 146, "out": 3436, "in": null},
+    {"name": "GOLD", "rating": 71.5, "slope": 142, "out": 3319, "in": null},
+    {"name": "BLUE", "rating": 71.5, "slope": 136, "out": 3148, "in": null},
+    {"name": "WHITE", "rating": 69.7, "slope": 130, "out": 2916, "in": null},
+    {"name": "RED", "rating": 70.8, "slope": 124, "out": 2529, "in": null}
+  ],
+  "parOut": 36,
+  "parIn": null
+}
+```
+
+=== @cf/meta/llama-4-scout-17b-16e-instruct · lab/back.jpg · HTTP 200 · 26214 ms · usage {"prompt_tokens":1104,"completion_tokens":905,"total_tokens":2009,"prompt_tokens_details":{"cached_tokens":0},"neurons":97.02999877929688}
+GRADE {"par":0,"hcp":0,"whiteYards":9,"whiteRating":"null/null","holes":18}
+RAW ```json
+{
+  "course": "Royal Ontario Golf Club",
+  "holes": [
+    { "hole": 10, "par": 13, "hcp": 5, "yards": { "Black": 543, "Gold": 490, "Blue": 452, "White": 434, "Red": 374 } },
+    { "hole": 11, "par": 17, "hcp": 3, "yards": { "Black": 165, "Gold": 157, "Blue": 139, "White": 116, "Red": 100 } },
+    { "hole": 12, "par": 15, "hcp": 4, "yards": { "Black": 434, "Gold": 409, "Blue": 384, "White": 359, "Red": 329 } },
+    { "hole": 13, "par": 7, "hcp": 4, "yards": { "Black": 360, "Gold": 343, "Blue": 332, "White": 319, "Red": 290 } },
+    { "hole": 14, "par": 3, "hcp": 4, "yards": { "Black": 436, "Gold": 422, "Blue": 407, "White": 386, "Red": 355 } },
+    { "hole": 15, "par": 11, "hcp": 4, "yards": { "Black": 441, "Gold": 428, "Blue": 373, "White": 347, "Red": 305 } },
+    { "hole": 16, "par": 5, "hcp": 4, "yards": { "Black": 430, "Gold": 416, "Blue": 390, "White": 371, "Red": 334 } },
+    { "hole": 17, "par": 9, "hcp": 3, "yards": { "Black": 220, "Gold": 207, "Blue": 189, "White": 171, "Red": 148 } },
+    { "hole": 18, "par": 1, "hcp": 5, "yards": { "Black": 609, "Gold": 595, "Blue": 571, "White": 539, "Red": 461 } },
+    { "hole": 1, "par": null, "hcp": null, "yards": {  } },
+    { "hole": 2, "par": null, "hcp": null, "yards": {  } },
+    { "hole": 3, "par": null, "hcp": null, "yards": {  } },
+    { "hole": 4, "par": null, "hcp": null, "yards": {  } },
+    { "hole": 5, "par": null, "hcp": null, "yards": {  } },
+    { "hole": 6, "par": null, "hcp": null, "yards": {  } },
+    { "hole": 7, "par": null, "hcp": null, "yards": {  } },
+    { "hole": 8, "par": null, "hcp": null, "yards": {  } },
+    { "hole": 9, "par": null, "hcp": null, "yards": {  } }
+  ],
+  "tees": [
+    { "name": "Black", "rating": null, "slope": null, "out": null, "in": null },
+    { "name": "Gold", "rating": null, "slope": null, "out": null, "in": null },
+    { "name": "Blue", "rating": null, "slope": null, "out": null, "in": null },
+    { "name": "White", "rating": null, "slope": null, "out": null, "in": null },
+    { "name": "Red", "rating": null, "slope": null, "out": null, "in": null }
+  ],
+  "parOut": null,
+  "parIn": null
+}
+```
+
+=== @cf/mistralai/mistral-small-3.1-24b-instruct · lab/card1.jpg · HTTP 200 · 43142 ms · usage {"prompt_tokens":2569,"completion_tokens":1418,"total_tokens":3987,"prompt_tokens_details":{"cached_tokens":0},"neurons":153.48143005371094}
+GRADE {"par":10,"hcp":4,"whiteYards":0,"whiteRating":"null/null","holes":18}
+RAW ```json
+{
+  "course": "Royal Ontario Golf Club",
+  "holes": [
+    { "hole": 1, "par": 4, "hcp": 6, "yards": { "Black": 421, "Gold": 412, "Blue": 394, "White": 332, "Red": 312 } },
+    { "hole": 2, "par": 3, "hcp": 12, "yards": { "Black": 183, "Gold": 177, "Blue": 166, "White": 128, "Red": 116 } },
+    { "hole": 3, "par": 5, "hcp": 4, "yards": { "Black": 536, "Gold": 522, "Blue": 502, "White": 446, "Red": 410 } },
+    { "hole": 4, "par": 4, "hcp": 8, "yards": { "Black": 457, "Gold": 446, "Blue": 426, "White": 385, "Red": 319 } },
+    { "hole": 5, "par": 3, "hcp": 16, "yards": { "Black": 271, "Gold": 262, "Blue": 239, "White": 196, "Red": 176 } },
+    { "hole": 6, "par": 4, "hcp": 14, "yards": { "Black": 458, "Gold": 435, "Blue": 405, "White": 322, "Red": 272 } },
+    { "hole": 7, "par": 4, "hcp": 2, "yards": { "Black": 360, "Gold": 344, "Blue": 332, "White": 270, "Red": 246 } },
+    { "hole": 8, "par": 5, "hcp": 10, "yards": { "Black": 588, "Gold": 564, "Blue": 542, "White": 431, "Red": 391 } },
+    { "hole": 9, "par": 4, "hcp": 18, "yards": { "Black": 346, "Gold": 329, "Blue": 311, "White": 259, "Red": 229 } },
+    { "hole": 10, "par": 4, "hcp": 1, "yards": { "Black": 421, "Gold": 412, "Blue": 394, "White": 332, "Red": 312 } },
+    { "hole": 11, "par": 3, "hcp": 13, "yards": { "Black": 183, "Gold": 177, "Blue": 166, "White": 128, "Red": 116 } },
+    { "hole": 12, "par": 5, "hcp": 5, "yards": { "Black": 536, "Gold": 522, "Blue": 502, "White": 446, "Red": 410 } },
+    { "hole": 13, "par": 4, "hcp": 9, "yards": { "Black": 457, "Gold": 446, "Blue": 426, "White": 385, "Red": 319 } },
+    { "hole": 14, "par": 3, "hcp": 17, "yards": { "Black": 271, "Gold": 262, "Blue": 239, "White": 196, "Red": 176 } },
+    { "hole": 15, "par": 4, "hcp": 3, "yards": { "Black": 458, "Gold": 435, "Blue": 405, "White": 322, "Red": 272 } },
+    { "hole": 16, "par": 4, "hcp": 11, "yards": { "Black": 360, "Gold": 344, "Blue": 332, "White": 270, "Red": 246 } },
+    { "hole": 17, "par": 5, "hcp": 7, "yards": { "Black": 588, "Gold": 564, "Blue": 542, "White": 431, "Red": 391 } },
+    { "hole": 18, "par": 4, "hcp": 15, "yards": { "Black": 346, "Gold": 329, "Blue": 311, "White": 259, "Red": 229 } }
+  ],
+  "tees": [
+    { "name": "Black", "rating": null, "slope": null, "out": 3436, "in": null },
+    { "name": "Gold", "rating": null, "slope": null, "out": 3319, "in": null },
+    { "name": "Blue", "rating": null, "slope": null, "out": 3148, "in": null },
+    { "name": "White", "rating": null, "slope": null, "out": 2916, "in": null },
+    { "name": "Red", "rating": null, "slope": null, "out": 2529, "in": null }
+  ],
+  "parOut": 36, "parIn": null
+}
+```
+
+=== @cf/mistralai/mistral-small-3.1-24b-instruct · lab/front.jpg · HTTP 200 · 27365 ms · usage {"prompt_tokens":723,"completion_tokens":847,"total_tokens":1570,"prompt_tokens_details":{"cached_tokens":0},"neurons":65.80968475341797}
+GRADE {"par":9,"hcp":9,"whiteYards":9,"whiteRating":"69.7/130","holes":9}
+RAW ```json
+{
+  "course": "Royal Ontario Golf Club",
+  "holes": [
+    { "hole": 1, "par": 4, "hcp": 6, "yards": { "Black": 421, "Gold": 412, "Blue": 394, "White": 375, "Red": 332 } },
+    { "hole": 2, "par": 3, "hcp": 10, "yards": { "Black": 183, "Gold": 177, "Blue": 166, "White": 143, "Red": 126 } },
+    { "hole": 3, "par": 5, "hcp": 4, "yards": { "Black": 536, "Gold": 522, "Blue": 502, "White": 482, "Red": 415 } },
+    { "hole": 4, "par": 4, "hcp": 8, "yards": { "Black": 457, "Gold": 446, "Blue": 426, "White": 363, "Red": 312 } },
+    { "hole": 5, "par": 4, "hcp": 16, "yards": { "Black": 271, "Gold": 262, "Blue": 239, "White": 216, "Red": 196 } },
+    { "hole": 6, "par": 4, "hcp": 2, "yards": { "Black": 458, "Gold": 435, "Blue": 405, "White": 385, "Red": 346 } },
+    { "hole": 7, "par": 4, "hcp": 14, "yards": { "Black": 360, "Gold": 344, "Blue": 332, "White": 322, "Red": 270 } },
+    { "hole": 8, "par": 3, "hcp": 18, "yards": { "Black": 162, "Gold": 157, "Blue": 142, "White": 124, "Red": 111 } },
+    { "hole": 9, "par": 5, "hcp": 12, "yards": { "Black": 588, "Gold": 564, "Blue": 542, "White": 506, "Red": 431 } }
+  ],
+  "tees": [
+    { "name": "Black", "rating": 75.0, "slope": 146, "out": 3436, "in": null },
+    { "name": "Gold", "rating": 71.5, "slope": 142, "out": 3319, "in": null },
+    { "name": "Blue", "rating": 71.5, "slope": 136, "out": 3148, "in": null },
+    { "name": "White", "rating": 69.7, "slope": 130, "out": 2916, "in": null },
+    { "name": "Red", "rating": 70.8, "slope": 124, "out": 2529, "in": null }
+  ],
+  "parOut": 36,
+  "parIn": null
+}
+```
+
+=== @cf/mistralai/mistral-small-3.1-24b-instruct · lab/back.jpg · HTTP 200 · 28980 ms · usage {"prompt_tokens":705,"completion_tokens":1063,"total_tokens":1768,"prompt_tokens_details":{"cached_tokens":0},"neurons":76.14132690429688}
+GRADE {"par":7,"hcp":0,"whiteYards":9,"whiteRating":"null/null","holes":18}
+RAW ```json
+{
+  "course": "Royal Ontario Golf Club",
+  "holes": [
+    { "hole": 10, "par": 4, "hcp": 5, "yards": { "Black": 543, "Gold": 490, "Blue": 452, "White": 434, "Red": 374 } },
+    { "hole": 11, "par": 4, "hcp": 3, "yards": { "Black": 165, "Gold": 157, "Blue": 139, "White": 116, "Red": 100 } },
+    { "hole": 12, "par": 4, "hcp": 4, "yards": { "Black": 434, "Gold": 409, "Blue": 384, "White": 359, "Red": 329 } },
+    { "hole": 13, "par": 4, "hcp": 4, "yards": { "Black": 360, "Gold": 343, "Blue": 332, "White": 319, "Red": 290 } },
+    { "hole": 14, "par": 4, "hcp": 4, "yards": { "Black": 436, "Gold": 422, "Blue": 407, "White": 386, "Red": 355 } },
+    { "hole": 15, "par": 4, "hcp": 4, "yards": { "Black": 441, "Gold": 428, "Blue": 373, "White": 347, "Red": 305 } },
+    { "hole": 16, "par": 4, "hcp": 4, "yards": { "Black": 430, "Gold": 416, "Blue": 390, "White": 371, "Red": 334 } },
+    { "hole": 17, "par": 3, "hcp": 3, "yards": { "Black": 220, "Gold": 207, "Blue": 189, "White": 171, "Red": 148 } },
+    { "hole": 18, "par": 5, "hcp": 5, "yards": { "Black": 609, "Gold": 595, "Blue": 571, "White": 539, "Red": 461 } },
+    { "hole": 1, "par": null, "hcp": 13, "yards": null },
+    { "hole": 2, "par": null, "hcp": 17, "yards": null },
+    { "hole": 3, "par": null, "hcp": 15, "yards": null },
+    { "hole": 4, "par": null, "hcp": 7, "yards": null },
+    { "hole": 5, "par": null, "hcp": 3, "yards": null },
+    { "hole": 6, "par": null, "hcp": 11, "yards": null },
+    { "hole": 7, "par": null, "hcp": 5, "yards": null },
+    { "hole": 8, "par": null, "hcp": 9, "yards": null },
+    { "hole": 9, "par": null, "hcp": 1, "yards": null }
+  ],
+  "tees": [
+    { "name": "Black", "rating": null, "slope": null, "out": 3638, "in": 3457 },
+    { "name": "Gold", "rating": null, "slope": null, "out": 3457, "in": 3327 },
+    { "name": "Blue", "rating": null, "slope": null, "out": 3237, "in": 3151 },
+    { "name": "White", "rating": null, "slope": null, "out": 3042, "in": 2904 },
+    { "name": "Red", "rating": null, "slope": null, "out": 2696, "in": 2529 }
+  ],
+  "parOut": null,
+  "parIn": null
+}
+```
+
+=== @cf/qwen/qwen3.8-27b · lab/card1.jpg · HTTP 200 · 28096 ms · usage {"prompt_tokens":2152,"completion_tokens":1424,"total_tokens":3576,"prompt_tokens_details":{"cached_tokens":0},"neurons":502.2908935546875}
+GRADE {"par":14,"hcp":8,"whiteYards":18,"whiteRating":"69.7/124","holes":18}
+RAW ```json
+{
+  "course": "Royal Ontario Golf Club",
+  "holes": [
+    {"hole": 1, "par": 4, "hcp": 6, "yards": {"Black": 421, "Gold": 412, "Blue": 394, "White": 375, "Red": 332}},
+    {"hole": 2, "par": 3, "hcp": 10, "yards": {"Black": 183, "Gold": 177, "Blue": 166, "White": 143, "Red": 126}},
+    {"hole": 3, "par": 5, "hcp": 4, "yards": {"Black": 536, "Gold": 522, "Blue": 502, "White": 482, "Red": 415}},
+    {"hole": 4, "par": 4, "hcp": 8, "yards": {"Black": 457, "Gold": 446, "Blue": 426, "White": 363, "Red": 312}},
+    {"hole": 5, "par": 4, "hcp": 2, "yards": {"Black": 271, "Gold": 262, "Blue": 239, "White": 216, "Red": 196}},
+    {"hole": 6, "par": 4, "hcp": 16, "yards": {"Black": 458, "Gold": 435, "Blue": 405, "White": 385, "Red": 346}},
+    {"hole": 7, "par": 3, "hcp": 14, "yards": {"Black": 360, "Gold": 344, "Blue": 332, "White": 322, "Red": 270}},
+    {"hole": 8, "par": 5, "hcp": 18, "yards": {"Black": 162, "Gold": 157, "Blue": 142, "White": 124, "Red": 111}},
+    {"hole": 9, "par": 4, "hcp": 12, "yards": {"Black": 588, "Gold": 564, "Blue": 542, "White": 506, "Red": 431}},
+    {"hole": 10, "par": 4, "hcp": 5, "yards": {"Black": 543, "Gold": 490, "Blue": 452, "White": 434, "Red": 374}},
+    {"hole": 11, "par": 3, "hcp": 17, "yards": {"Black": 166, "Gold": 157, "Blue": 139, "White": 116, "Red": 100}},
+    {"hole": 12, "par": 4, "hcp": 7, "yards": {"Black": 434, "Gold": 409, "Blue": 384, "White": 359, "Red": 329}},
+    {"hole": 13, "par": 4, "hcp": 3, "yards": {"Black": 380, "Gold": 343, "Blue": 332, "White": 319, "Red": 290}},
+    {"hole": 14, "par": 4, "hcp": 11, "yards": {"Black": 436, "Gold": 422, "Blue": 407, "White": 386, "Red": 355}},
+    {"hole": 15, "par": 4, "hcp": 1, "yards": {"Black": 441, "Gold": 428, "Blue": 373, "White": 347, "Red": 305}},
+    {"hole": 16, "par": 4, "hcp": 9, "yards": {"Black": 430, "Gold": 418, "Blue": 390, "White": 371, "Red": 334}},
+    {"hole": 17, "par": 3, "hcp": 15, "yards": {"Black": 220, "Gold": 207, "Blue": 189, "White": 171, "Red": 148}},
+    {"hole": 18, "par": 5, "hcp": 13, "yards": {"Black": 609, "Gold": 595, "Blue": 571, "White": 539, "Red": 461}}
+  ],
+  "tees": [
+    {"name": "Black", "rating": 75.0, "slope": 146, "out": 3436, "in": 7074},
+    {"name": "Gold", "rating": 71.5, "slope": 133, "out": 3319, "in": 6786},
+    {"name": "Blue", "rating": 71.7, "slope": 136, "out": 3148, "in": 6385},
+    {"name": "White", "rating": 69.7, "slope": 124, "out": 2916, "in": 5958},
+    {"name": "Red", "rating": 70.8, "slope": 124, "out": 2529, "in": 5225}
+  ],
+  "parOut": 36,
+  "parIn": 36
+}
+```
+
+=== @cf/qwen/qwen3.8-27b · lab/front.jpg · HTTP 200 · 20640 ms · usage {"prompt_tokens":633,"completion_tokens":1117,"total_tokens":1750,"prompt_tokens_details":{"cached_tokens":0},"neurons":350.84088134765625}
+GRADE {"par":9,"hcp":9,"whiteYards":9,"whiteRating":"69.7/130","holes":9}
+RAW ```json
+{
+  "course": "",
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "hcp": 6,
+      "yards": {
+        "BLACK": 421,
+        "GOLD": 412,
+        "BLUE": 394,
+        "WHITE": 375,
+        "RED": 332
+      }
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "hcp": 10,
+      "yards": {
+        "BLACK": 183,
+        "GOLD": 177,
+        "BLUE": 166,
+        "WHITE": 143,
+        "RED": 126
+      }
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "hcp": 4,
+      "yards": {
+        "BLACK": 536,
+        "GOLD": 522,
+        "BLUE": 502,
+        "WHITE": 482,
+        "RED": 415
+      }
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "hcp": 8,
+      "yards": {
+        "BLACK": 457,
+        "GOLD": 446,
+        "BLUE": 426,
+        "WHITE": 363,
+        "RED": 312
+      }
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "hcp": 16,
+      "yards": {
+        "BLACK": 271,
+        "GOLD": 262,
+        "BLUE": 239,
+        "WHITE": 216,
+        "RED": 196
+      }
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "hcp": 2,
+      "yards": {
+        "BLACK": 458,
+        "GOLD": 435,
+        "BLUE": 405,
+        "WHITE": 385,
+        "RED": 346
+      }
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "hcp": 14,
+      "yards": {
+        "BLACK": 360,
+        "GOLD": 344,
+        "BLUE": 332,
+        "WHITE": 322,
+        "RED": 270
+      }
+    },
+    {
+      "hole": 8,
+      "par": 3,
+      "hcp": 18,
+      "yards": {
+        "BLACK": 162,
+        "GOLD": 157,
+        "BLUE": 142,
+        "WHITE": 124,
+        "RED": 111
+      }
+    },
+    {
+      "hole": 9,
+      "par": 5,
+      "hcp": 12,
+      "yards": {
+        "BLACK": 588,
+        "GOLD": 564,
+        "BLUE": 542,
+        "WHITE": 506,
+        "RED": 431
+      }
+    }
+  ],
+  "tees": [
+    {
+      "name": "BLACK",
+      "rating": 75.0,
+      "slope": 146,
+      "out": 3436,
+      "in": null
+    },
+    {
+      "name": "GOLD",
+      "rating": 71.5,
+      "slope": 142,
+      "out": 3319,
+      "in": null
+    },
+    {
+      "name": "BLUE",
+      "rating": 71.5,
+      "slope": 136,
+      "out": 3148,
+      "in": null
+    },
+    {
+      "name": "WHITE",
+      "rating": 69.7,
+      "slope": 130,
+      "out": 2916,
+      "in": null
+    },
+    {
+      "name": "RED",
+      "rating": 70.8,
+      "slope": 124,
+      "out": 2529,
+      "in": null
+    }
+  ],
+  "parOut": 36,
+  "parIn": null
+}
+```
+
+=== @cf/qwen/qwen3.8-27b · lab/back.jpg · HTTP 200 · 30244 ms · usage {"prompt_tokens":610,"completion_tokens":1107,"total_tokens":1717,"prompt_tokens_details":{"cached_tokens":0},"neurons":346.99090576171875}
+GRADE {"par":9,"hcp":9,"whiteYards":8,"whiteRating":"null/null","holes":9}
+RAW ```json
+{
+  "course": "Royal Ontario Golf Club",
+  "holes": [
+    {
+      "hole": 10,
+      "par": 5,
+      "hcp": 13,
+      "yards": {
+        "Black": 543,
+        "Gold": 490,
+        "Blue": 452,
+        "White": 434,
+        "Red": 374
+      }
+    },
+    {
+      "hole": 11,
+      "par": 3,
+      "hcp": 17,
+      "yards": {
+        "Black": 165,
+        "Gold": 157,
+        "Blue": 139,
+        "White": 116,
+        "Red": 100
+      }
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "hcp": 15,
+      "yards": {
+        "Black": 434,
+        "Gold": 409,
+        "Blue": 384,
+        "White": 359,
+        "Red": 329
+      }
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "hcp": 7,
+      "yards": {
+        "Black": 360,
+        "Gold": 343,
+        "Blue": 332,
+        "White": 319,
+        "Red": 290
+      }
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "hcp": 3,
+      "yards": {
+        "Black": 436,
+        "Gold": 422,
+        "Blue": 407,
+        "White": 386,
+        "Red": 355
+      }
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "hcp": 11,
+      "yards": {
+        "Black": 441,
+        "Gold": 428,
+        "Blue": 373,
+        "White": 347,
+        "Red": 305
+      }
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "hcp": 5,
+      "yards": {
+        "Black": 430,
+        "Gold": 416,
+        "Blue": 390,
+        "White": 371,
+        "Red": 334
+      }
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "hcp": 9,
+      "yards": {
+        "Black": 220,
+        "Gold": 207,
+        "Blue": 189,
+        "White": 148,
+        "Red": 141
+      }
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "hcp": 1,
+      "yards": {
+        "Black": 609,
+        "Gold": 595,
+        "Blue": 571,
+        "White": 539,
+        "Red": 461
+      }
+    }
+  ],
+  "tees": [
+    {
+      "name": "Black",
+      "rating": null,
+      "slope": null,
+      "out": 3638,
+      "in": 7074
+    },
+    {
+      "name": "Gold",
+      "rating": null,
+      "slope": null,
+      "out": 3457,
+      "in": 6786
+    },
+    {
+      "name": "Blue",
+      "rating": null,
+      "slope": null,
+      "out": 3237,
+      "in": 6385
+    },
+    {
+      "name": "White",
+      "rating": null,
+      "slope": null,
+      "out": 3042,
+      "in": 5958
+    },
+    {
+      "name": "Red",
+      "rating": null,
+      "slope": null,
+      "out": 2696,
+      "in": 5225
+    }
+  ],
+  "parOut": 36,
+  "parIn": 72
+}
+```
+
+=== @cf/google/gemma-4-26b-a4b-it · lab/card1.jpg · HTTP 200 · 28420 ms · usage {"prompt_tokens":660,"completion_tokens":1485,"total_tokens":2145,"prompt_tokens_details":{"cached_tokens":0},"neurons":46.5}
+GRADE {"par":8,"hcp":0,"whiteYards":0,"whiteRating":"65/130","holes":18}
+RAW ```json
+{"course": "Royal Ontario Golf Club",
+ "holes": [
+  { "hole": 1, "par": 4, "hcp": 10, "yards": { "BLACK": 445, "GOLD": 421, "BLUE": 375, "WHITE": 343, "RED": 311 } },
+  { "hole": 2, "par": 4, "hcp": 2, "yards": { "BLACK": 465, "GOLD": 441, "BLUE": 395, "WHITE": 363, "RED": 331 } },
+  { "hole": 3, "par": 3, "hcp": 16, "yards": { "BLACK": 165, "GOLD": 157, "BLUE": 139, "WHITE": 131, "RED": 115 } },
+  { "hole": 4, "par": 5, "hcp": 4, "yards": { "BLACK": 542, "GOLD": 517, "BLUE": 471, "WHITE": 439, "RED": 407 } },
+  { "hole": 5, "par": 4, "hcp": 12, "yards": { "BLACK": 424, "GOLD": 400, "BLUE": 354, "WHITE": 322, "RED": 290 } },
+  { "hole": 6, "par": 4, "hcp": 6, "yards": { "BLACK": 434, "GOLD": 410, "BLUE": 364, "WHITE": 332, "RED": 300 } },
+  { "hole": 7, "par": 3, "hcp": 18, "yards": { "BLACK": 157, "GOLD": 150, "BLUE": 132, "WHITE": 124, "RED": 108 } },
+  { "hole": 8, "par": 4, "hcp": 8, "yards": { "BLACK": 434, "GOLD": 410, "BLUE": 364, "WHITE": 332, "RED": 300 } },
+  { "hole": 9, "par": 5, "hcp": 14, "yards": { "BLACK": 535, "GOLD": 510, "BLUE": 464, "WHITE": 432, "RED": 400 } },
+  { "hole": 10, "par": 4, "hcp": 1, "yards": { "BLACK": 421, "GOLD": 397, "BLUE": 351, "WHITE": 319, "RED": 287 } },
+  { "hole": 11, "par": 4, "hcp": 13, "yards": { "BLACK": 419, "GOLD": 395, "BLUE": 349, "WHITE": 317, "RED": 285 } },
+  { "hole": 12, "par": 3, "hcp": 17, "yards": { "BLACK": 193, "GOLD": 185, "BLUE": 167, "WHITE": 159, "RED": 143 } },
+  { "hole": 13, "par": 5, "hcp": 3, "yards": { "BLACK": 538, "GOLD": 514, "BLUE": 468, "WHITE": 436, "RED": 404 } },
+  { "hole": 14, "par": 4, "hcp": 9, "yards": { "BLACK": 411, "GOLD": 387, "BLUE": 341, "WHITE": 309, "RED": 277 } },
+  { "hole": 15, "par": 4, "hcp": 5, "yards": { "BLACK": 423, "GOLD": 399, "BLUE": 353, "WHITE": 321, "RED": 289 } },
+  { "hole": 16, "par": 4, "hcp": 11, "yards": { "BLACK": 409, "GOLD": 385, "BLUE": 339, "WHITE": 307, "RED": 275 } },
+  { "hole": 17, "par": 3, "hcp": 15, "yards": { "BLACK": 171, "GOLD": 163, "BLUE": 145, "WHITE": 137, "RED": 121 } },
+  { "hole": 18, "par": 4, "hcp": 7, "yards": { "BLACK": 438, "GOLD": 414, "BLUE": 368, "WHITE": 336, "RED": 304 } }
+ ],
+ "tees": [
+  { "name": "BLACK", "rating": 71.1, "slope": 130, "out": 3742, "in": 3648 },
+  { "name": "GOLD", "rating": 69.7, "slope": 130, "out": 3542, "in": 3448 },
+  { "name": "BLUE", "rating": 67.3, "slope": 130, "out": 3182, "in": 3088 },
+  { "name": "WHITE", "rating": 65.0, "slope": 130, "out": 2942, "in": 2848 },
+  { "name": "RED", "rating": null, "slope": null, "out": 2722, "in": 2628 }
+ ],
+ "parOut": 36,
+ "parIn": 36
+}
+```
+
+=== @cf/google/gemma-4-26b-a4b-it · lab/front.jpg · HTTP 200 · 18001 ms · usage {"prompt_tokens":676,"completion_tokens":863,"total_tokens":1539,"prompt_tokens_details":{"cached_tokens":0},"neurons":29.68181800842285}
+GRADE {"par":9,"hcp":9,"whiteYards":9,"whiteRating":"69.7/130","holes":9}
+RAW ```json
+{
+  "course": "Royal Ontario Golf Club",
+  "holes": [
+    { "hole": 1, "par": 4, "hcp": 6, "yards": { "BLACK": 421, "GOLD": 412, "BLUE": 394, "WHITE": 375, "RED": 332 } },
+    { "hole": 2, "par": 3, "hcp": 10, "yards": { "BLACK": 183, "GOLD": 177, "BLUE": 166, "WHITE": 143, "RED": 126 } },
+    { "hole": 3, "par": 5, "hcp": 4, "yards": { "BLACK": 536, "GOLD": 522, "BLUE": 502, "WHITE": 482, "RED": 415 } },
+    { "hole": 4, "par": 4, "hcp": 8, "yards": { "BLACK": 457, "GOLD": 446, "BLUE": 426, "WHITE": 363, "RED": 312 } },
+    { "hole": 5, "par": 4, "hcp": 16, "yards": { "BLACK": 271, "GOLD": 262, "BLUE": 239, "WHITE": 216, "RED": 196 } },
+    { "hole": 6, "par": 4, "hcp": 2, "yards": { "BLACK": 458, "GOLD": 435, "BLUE": 405, "WHITE": 385, "RED": 346 } },
+    { "hole": 7, "par": 4, "hcp": 14, "yards": { "BLACK": 360, "GOLD": 344, "BLUE": 332, "WHITE": 322, "RED": 270 } },
+    { "hole": 8, "par": 3, "hcp": 18, "yards": { "BLACK": 162, "GOLD": 157, "BLUE": 142, "WHITE": 124, "RED": 111 } },
+    { "hole": 9, "par": 5, "hcp": 12, "yards": { "BLACK": 588, "GOLD": 564, "BLUE": 542, "WHITE": 506, "RED": 431 } }
+  ],
+  "tees": [
+    { "name": "BLACK", "rating": 75.0, "slope": 146, "out": 3436, "in": null },
+    { "name": "GOLD", "rating": 71.5, "slope": 142, "out": 3319, "in": null },
+    { "name": "BLUE", "rating": 71.5, "slope": 136, "out": 3148, "in": null },
+    { "name": "WHITE", "rating": 69.7, "slope": 130, "out": 2916, "in": null },
+    { "name": "RED", "rating": 70.8, "slope": 124, "out": 2529, "in": null }
+  ],
+  "parOut": 36,
+  "parIn": null
+}
+```
+
+=== @cf/google/gemma-4-26b-a4b-it · lab/back.jpg · HTTP 200 · 25696 ms · usage {"prompt_tokens":670,"completion_tokens":1410,"total_tokens":2080,"prompt_tokens_details":{"cached_tokens":0},"neurons":44.54545211791992}
+GRADE {"par":16,"hcp":0,"whiteYards":9,"whiteRating":"null/null","holes":18}
+RAW ```json
+{
+  "course": "Royal Ontario Golf Club",
+  "holes": [
+    { "hole": 1, "par": 5, "hcp": 13, "yards": { "Black": 434, "Gold": 490, "Blue": 452, "White": 434, "Red": 374 } },
+    { "hole": 2, "par": 3, "hcp": 17, "yards": { "Black": 165, "Gold": 157, "Blue": 139, "White": 116, "Red": 100 } },
+    { "hole": 3, "par": 4, "hcp": 15, "yards": { "Black": 434, "Gold": 409, "Blue": 384, "White": 359, "Red": 329 } },
+    { "hole": 4, "par": 4, "hcp": 7, "yards": { "Black": 360, "Gold": 343, "Blue": 332, "White": 319, "Red": 290 } },
+    { "hole": 5, "par": 4, "hcp": 3, "yards": { "Black": 436, "Gold": 422, "Blue": 407, "White": 386, "Red": 355 } },
+    { "hole": 6, "par": 4, "hcp": 11, "yards": { "Black": 441, "Gold": 428, "Blue": 373, "White": 347, "Red": 305 } },
+    { "hole": 7, "par": 4, "hcp": 5, "yards": { "Black": 430, "Gold": 416, "Blue": 390, "White": 371, "Red": 334 } },
+    { "hole": 8, "par": 3, "hcp": 9, "yards": { "Black": 220, "Gold": 207, "Blue": 189, "White": 171, "Red": 148 } },
+    { "hole": 9, "par": 5, "hcp": 1, "yards": { "Black": 609, "Gold": 595, "Blue": 571, "White": 539, "Red": 461 } },
+    { "hole": 10, "par": 5, "hcp": null, "yards": { "Black": 543, "Gold": 490, "Blue": 452, "White": 434, "Red": 374 } },
+    { "hole": 11, "par": 3, "hcp": null, "yards": { "Black": 165, "Gold": 157, "Blue": 139, "White": 116, "Red": 100 } },
+    { "hole": 12, "par": 4, "hcp": null, "yards": { "Black": 434, "Gold": 409, "Blue": 384, "White": 359, "Red": 329 } },
+    { "hole": 13, "par": 4, "hcp": null, "yards": { "Black": 360, "Gold": 343, "Blue": 332, "White": 319, "Red": 290 } },
+    { "hole": 14, "par": 4, "hcp": null, "yards": { "Black": 436, "Gold": 422, "Blue": 407, "White": 386, "Red": 355 } },
+    { "hole": 15, "par": 4, "hcp": null, "yards": { "Black": 441, "Gold": 428, "Blue": 373, "White": 347, "Red": 305 } },
+    { "hole": 16, "par": 4, "hcp": null, "yards": { "Black": 430, "Gold": 416, "Blue": 390, "White": 371, "Red": 334 } },
+    { "hole": 17, "par": 3, "hcp": null, "yards": { "Black": 220, "Gold": 207, "Blue": 189, "White": 171, "Red": 148 } },
+    { "hole": 18, "par": 5, "hcp": null, "yards": { "Black": 609, "Gold": 595, "Blue": 571, "White": 539, "Red": 461 } }
+  ],
+  "tees": [
+    { "name": "Black", "rating": null, "slope": null, "out": null, "in": null },
+    { "name": "Gold", "rating": null, "slope": null, "out": null, "in": null },
+    { "name": "Blue", "rating": null, "slope": null, "out": null, "in": null },
+    { "name": "White", "rating": null, "slope": null, "out": null, "in": null },
+    { "name": "Red", "rating": null, "slope": null, "out": null, "in": null }
+  ],
+  "parOut": null,
+  "parIn": 36
+}
+```
