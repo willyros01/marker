@@ -1,0 +1,31 @@
+name: Scan lab (scorecard photo reading experiments)
+on:
+  push:
+    branches: [scan-lab]
+permissions:
+  contents: write
+jobs:
+  lab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Try the models
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          MODELS: "@cf/meta/llama-4-scout-17b-16e-instruct,@cf/mistralai/mistral-small-3.1-24b-instruct,@cf/qwen/qwen3.8-27b,@cf/google/gemma-4-26b-a4b-it,@cf/moonshotai/kimi-k2.6"
+        run: |
+          export ACC=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/accounts | jq -r '.result[0].id')
+          node lab/scan-lab.mjs
+      - name: Save the result to ci-logs
+        if: always()
+        run: |
+          d="logs/lab/${GITHUB_RUN_NUMBER}"; mkdir -p /tmp/$d; cp lab-result.txt /tmp/$d/ 2>/dev/null || true
+          git config user.name marker-ci; git config user.email marker-ci@users.noreply.github.com
+          git fetch origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p $d; cp /tmp/$d/* $d/ 2>/dev/null || true
+          git add logs && git commit -qm "Scan lab ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
