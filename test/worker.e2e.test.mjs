@@ -14,7 +14,7 @@ import { submissionCard } from "../store.js";
 import { client } from "../worker/src/firestore.js";
 import { processSubmission, sweep } from "../worker/src/post.js";
 
-const PROJECT = "demo-marker";
+const PROJECT = "demo-marker-e2e";   /* its own data: the rules tests clear theirs in parallel */
 const SCORER = "member1";
 let env, fs;
 

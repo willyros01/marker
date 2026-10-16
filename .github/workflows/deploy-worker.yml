@@ -1,0 +1,156 @@
+name: Deploy the worker (Cloudflare)
+
+# Puts worker/ on Willy's Cloudflare account (free plan) whenever it changes
+# on main, after the tests pass. Nobody needs to run anything by hand.
+#
+# Each deploy:
+#   1. runs the unit tests (a failing test stops the deploy);
+#   2. signs in to Google WITHOUT a stored key (Workload Identity Federation),
+#      as marker-deployer, allowed by Google only for this repo's main branch;
+#   3. makes a NEW key for marker-worker (the account the worker posts as) and
+#      reads The Scorecard's course-search key;
+#   4. deploys the worker with both as Cloudflare secrets (never printed, never
+#      stored in GitHub);
+#   5. checks the worker answers, then deletes marker-worker's older keys, so
+#      only the key on Cloudflare works;
+#   6. writes the worker's address to markerConfig/public for the app.
+# Needs one GitHub secret: CLOUDFLARE_API_TOKEN (template "Edit Cloudflare Workers").
+on:
+  push:
+    branches: [main]
+    paths:
+      - worker/**
+      - card.js
+      - model.js
+      - courses.js
+      - .github/workflows/deploy-worker.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # keyless sign-in to Google
+
+concurrency:
+  group: deploy-worker
+  cancel-in-progress: false
+
+env:
+  PROJECT: scorecard-f41b8
+  WORKER_SA: marker-worker@scorecard-f41b8.iam.gserviceaccount.com
+  WRANGLER: wrangler@4.146.0
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Is Cloudflare set up?
+        id: cf
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::warning title=Not set up yet::Add the GitHub secret CLOUDFLARE_API_TOKEN (see HANDOFF.md)."
+            echo "ready=no" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          accounts=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/accounts)
+          id=$(echo "$accounts" | jq -r '.result[0].id // empty')
+          [ -n "$id" ] || { echo "::error::The Cloudflare token sees no account."; exit 1; }
+          sub=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$id/workers/subdomain" | jq -r '.result.subdomain // empty')
+          [ -n "$sub" ] || { echo "::error::This Cloudflare account has no workers.dev subdomain yet."; exit 1; }
+          echo "account=$id" >> "$GITHUB_OUTPUT"
+          echo "url=https://marker.$sub.workers.dev" >> "$GITHUB_OUTPUT"
+          echo "ready=yes" >> "$GITHUB_OUTPUT"
+
+      - name: Keyless sign-in to Google
+        id: auth
+        if: steps.cf.outputs.ready == 'yes'
+        # Until the Cloud Shell script has been run, Google refuses this sign-in.
+        continue-on-error: true
+        uses: google-github-actions/auth@v3.0.0
+        with:
+          workload_identity_provider: projects/811267714235/locations/global/workloadIdentityPools/scorecard-github/providers/marker-provider
+          service_account: marker-deployer@scorecard-f41b8.iam.gserviceaccount.com
+          token_format: access_token
+
+      - name: Not set up yet
+        if: steps.cf.outputs.ready == 'yes' && steps.auth.outcome != 'success'
+        run: echo "::warning title=Not set up yet::Google refused the keyless sign-in. Run the Cloud Shell script first (see HANDOFF.md)."
+
+      - name: Secrets for the worker
+        id: secrets
+        if: steps.auth.outcome == 'success'
+        env:
+          TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          umask 077
+          # A fresh key for marker-worker.
+          made=$(curl -fsS -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{}' \
+            "https://iam.googleapis.com/v1/projects/-/serviceAccounts/$WORKER_SA/keys")
+          echo "key_name=$(echo "$made" | jq -r .name)" >> "$GITHUB_OUTPUT"
+          sa_json=$(echo "$made" | jq -r .privateKeyData | base64 -d)
+          # The Scorecard's course-search key: the first group that has one.
+          golf=$(curl -fsS -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+            "https://firestore.googleapis.com/v1/projects/$PROJECT/databases/(default)/documents:runQuery" \
+            -d '{"structuredQuery":{"from":[{"collectionId":"associations"}],"where":{"fieldFilter":{"field":{"fieldPath":"lookupKey"},"op":"GREATER_THAN","value":{"stringValue":""}}},"limit":1}}' \
+            | jq -r '.[0].document.fields.lookupKey.stringValue // empty')
+          [ -n "$golf" ] && echo "::add-mask::$golf"
+          [ -n "$golf" ] || echo "::warning::No course-search key found in The Scorecard; search will say it is not set up."
+          jq -n --arg sa "$sa_json" --arg golf "$golf" '{SA_KEY: $sa, GOLF_KEY: $golf}' > "$RUNNER_TEMP/secrets.json"
+
+      - name: Deploy
+        if: steps.auth.outcome == 'success'
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cf.outputs.account }}
+        run: |
+          npx -y "$WRANGLER" deploy --secrets-file "$RUNNER_TEMP/secrets.json" \
+            --var "VERSION:${GITHUB_SHA::7}" --message "marker ${GITHUB_SHA::7}"
+          rm -f "$RUNNER_TEMP/secrets.json"
+
+      - name: Check it answers
+        if: steps.auth.outcome == 'success'
+        env:
+          URL: ${{ steps.cf.outputs.url }}
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6; do
+            v=$(curl -fsS "$URL/health" | jq -r .version) || v=""
+            [ "$v" = "${GITHUB_SHA::7}" ] && break
+            sleep 5
+          done
+          [ "$v" = "${GITHUB_SHA::7}" ] || { echo "::error::The worker did not answer with this version."; exit 1; }
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/search?q=royal")
+          [ "$code" = "401" ] || { echo "::error::Search answered without a sign-in ($code)."; exit 1; }
+          echo "Worker $URL is up (version $v)."
+
+      - name: Old keys out, address in
+        if: steps.auth.outcome == 'success'
+        env:
+          TOKEN: ${{ steps.auth.outputs.access_token }}
+          KEEP: ${{ steps.secrets.outputs.key_name }}
+          URL: ${{ steps.cf.outputs.url }}
+        run: |
+          set -euo pipefail
+          for k in $(curl -fsS -H "Authorization: Bearer $TOKEN" \
+              "https://iam.googleapis.com/v1/projects/-/serviceAccounts/$WORKER_SA/keys?keyTypes=USER_MANAGED" | jq -r '.keys[]?.name'); do
+            [ "$k" = "$KEEP" ] && continue
+            curl -fsS -X DELETE -H "Authorization: Bearer $TOKEN" "https://iam.googleapis.com/v1/$k" > /dev/null
+            echo "Deleted an older worker key."
+          done
+          jq -n --arg url "$URL" --arg v "${GITHUB_SHA::7}" \
+            '{fields:{workerUrl:{stringValue:$url},version:{stringValue:$v}}}' > "$RUNNER_TEMP/config.json"
+          curl -fsS -X PATCH -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+            "https://firestore.googleapis.com/v1/projects/$PROJECT/databases/(default)/documents/markerConfig/public?updateMask.fieldPaths=workerUrl&updateMask.fieldPaths=version" \
+            --data @"$RUNNER_TEMP/config.json" > /dev/null
+          echo "The app will use $URL"
