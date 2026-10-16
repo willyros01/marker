@@ -190,9 +190,16 @@ function screenManualCourse() {
   const miss = m.miss || { par: [], si: [] };
   const red = (on) => (on ? ' style="outline:3px solid var(--over);outline-offset:1px"' : "");
   const photo = `
-      <label class="btn dashed" style="position:relative">${S.busy === "scan" ? "Reading the photo…" : "📷 Read it from a photo of the scorecard"}
-        <input type="file" id="scanfile" accept="image/*" capture="environment" ${S.busy ? "disabled" : ""}
-          style="position:absolute;inset:0;opacity:0;width:100%;height:100%"></label>
+      ${S.busy === "scan" ? `<div class="btn dashed">Reading the photo…</div>` : `
+      <span class="label">Read it from a picture of the club's scorecard</span>
+      <div class="row2">
+        <label class="btn dashed" style="position:relative">📷 Take a photo
+          <input type="file" id="scanfile" accept="image/*" capture="environment" ${S.busy ? "disabled" : ""}
+            style="position:absolute;inset:0;opacity:0;width:100%;height:100%"></label>
+        <label class="btn dashed" style="position:relative">🖼 Photos or Files
+          <input type="file" id="scanpick" accept="image/*" ${S.busy ? "disabled" : ""}
+            style="position:absolute;inset:0;opacity:0;width:100%;height:100%"></label>
+      </div>`}
       ${S.cs.error ? `<div class="banner warn">${esc(S.cs.error)}</div>` : ""}
       ${sc && sc.tees.length > 1 && !sc.applied ? `<span class="label">The photo shows ${sc.tees.length} tees. Which one are you playing?</span>
         <div class="list">${sc.tees.map((t, i) => `<button class="item" data-act="scan-pick" data-v="${i}"><span class="txt"><span class="name">${esc(t.name)}</span>
@@ -937,7 +944,7 @@ function confirmLeave(cur) {
 
 /* Typing straight into a score box in "all four" mode. */
 document.addEventListener("change", (e) => {
-  if (e.target.id === "scanfile") { readPhoto(e.target.files && e.target.files[0]); e.target.value = ""; return; }
+  if (e.target.id === "scanfile" || e.target.id === "scanpick") { readPhoto(e.target.files && e.target.files[0]); e.target.value = ""; return; }
   const m = S.cs.manual;
   if (m && e.target.dataset.hole != null) m.pars[Number(e.target.dataset.hole)] = Number(e.target.value);
   if (m && e.target.dataset.si != null) m.sis[Number(e.target.dataset.si)] = e.target.value ? Number(e.target.value) : "";
