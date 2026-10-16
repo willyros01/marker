@@ -101,8 +101,10 @@ test("M5 a card naming a golfer who is not on that group's roster is refused", a
 test("M6 a round whose card puts the golfer in a different group is refused", async () => {
   const db = real(MEMBER);
   const b = writeBatch(db);
-  b.set(doc(db, "cards", "c1"), card(MEMBER, { A: "G1" }));
-  b.set(doc(db, "associations/G2/rounds", "r-A"), round(MEMBER, "G2", "A", "c1"));
+  /* B is somebody else's golfer (A is the scorer's own, which The Scorecard
+     already lets them post anywhere they are a member). */
+  b.set(doc(db, "cards", "c1"), card(MEMBER, { B: "G1" }));
+  b.set(doc(db, "associations/G2/rounds", "r-B"), round(MEMBER, "G2", "B", "c1"));
   await assertFails(b.commit());
 });
 
