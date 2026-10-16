@@ -265,6 +265,19 @@ export async function flush() {
   }
 }
 
+/* Deletes a card kept on this phone that was never posted. Refused while the
+   card is being sent, so a card can never be posted after it was deleted. */
+export function deleteCard(id) {
+  const c = local.finishedCards().find((x) => x.id === id);
+  if (!c) return;
+  if (!card.canDelete(c)) throw new Error(c.state === "posted" ? "This card is posted in The Scorecard, so it cannot be deleted here." : "The Scorecard is checking this card right now, so it cannot be deleted.");
+  if (flushing && local.load("outbox", []).includes(id)) throw new Error("This card is being sent right now. Wait a moment and try again.");
+  dropFromOutbox(id);
+  local.dropFinished(id);
+  const cur = local.currentCard();
+  if (cur && cur.id === id) local.clearCurrent();
+}
+
 function dropFromOutbox(id) {
   local.save("outbox", local.load("outbox", []).filter((x) => x !== id));
 }

@@ -129,3 +129,27 @@ test("U12 the shared text lists every player and every hole", () => {
   assert.match(text, /1-9: 4 4 3 5 4 4 3 4 5/);
   assert.match(text, /10-18: 4 3 5 4 4 4 3 4 5/);
 });
+
+test("U13 only cards that were never posted, and are not being checked, may be deleted", () => {
+  assert.equal(card.canDelete({ state: "finished" }), true);
+  assert.equal(card.canDelete({ state: "ended" }), true);
+  assert.equal(card.canDelete({ state: "failed", sent: true }), true, "refused by The Scorecard");
+  assert.equal(card.canDelete({ state: "posting", sent: false }), true, "never left the phone");
+  assert.equal(card.canDelete({ state: "posting", sent: true }), false, "being checked: it may still be posted");
+  assert.equal(card.canDelete({ state: "posted" }), false);
+});
+
+test("U14 deleting a kept card removes it from the phone and from the waiting list", async () => {
+  const local = await import("../../storage.js");
+  const store = await import("../../store.js");
+  const mem = new Map();
+  local.useBackend({ getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) });
+  local.keepFinished({ id: "a", state: "posting", sent: false });
+  local.keepFinished({ id: "b", state: "posted" });
+  local.save("outbox", ["a"]);
+  store.deleteCard("a");
+  assert.deepEqual(local.finishedCards().map((c) => c.id), ["b"]);
+  assert.deepEqual(local.load("outbox"), []);
+  assert.throws(() => store.deleteCard("b"), /posted in The Scorecard/);
+  assert.deepEqual(local.finishedCards().map((c) => c.id), ["b"]);
+});

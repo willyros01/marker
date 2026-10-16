@@ -460,7 +460,9 @@ function screenView(c) {
   return `${top(c.course.name, `${niceDate(c.date)} · ${c.tee.name}`)}
     <main class="body" style="padding:10px">${banner()}${cardGrid(c, false)}${summaries(c)}
       ${c.state === "failed" && c.postError ? `<div class="banner warn">${esc(c.postError)}</div>` : ""}</main>
-    <footer class="foot"><button class="btn primary" data-act="share-view">Share the card</button><button class="btn" data-act="history">← Back</button></footer>`;
+    <footer class="foot"><button class="btn primary" data-act="share-view">Share the card</button>
+      ${card.canDelete(c) ? `<button class="btn" data-act="delete-card" style="color:var(--over)">Delete this card</button>` : ""}
+      <button class="btn" data-act="history">← Back</button></footer>`;
 }
 
 /* ---------------- sharing ---------------- */
@@ -819,6 +821,17 @@ const actions = {
   },
   history() { go("history"); },
   view(el) { S.view = local.finishedCards().find((c) => c.id === el.dataset.v) || null; go("view"); },
+  "delete-card"() {
+    const c = S.view;
+    if (!c) return;
+    if (!window.confirm(`Delete the card from ${c.course.name}, ${niceDate(c.date)}? It was never posted, and it cannot be brought back.`)) return;
+    try { db.deleteCard(c.id); }
+    catch (e) { fail(e); return; }
+    S.view = null;
+    go("history");
+    S.flash = "The card is deleted.";
+    render();
+  },
 };
 
 /* A course in a list: "" usable, "check" withdrawn in The Scorecard but the

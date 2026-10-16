@@ -143,6 +143,10 @@ export function postable(card) {
   return { ok: true, members };
 }
 
+/* May this kept card be deleted? Never once posted (it lives in The Scorecard
+   then), and never while The Scorecard is checking it (it may still be posted). */
+export const canDelete = (c) => !!c && c.state !== "posted" && !(c.state === "posting" && c.sent);
+
 /* The text sent by WhatsApp, email or text message. */
 export function shareText(card) {
   const lines = [];

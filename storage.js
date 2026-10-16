@@ -57,6 +57,12 @@ export function keepFinished(card) {
   save("cards", list.slice(0, 30));
 }
 
+/* Deleting a kept card. Counts only once the list without it is written and
+   read back (save checks); otherwise it throws and nothing changes. */
+export function dropFinished(id) {
+  save("cards", finishedCards().filter((c) => c.id !== id));
+}
+
 /* ---------------- courses used recently (offline choice) ---------------- */
 
 export const recentCourses = () => load("courses", []);
