@@ -1,0 +1,6 @@
+base64 characters (spaces and line breaks removed): 5752 (expected 5752)
+password characters: 32 (expected 32)
+decoded: yes
+opens with the password: yes
+SHA256: 0f0da069f2c8b2842beb4d242415d70069a6bb3137fc90a75e6d1619ad32deff
+expected: 0f0da069f2c8b2842beb4d242415d70069a6bb3137fc90a75e6d1619ad32deff
