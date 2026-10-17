@@ -1,0 +1,71 @@
+name: iPhone setup check
+
+# Signs in to App Store Connect with the four secrets and checks that The
+# Marker's App ID and app record exist. Records only names and yes/no answers
+# (never any part of the key) to the ci-logs branch.
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/ios-check.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Sign in and look for The Marker
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          node > ios.txt 2>&1 <<'JS' || true
+          const crypto = require("crypto"); const e = process.env;
+          const say = (s) => console.log(s);
+          say("ASC_KEY_ID: " + (e.ASC_KEY_ID ? `${e.ASC_KEY_ID.trim().length} characters` + (e.ASC_KEY_ID.trim() === "48475DA2L4" ? " (matches 48475DA2L4)" : " (DOES NOT match 48475DA2L4)") : "MISSING"));
+          say("APPLE_TEAM_ID: " + (e.APPLE_TEAM_ID ? (e.APPLE_TEAM_ID.trim() === "VXMLKHF72B" ? "matches VXMLKHF72B" : "DOES NOT match VXMLKHF72B") : "MISSING"));
+          say("ASC_ISSUER_ID: " + (e.ASC_ISSUER_ID ? (/^[0-9a-f-]{36}$/.test(e.ASC_ISSUER_ID.trim()) ? "looks right (36 characters)" : "WRONG SHAPE") : "MISSING"));
+          const pem = (e.ASC_KEY_P8 || "").trim();
+          say("ASC_KEY_P8: " + (!pem ? "MISSING" : pem.startsWith("-----BEGIN PRIVATE KEY-----") && pem.endsWith("-----END PRIVATE KEY-----") ? "has its BEGIN and END lines" : "BEGIN/END lines missing"));
+          (async () => {
+            let key;
+            try { key = crypto.createPrivateKey(pem); say("key opens: yes"); } catch (x) { say("key opens: NO"); return; }
+            const b = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+            const now = Math.floor(Date.now() / 1000);
+            const head = b({ alg: "ES256", kid: e.ASC_KEY_ID.trim(), typ: "JWT" });
+            const body = b({ iss: e.ASC_ISSUER_ID.trim(), iat: now, exp: now + 600, aud: "appstoreconnect-v1" });
+            const sig = crypto.sign("sha256", Buffer.from(head + "." + body), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+            const jwt = `${head}.${body}.${sig}`;
+            const get = async (p) => { const r = await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { headers: { Authorization: "Bearer " + jwt } }); return { status: r.status, json: await r.json().catch(() => ({})) }; };
+            const ids = await get("bundleIds?filter[identifier]=io.github.willyros01.marker&limit=5");
+            say("sign-in to App Store Connect: " + (ids.status === 200 ? "yes" : "NO (" + ids.status + ")"));
+            if (ids.status !== 200) return;
+            const id = (ids.json.data || []).find((d) => d.attributes.identifier === "io.github.willyros01.marker");
+            say("App ID io.github.willyros01.marker: " + (id ? `registered ("${id.attributes.name}", platform ${id.attributes.platform})` : "NOT FOUND"));
+            const apps = await get("apps?filter[bundleId]=io.github.willyros01.marker&limit=5");
+            const app = (apps.json.data || [])[0];
+            say("App Store Connect app: " + (app ? `found ("${app.attributes.name}", id ${app.id}, SKU ${app.attributes.sku})` : "NOT FOUND"));
+          })().catch((x) => say("error: " + x.message));
+          JS
+          cat ios.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/ios-check/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp ios.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "iPhone setup check ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
