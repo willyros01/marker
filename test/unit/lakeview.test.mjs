@@ -27,7 +27,7 @@ const all = Array.from({ length: 18 }, (_, i) => i + 1);
 
 test("L1 a red row with men's and ladies' ratings becomes two tees with the same yards", () => {
   const r = search.normalizeScan(answer(all));
-  assert.deepEqual(r.tees.map((t) => t.name), ["BLUE", "WHITE", "RED (men)", "RED (ladies)"]);
+  assert.deepEqual(r.tees.map((t) => t.name), ["BLUE", "WHITE", "RED (men)", "RED (women)"]);
   const men = r.tees[2], ladies = r.tees[3];
   assert.equal(men.rating, 63.8); assert.equal(men.slope, 109);
   assert.equal(ladies.rating, 68.2); assert.equal(ladies.slope, 115);
@@ -42,7 +42,7 @@ test("L2 one picture of the whole Lakeview card is verified, with four tees", ()
   const v = check.verifyCard(m, { lenientYards: check.LENIENT_YARDS });
   assert.deepEqual(v.problems, []);
   assert.equal(v.par, 71);
-  assert.deepEqual(m.tees.map((t) => t.name), ["Blue", "White", "Red (men)", "Red (ladies)"]);
+  assert.deepEqual(m.tees.map((t) => t.name), ["Blue", "White", "Red (men)", "Red (women)"]);
 });
 
 test("L3 two pictures: the split red row is completed by a plain red row, in either order", () => {
@@ -54,7 +54,7 @@ test("L3 two pictures: the split red row is completed by a plain red row, in eit
     const v = check.verifyCard(m, { lenientYards: check.LENIENT_YARDS });
     assert.deepEqual(v.problems, [], JSON.stringify(m.tees.map((t) => t.name)));
     assert.equal(m.tees.length, 4);
-    const ladies = m.tees.find((t) => /ladies/.test(t.name));
+    const ladies = m.tees.find((t) => /women/.test(t.name));
     assert.deepEqual(ladies.yards, Y.RED);
     assert.equal(ladies.rating, 68.2);
   }

@@ -118,9 +118,9 @@ Each tee is one ROW of yardages, usually named by a colour (Black, Gold, Blue, W
 Read every table and answer with JSON only, in this shape:
 {"course": "<course name or empty>",
  "holes": [ { "hole": <hole number>, "par": <par>, "hcp": <handicap number>, "yards": { "<tee name>": <yards>, ... } }, ... one entry per hole column shown ],
- "tees": [ { "name": "<tee name>", "rating": <number or null>, "slope": <number or null>, "ratings": [ { "for": "<men | ladies | empty>", "rating": <number>, "slope": <number> } ], "out": <OUT total or null>, "in": <IN total or null>, "total": <TOTAL (18 holes) or null> } ],
+ "tees": [ { "name": "<tee name>", "rating": <number or null>, "slope": <number or null>, "ratings": [ { "for": "<men | women | empty>", "rating": <number>, "slope": <number> } ], "out": <OUT total or null>, "in": <IN total or null>, "total": <TOTAL (18 holes) or null> } ],
  "parOut": <par OUT total or null>, "parIn": <par IN total or null> }
-Some tees show two ratings, one for men and one for ladies, e.g. "M 63.8 / 109" and "L 68.2 / 115": list BOTH in "ratings" (for: "men" and "ladies"); a tee with one rating has one entry in "ratings".
+Some tees show two ratings, one for men and one for women, e.g. "M 63.8 / 109" and "L 68.2 / 115": list BOTH in "ratings" (for: "men" and "women"); a tee with one rating has one entry in "ratings".
 Read each number from the column of its own hole. Use null for anything you cannot read. Never guess. Do not include OUT, IN or TOTAL columns as holes.
 For holes 10-18, a tee row may not be named; it is the same tee as the row in the same position (same colour) in the holes 1-9 table; if there is no holes 1-9 table, name it by its colour.`;
 
@@ -196,11 +196,11 @@ export function normalizeScan(raw) {
     });
     /* One coloured row with a men's and a ladies' rating is two tees with
        the same yards (Lakeview's Red: M 63.8 / 109, L 68.2 / 115). */
-    const who = (f) => (/^(l|w|lad|wom|fem)/i.test(String(f || "").trim()) ? "ladies" : /^(m|men|male|gent)/i.test(String(f || "").trim()) ? "men" : "");
+    const who = (f) => (/^(l|w|lad|wom|fem)/i.test(String(f || "").trim()) ? "women" : /^(m|men|male|gent)/i.test(String(f || "").trim()) ? "men" : "");
     const rs = (Array.isArray(t.ratings) ? t.ratings : []).filter((x) => x && within(num(x.rating), 55, 85) != null);
     const kinds = new Set(rs.map((x) => who(x.for)));
-    if (rs.length >= 2 && kinds.has("men") && kinds.has("ladies")) {
-      return ["men", "ladies"].map((k) => { const x = rs.find((y) => who(y.for) === k); return one(`${name} (${k})`, x.rating, x.slope); });
+    if (rs.length >= 2 && kinds.has("men") && kinds.has("women")) {
+      return ["men", "women"].map((k) => { const x = rs.find((y) => who(y.for) === k); return one(`${name} (${k})`, x.rating, x.slope); });
     }
     const single = rs.length === 1 ? rs[0] : t;
     return [one(name, t.rating ?? single.rating, t.slope ?? single.slope)];
