@@ -1,0 +1,8 @@
+ASC_KEY_ID: 10 characters (matches 48475DA2L4)
+APPLE_TEAM_ID: matches VXMLKHF72B
+ASC_ISSUER_ID: looks right (36 characters)
+ASC_KEY_P8: has its BEGIN and END lines
+key opens: yes
+sign-in to App Store Connect: yes
+App ID io.github.willyros01.marker: registered ("The Marker", platform UNIVERSAL)
+App Store Connect app: found ("The Marker", id 6824006235, SKU marker)
