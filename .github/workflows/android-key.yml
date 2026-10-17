@@ -1,0 +1,54 @@
+name: Android signing key check
+
+# Checks that the two GitHub secrets hold a key that opens with its password,
+# and records only the certificate fingerprint (public) to the ci-logs branch.
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/android-key.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Open the key
+        env:
+          KEY64: ${{ secrets.MARKER_ANDROID_KEYSTORE_BASE64 }}
+          PASS: ${{ secrets.MARKER_ANDROID_PASSWORD }}
+        run: |
+          set -u; umask 077
+          out="$RUNNER_TEMP/key.txt"
+          {
+            echo "base64 characters (spaces and line breaks removed): $(printf '%s' "$KEY64" | tr -d ' \r\n\t' | wc -c) (expected 5752)"
+            echo "password characters: $(printf '%s' "$PASS" | tr -d '\r\n' | wc -c) (expected 32)"
+            printf '%s' "$KEY64" | tr -d ' \r\n\t' | base64 -d > "$RUNNER_TEMP/k.p12" 2>/dev/null && echo "decoded: yes" || echo "decoded: NO"
+            if keytool -list -v -keystore "$RUNNER_TEMP/k.p12" -storetype PKCS12 -storepass "$(printf '%s' "$PASS" | tr -d '\r\n')" -alias marker > "$RUNNER_TEMP/list.txt" 2>&1; then
+              echo "opens with the password: yes"
+              echo "SHA256: $(grep 'SHA256:' "$RUNNER_TEMP/list.txt" | head -1 | sed 's/.*SHA256: //' | tr -d ':' | tr A-F a-f)"
+              echo "expected: 0f0da069f2c8b2842beb4d242415d70069a6bb3137fc90a75e6d1619ad32deff"
+            else
+              echo "opens with the password: NO"
+              grep -i -E "error|exception" "$RUNNER_TEMP/list.txt" | head -2
+            fi
+          } > "$out"
+          rm -f "$RUNNER_TEMP/k.p12" "$RUNNER_TEMP/list.txt"
+          cat "$out"
+          cp "$out" key.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/android-key/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp key.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "Android key check ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
