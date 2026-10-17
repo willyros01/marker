@@ -1,0 +1,8 @@
+Note: Gold: the card prints IN 3457, but its holes add up to 3467, which the card's own total 6786 confirms; the holes are used.
+Amber (red): the card prints OUT 2529, but its holes add up to 2539
+Before: 1 saved copy of Royal Ontario.
+  kkzm98cs: "Royal Ontario Golf Club" source=database tees=Black (M) 73.7/150 par 71; Gold. (M) 73/148 par 71; Blue. (M) 70.5/138 par 70; White (M) 68.8/133 par 70; Red (M) 65.7/122 par 68; White. (F) (W) 74.2/141 par 72; Red. (F) (W) 70.8/127 par 70
+Saving as markerCourses/kkzm98cs.
+After:
+  kkzm98cs: "Royal Ontario Golf Club" source=verified tees=Black 75/146 par 72; Gold 71.5/142 par 72; Blue 71.5/136 par 72; White 69.7/130 par 72; Red 70.8/124 par 72
+Check: hole 3 par 5; handicap numbers 6,10,4,8,16,2,14,18,12,13,17,15,7,3,11,5,9,1
