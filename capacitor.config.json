@@ -1,5 +1,10 @@
 {
   "appId": "io.github.willyros01.marker",
   "appName": "The Marker",
-  "webDir": "www"
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "limitsNavigationsToAppBoundDomains": false,
+    "zoomEnabled": true
+  }
 }
