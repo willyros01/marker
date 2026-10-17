@@ -1,0 +1,51 @@
+name: Save a verified course (one-off)
+
+# Runs build/save-course.mjs once, when that file changes on main, as
+# marker-deployer (keyless). The log goes to the ci-logs branch.
+on:
+  push:
+    branches: [main]
+    paths:
+      - build/save-course.mjs
+
+permissions:
+  contents: write   # only to save the log to the ci-logs branch
+  id-token: write
+
+env:
+  PROJECT: scorecard-f41b8
+
+jobs:
+  save:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Keyless sign-in to Google
+        id: auth
+        uses: google-github-actions/auth@v3.0.0
+        with:
+          workload_identity_provider: projects/811267714235/locations/global/workloadIdentityPools/scorecard-github/providers/marker-provider
+          service_account: marker-deployer@scorecard-f41b8.iam.gserviceaccount.com
+          token_format: access_token
+      - name: Save
+        env:
+          TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          set -o pipefail
+          node build/save-course.mjs 2>&1 | tee save.log
+      - name: Save the log to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/save/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp save.log "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "Save log ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
