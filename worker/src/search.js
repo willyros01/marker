@@ -15,7 +15,16 @@ export const LIMITS = { anon: 10, member: 100, anonTotal: 300 };
 /* Reading a scorecard picture uses Cloudflare's free AI allowance (10,000
    units a day, about 350-500 a picture), so pictures have their own limits:
    20 a day in all is about 10 courses, two pictures each. */
-export const SCAN_LIMITS = { anon: 2, member: 8, total: 20 };
+export const SCAN_LIMITS = { anon: 2, member: 8, total: 40 };
+
+/* Cloudflare's free AI allowance: 10,000 units ("neurons") a day, renewed at
+   midnight UTC. What each picture really cost is added up here (Cloudflare
+   reports it with every answer), and reading stops with a clear message
+   before the allowance is gone, keeping a margin for one more picture. */
+export const AI_BUDGET = 9500;
+const RESERVE = 900;                     /* the most one picture is expected to cost */
+const TYPICAL = 700;                     /* used to estimate the pictures left before any is read today */
+const PRICE = { in: 40909 / 1e6, out: 290909 / 1e6 };   /* Qwen, neurons per token */
 export class LimitReached extends Error {}
 
 const day = (now = Date.now()) => new Date(now).toISOString().slice(0, 10);
@@ -216,6 +225,8 @@ export async function scan(fs, who, image, ai) {
   if (!ai) throw new Error("NOT_SET_UP");
   if (typeof image !== "string" || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) throw new Error("SCAN_BAD_PHOTO");
   if (image.length > MAX_IMAGE) throw new Error("SCAN_TOO_BIG");
+  const spent = await aiSpent(fs);
+  if (spent.neurons + margin(spent) > AI_BUDGET) throw new Error("SCAN_BUSY");
   await count(fs, who, { kind: "scan" });
   let out;
   try {
@@ -227,9 +238,14 @@ export async function scan(fs, who, image, ai) {
   } catch (e) {
     const m = String((e && e.message) || e);
     if (/agree|licen[cs]e/i.test(m)) throw new Error("AI_LICENCE");
-    if (/limit|quota|neurons|capacity|429/i.test(m)) throw new Error("SCAN_BUSY");
+    if (/allocation|neurons|4006/i.test(m)) { await addSpent(fs, AI_BUDGET, 0); throw new Error("SCAN_BUSY"); }
+    if (/limit|quota|capacity|429/i.test(m)) throw new Error("SCAN_BUSY");
     throw new Error("SCAN_FAILED");
   }
+  const usage = (out && out.usage) || {};
+  const cost = Number.isFinite(Number(usage.neurons)) ? Number(usage.neurons)
+    : Math.round((Number(usage.prompt_tokens) || 3000) * PRICE.in + (Number(usage.completion_tokens) || 2000) * PRICE.out);
+  try { await addSpent(fs, cost, 1); } catch { /* the count is a guide; the reading stands */ }
   const result = normalizeScan(out && out.response !== undefined ? out.response : out);
   /* Kept so a card can later be verified from what was READ, never from
      values a phone sends (Willy: any change by hand makes it a hand entry). */
@@ -237,6 +253,42 @@ export async function scan(fs, who, image, ai) {
   try { await fs.commit([setWrite(fs, `markerScans/${scanId}`, { uid: who.uid, anonymous: !!who.anonymous, result }, { exists: false, now: ["at"] })]); }
   catch { return result; }   /* reading still usable for the round; it just cannot be verified */
   return { ...result, scanId };
+}
+
+/* ---------------- the day's AI allowance ---------------- */
+
+/* Room kept for one more picture: the usual margin, or today's average cost
+   when pictures have cost more than that. */
+const margin = (spent) => Math.max(RESERVE, spent.pictures ? spent.neurons / spent.pictures : 0);
+
+async function aiSpent(fs, now = Date.now()) {
+  const d = await fs.get(`markerLimits/ai-${day(now)}`);
+  return { neurons: d ? Number(d.data.neurons) || 0 : 0, pictures: d ? Number(d.data.pictures) || 0 : 0, doc: d };
+}
+
+async function addSpent(fs, neurons, pictures, now = Date.now()) {
+  for (let i = 0; i < 4; i++) {
+    const cur = await aiSpent(fs, now);
+    const next = { neurons: Math.min(AI_BUDGET * 2, cur.neurons + neurons), pictures: cur.pictures + pictures };
+    try {
+      await fs.commit([setWrite(fs, `markerLimits/ai-${day(now)}`, next, cur.doc ? { updateTime: cur.doc.updateTime } : { exists: false })]);
+      return next;
+    } catch (e) { if (!e.conflict) throw e; }
+  }
+}
+
+/* About how many more pictures this caller can have read today: the smaller
+   of their own daily limit and what is left of the AI allowance. */
+export async function scanStatus(fs, who, { now = Date.now() } = {}) {
+  const spent = await aiSpent(fs, now);
+  const avg = spent.pictures ? spent.neurons / spent.pictures : TYPICAL;
+  const room = AI_BUDGET - margin(spent) - spent.neurons;
+  const byBudget = room >= 0 ? Math.floor(room / Math.max(avg, 1)) + 1 : 0;
+  const mine = await fs.get(`markerLimits/scan-${who.uid}`);
+  const used = mine && mine.data.day === day(now) ? Number(mine.data.count) || 0 : 0;
+  const byLimit = Math.max(0, (who.anonymous ? SCAN_LIMITS.anon : SCAN_LIMITS.member) - used);
+  const left = Math.min(byBudget, byLimit);
+  return { left, why: left > 0 ? "" : byBudget === 0 ? "allowance" : "limit" };
 }
 
 /* ---------------- verifying a card from its readings ---------------- */

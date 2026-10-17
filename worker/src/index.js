@@ -4,6 +4,7 @@
  *   GET  /search?q=...       -> { courses: [...] }       any sign-in, counted
  *   GET  /course?id=...      -> { course: {...} }        any sign-in, counted, saved to the library
  *   GET  /withdrawn          -> { courses: [...] }       withdrawn courses: names, tee figures, ids
+ *   GET  /scan-status        -> { left, why }            about how many pictures can still be read today
  *   POST /scan  {image}      -> { scan: {course, tees} } any sign-in, counted: reads a scorecard photo
  *   POST /verify {scanIds, replaceId?, name?} -> { course }  signed-in only: a verified card replaces the course
  *   POST /wake  {cardId}     -> { status, reason?, rounds? }   the card's own scorer only
@@ -66,6 +67,9 @@ export default {
       }
       if (url.pathname === "/withdrawn" && req.method === "GET") {
         return reply({ courses: await search.withdrawnList(fs) }, 200, h);
+      }
+      if (url.pathname === "/scan-status" && req.method === "GET") {
+        return reply(await search.scanStatus(fs, who), 200, h);
       }
       if (url.pathname === "/scan" && req.method === "POST") {
         const body = await req.json().catch(() => ({}));

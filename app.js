@@ -193,7 +193,14 @@ function screenCourse() {
 function photoButtons(label = "") {
   if (S.busy === "scan") return `<div class="reading" role="status"><span class="wheel" aria-hidden="true"></span>
       <span><b>Reading the picture…</b><br>This can take up to half a minute.</span></div>`;
-  return `${label ? `<span class="label">${esc(label)}</span>` : ""}<div class="row2">
+  const st = S.scanStatus;
+  if (st && st.left === 0) {
+    return `<div class="banner warn"><b>No more pictures can be read today.</b><br>${st.why === "allowance"
+      ? "The free daily allowance for reading pictures is used up for everybody. It renews at 8 pm (Toronto time)."
+      : "You have used today's pictures. More tomorrow."} Meanwhile you can type the course in below.</div>`;
+  }
+  const left = st && Number.isFinite(st.left) ? `<p class="muted" style="margin-top:6px">${st.left === 1 ? "1 picture" : `About ${st.left} pictures`} left today.</p>` : "";
+  return `${label ? `<span class="label">${esc(label)}</span>` : ""}${left}<div class="row2">
         <label class="btn dashed" style="position:relative">📷 Take a photo
           <input type="file" id="scanfile" accept="image/*" capture="environment" ${S.busy ? "disabled" : ""}
             style="position:absolute;inset:0;opacity:0;width:100%;height:100%"></label>
@@ -992,7 +999,13 @@ function courseState(c) {
   return W.nameWithdrawn(list, c.name) ? "check" : "";
 }
 
+/* How many pictures can still be read today; shown with the picture buttons. */
+function refreshScanStatus() {
+  db.scanStatus().then((st) => { S.scanStatus = st; if (["course", "review"].includes(S.screen)) render(); }).catch(() => {});
+}
+
 function newManual(name) {
+  refreshScanStatus();
   return { name, tee: "White", rating: "", slope: "", pars: Array(18).fill(4), sis: Array(18).fill(""), yards: Array(18).fill(null), providerId: null, where: "" };
 }
 
@@ -1051,11 +1064,12 @@ async function readPhoto(file) {
     const result = await db.scanCard(image);
     S.busy = "";
     S.cs.readings = [...(S.cs.readings || []), result];
+    refreshScanStatus();
     S.cs.pickTee = false;
     if (result.course && !S.cs.manual.name) S.cs.manual.name = result.course;
     go("review");
   } catch (e) {
-    S.busy = ""; S.cs.error = courses.explain(e); render();
+    S.busy = ""; S.cs.error = courses.explain(e); refreshScanStatus(); render();
   }
 }
 

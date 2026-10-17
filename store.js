@@ -225,6 +225,11 @@ export async function scanCard(image) {
   return (await callWorker("/scan", { method: "POST", body: { image } })).scan;
 }
 
+/* About how many pictures can still be read today (null when unknown). */
+export async function scanStatus() {
+  try { return await callWorker("/scan-status"); } catch { return null; }
+}
+
 /* A signed-in scorer confirms the card: the worker checks its own copies of
    the readings and, if verified, makes it THE course for everybody. */
 export async function verifyCourse({ scanIds, replaceId = null, name = "" }) {

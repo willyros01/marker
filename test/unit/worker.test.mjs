@@ -539,3 +539,44 @@ test("Y3 a reading is stored with its scorer when the picture is read", async ()
   assert.equal(fs.data(`markerScans/${r.scanId}`).uid, "m1");
   assert.equal(fs.data(`markerScans/${r.scanId}`).result.tees.length, 2);
 });
+
+/* ---------------- the day's AI allowance ---------------- */
+
+test("A1 what each picture really costs is added up, and pictures left are reported", async () => {
+  const fs = fakeFs();
+  const who = { uid: "m1", anonymous: false };
+  let st = await search.scanStatus(fs, who);
+  assert.equal(st.left, 8, "own daily limit before anything is used");
+  const ai = { run: async () => ({ response: frontAnswer(), usage: { neurons: 2000, prompt_tokens: 3000, completion_tokens: 1500 } }) };
+  await search.scan(fs, who, "data:image/jpeg;base64,/9j/", ai);
+  await search.scan(fs, who, "data:image/jpeg;base64,/9j/", ai);
+  const day = new Date().toISOString().slice(0, 10);
+  assert.deepEqual(fs.data(`markerLimits/ai-${day}`), { neurons: 4000, pictures: 2 });
+  st = await search.scanStatus(fs, who);
+  assert.equal(st.left, 2, "4,000 spent at 2,000 a picture: two more fit inside 9,500");
+  await search.scan(fs, who, "data:image/jpeg;base64,/9j/", ai);
+  await search.scan(fs, who, "data:image/jpeg;base64,/9j/", ai);
+  /* 8,000 spent: one more at 2,000 would go over the allowance. */
+  await assert.rejects(search.scan(fs, who, "data:image/jpeg;base64,/9j/", ai), /SCAN_BUSY/);
+  st = await search.scanStatus(fs, who);
+  assert.deepEqual(st, { left: 0, why: "allowance" });
+});
+
+test("A2 Cloudflare saying the allowance is used up stops further pictures for the day", async () => {
+  const fs = fakeFs();
+  const who = { uid: "m1", anonymous: false };
+  const used = { run: async () => { throw new Error("AiError: you have used up your daily free allocation of 10,000 neurons (4006)"); } };
+  await assert.rejects(search.scan(fs, who, "data:image/jpeg;base64,/9j/", used), /SCAN_BUSY/);
+  assert.deepEqual(await search.scanStatus(fs, who), { left: 0, why: "allowance" });
+  let called = false;
+  await assert.rejects(search.scan(fs, who, "data:image/jpeg;base64,/9j/", { run: async () => { called = true; return {}; } }), /SCAN_BUSY/);
+  assert.equal(called, false, "the AI is not even asked");
+});
+
+test("A3 without a reported cost, the tokens are priced instead", async () => {
+  const fs = fakeFs();
+  const ai = { run: async () => ({ response: frontAnswer(), usage: { prompt_tokens: 2000, completion_tokens: 1000 } }) };
+  await search.scan(fs, { uid: "m1", anonymous: false }, "data:image/jpeg;base64,/9j/", ai);
+  const day = new Date().toISOString().slice(0, 10);
+  assert.equal(fs.data(`markerLimits/ai-${day}`).neurons, Math.round(2000 * 40909 / 1e6 + 1000 * 290909 / 1e6));
+});
