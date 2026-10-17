@@ -95,7 +95,7 @@ p { margin: 0; line-height: 1.45; }
 
 .under { color: var(--under); } .over { color: var(--over); }
 .cgrid { display: flex; flex-direction: column; gap: 2px; }
-.crow { display: grid; grid-template-columns: 52px 40px 36px repeat(var(--n), minmax(0, 1fr)); align-items: center; width: 100%; border: 0; border-radius: 6px; padding: 0; background: transparent; color: var(--ink); text-align: center; }
+.crow { display: grid; grid-template-columns: 44px 34px 48px 38px repeat(var(--n), minmax(0, 1fr)); align-items: center; width: 100%; border: 0; border-radius: 6px; padding: 0; background: transparent; color: var(--ink); text-align: center; }
 .crow > div { padding: 6px 2px; font-size: 17px; text-align: center; }
 .crow .hd { font-size: 12px; font-weight: 800; color: var(--ink-3); letter-spacing: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .crow.plain { background: #fff; }
