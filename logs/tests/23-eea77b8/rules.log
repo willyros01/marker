@@ -1,0 +1,188 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: firestore
+[36m[1mi  emulators:[22m[39m Detected demo project ID "demo-marker", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+[33m[1m⚠ [22m[39m It appears you are running in a CI environment. You can avoid downloading the Firestore Emulator repeatedly by caching the /home/runner/.cache/firebase/emulators directory.
+[36m[1mi  firestore:[22m[39m downloading cloud-firestore-emulator-v1.22.0.jar...
+
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m✔  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m✔  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnode --test --test-concurrency=1 test/rules.test.mjs test/worker.e2e.test.mjs[22m
+TAP version 13
+# Subtest: N1 a real account drops off its own card
+ok 1 - N1 a real account drops off its own card
+  ---
+  duration_ms: 3666.444346
+  type: 'test'
+  ...
+# [2026-10-17T00:59:12.864Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451654 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1199:24 for 'create' @ L1199, false for 'update' @ L1208, false for 'create' @ L1199
+# Subtest: N2 a card naming somebody else as the scorer is refused
+ok 2 - N2 a card naming somebody else as the scorer is refused
+  ---
+  duration_ms: 229.595595
+  type: 'test'
+  ...
+# [2026-10-17T00:59:12.993Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451656 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L1199, false for 'update' @ L1208
+# Subtest: N3 an anonymous player cannot drop off a card
+ok 3 - N3 an anonymous player cannot drop off a card
+  ---
+  duration_ms: 127.916716
+  type: 'test'
+  ...
+# [2026-10-17T00:59:13.123Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451658 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1199:24 for 'create' @ L1199, false for 'update' @ L1208, false for 'create' @ L1199
+# [2026-10-17T00:59:13.164Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451659 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L1199, false for 'update' @ L1208
+# Subtest: N4 only status 'sent' and the server's own time are accepted
+ok 4 - N4 only status 'sent' and the server's own time are accepted
+  ---
+  duration_ms: 170.346408
+  type: 'test'
+  ...
+# [2026-10-17T00:59:13.274Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x1345165b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1199:24 for 'create' @ L1199, false for 'update' @ L1208, false for 'create' @ L1199
+# [2026-10-17T00:59:13.312Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x1345165c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1199:24 for 'create' @ L1199, false for 'update' @ L1208, false for 'create' @ L1199
+# [2026-10-17T00:59:13.348Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x1345165d error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1199:24 for 'create' @ L1199, false for 'update' @ L1208, false for 'create' @ L1199
+# Subtest: N5 one to four golfers only, and no extra fields
+ok 5 - N5 one to four golfers only, and no extra fields
+  ---
+  duration_ms: 215.775254
+  type: 'test'
+  ...
+# [2026-10-17T00:59:13.522Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451661 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'update' @ L1208
+# [2026-10-17T00:59:13.545Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451662 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1199:24 for 'create' @ L1199, false for 'update' @ L1208, false for 'update' @ L1208
+# [2026-10-17T00:59:13.569Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451663 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'delete' @ L1208
+# Subtest: N6 a card can never be changed, replaced or deleted from a phone
+ok 6 - N6 a card can never be changed, replaced or deleted from a phone
+  ---
+  duration_ms: 189.026662
+  type: 'test'
+  ...
+# Subtest: N7 only the scorer reads a card; 'not there' is an answer; nobody lists them
+ok 7 - N7 only the scorer reads a card; 'not there' is an answer; nobody lists them
+  ---
+  duration_ms: 247.813543
+  type: 'test'
+  ...
+# [2026-10-17T00:59:13.932Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x1345166d error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L1199:24 for 'create' @ L1199, false for 'update' @ L1208, false for 'create' @ L1199
+# Subtest: N8 an account that asked to be deleted cannot drop off a card
+ok 8 - N8 an account that asked to be deleted cannot drop off a card
+  ---
+  duration_ms: 115.223629
+  type: 'test'
+  ...
+# [2026-10-17T00:59:14.093Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451671 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L1213, false for 'update' @ L1213
+# [2026-10-17T00:59:14.112Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451672 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L1213, false for 'update' @ L1213
+# Subtest: C1 any sign-in reads Marker courses; nobody writes them from a phone
+ok 9 - C1 any sign-in reads Marker courses; nobody writes them from a phone
+  ---
+  duration_ms: 214.460625
+  type: 'test'
+  ...
+# [2026-10-17T00:59:14.258Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451676 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L1218, false for 'update' @ L1218
+# Subtest: C2 the worker's address is readable by any sign-in, writable by none
+ok 10 - C2 the worker's address is readable by any sign-in, writable by none
+  ---
+  duration_ms: 111.419667
+  type: 'test'
+  ...
+# [2026-10-17T00:59:14.361Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451679 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L1222, false for 'update' @ L1222
+# Subtest: C3 search limits are the worker's alone
+ok 11 - C3 search limits are the worker's alone
+  ---
+  duration_ms: 101.930107
+  type: 'test'
+  ...
+# Subtest: S1 an admin still posts for anybody, a member for themselves
+ok 12 - S1 an admin still posts for anybody, a member for themselves
+  ---
+  duration_ms: 140.585218
+  type: 'test'
+  ...
+# [2026-10-17T00:59:14.606Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x1345167e error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L672:26 for 'create' @ L672, evaluation error at L685:26 for 'update' @ L685, false for 'create' @ L672
+# [2026-10-17T00:59:14.644Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x1345167f error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# evaluation error at L672:26 for 'create' @ L672, evaluation error at L685:26 for 'update' @ L685, false for 'create' @ L672
+# Subtest: S2 a regular member still cannot post somebody else's round, with or without a card id
+ok 13 - S2 a regular member still cannot post somebody else's round, with or without a card id
+  ---
+  duration_ms: 143.423343
+  type: 'test'
+  ...
+# [2026-10-17T00:59:14.728Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451681 error. Code: 7 Message: 7 PERMISSION_DENIED: No matching allow statements
+# [2026-10-17T00:59:14.765Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x13451683 error. Code: 7 Message: 7 PERMISSION_DENIED: No matching allow statements
+# Subtest: S3 the 0.1.0 openings are gone: cards, lookup, anonymous counters
+ok 14 - S3 the 0.1.0 openings are gone: cards, lookup, anonymous counters
+  ---
+  duration_ms: 119.81771
+  type: 'test'
+  ...
+# Subtest: S4 anonymous players still see nothing of The Scorecard
+ok 15 - S4 anonymous players still see nothing of The Scorecard
+  ---
+  duration_ms: 132.250768
+  type: 'test'
+  ...
+# Subtest: E1 a card dropped off by a phone is posted by the worker, all of it in one commit
+ok 16 - E1 a card dropped off by a phone is posted by the worker, all of it in one commit
+  ---
+  duration_ms: 1601.124531
+  type: 'test'
+  ...
+# Subtest: E2 the same card twice: posted once
+ok 17 - E2 the same card twice: posted once
+  ---
+  duration_ms: 271.384014
+  type: 'test'
+  ...
+# Subtest: E3 a card for somebody taken off the roster is refused with the reason, nothing posted
+ok 18 - E3 a card for somebody taken off the roster is refused with the reason, nothing posted
+  ---
+  duration_ms: 194.17405
+  type: 'test'
+  ...
+# Subtest: E4 the timer finds a card whose wake-up was lost
+ok 19 - E4 the timer finds a card whose wake-up was lost
+  ---
+  duration_ms: 201.912961
+  type: 'test'
+  ...
+# Subtest: E5 after a withdrawal: the withdrawn details are refused, a hand entry becomes a new course
+ok 20 - E5 after a withdrawal: the withdrawn details are refused, a hand entry becomes a new course
+  ---
+  duration_ms: 273.370045
+  type: 'test'
+  ...
+# [2026-10-17T00:59:17.907Z]  @firebase/firestore: Firestore (10.12.0): GrpcConnection RPC 'Write' stream 0x43b4c356 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+# false for 'create' @ L1213, false for 'update' @ L1213
+# Subtest: E6 a verified card replaces the saved course, over Firestore's real interface
+ok 21 - E6 a verified card replaces the saved course, over Firestore's real interface
+  ---
+  duration_ms: 185.745689
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9228.969463
+[32m[1m✔ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
