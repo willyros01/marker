@@ -29,6 +29,8 @@ s, k = re.subn(r'(?m)^(\s*versionName\s+)"[^"]*"', lambda m: m.group(1) + '"' + 
 f.write_text(s)
 print("versionCode", n, "versionName", v)
 PY
+# A pasted password may carry a line break; the key check already allows for it.
+export MARKER_ANDROID_PASSWORD="$(printf '%s' "${MARKER_ANDROID_PASSWORD:-}" | tr -d '\r\n')"
 bash build/android-sign.sh
 trap 'rm -f android/app/mk-sign.p12 android/app/mk-sign.gradle' EXIT
 (cd android && chmod +x gradlew && ./gradlew --no-daemon -q assembleDebug)
