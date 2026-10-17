@@ -82,3 +82,11 @@ test("K7 a misprinted nine total is accepted only when the card's 18-hole total 
   const wrong = check.mergeReadings([reading("front"), reading("back", { tweak: (r) => { r.tees[3].holes[16].yards = 148; } })]);
   assert.equal(check.verifyCard(wrong).tees.white.ok, false);
 });
+
+test("K8 one picture of the whole card is enough when everything is read", () => {
+  const f = reading("front"), b = reading("back");
+  const whole = { ...f, holesRead: [...f.holesRead, ...b.holesRead], parIn: 36,
+    tees: f.tees.map((t, i) => ({ ...t, in: b.tees[i].in, total: b.tees[i].total, holes: t.holes.map((h, j) => (j < 9 ? h : b.tees[i].holes[j])) })) };
+  const v = check.verifyCard(check.mergeReadings([whole]), { lenientYards: check.LENIENT_YARDS });
+  assert.equal(v.ok, true);
+});

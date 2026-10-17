@@ -259,7 +259,7 @@ function screenReview() {
   const status = v.ok
     ? `<div class="verdict ok"><span class="big">✓</span><div><b>Everything on the card was read, and it all adds up.</b><br>${m.tees.length} tees, par ${v.par}. Compare it with the card one last time.</div></div>`
     : missingNine
-      ? `<div class="verdict next"><span class="big">${has(front) || has(back) ? "½" : "?"}</span><div><b>Now take a picture of ${missingNine}.</b><br>${has(front) || has(back) ? "Half of the card is read." : ""}</div></div>`
+      ? `<div class="verdict next"><span class="big">${has(front) || has(back) ? "½" : "?"}</span><div><b>Now take a picture of ${missingNine}.</b><br>${has(front) || has(back) ? "Half of the card is read. A close picture of the other half finishes it." : ""}</div></div>`
       : `<div class="verdict bad"><span class="big">✗</span><div><b>Not everything could be read or adds up.</b><br>${v.problems.map(esc).join("<br>")}</div></div>`;
   const pick = S.cs.pickTee ? `<span class="label">Which tee do you want to correct by hand?</span><div class="list">${m.tees.map((t, i) => `
       <button class="item" data-act="review-hand-tee" data-v="${i}"><span class="txt"><span class="name">${esc(t.name)}</span></span></button>`).join("")}</div>` : "";
@@ -270,7 +270,9 @@ function screenReview() {
       ${warnings.length ? `<div class="banner warn"><b>The club's card itself does not add up here:</b><br>${warnings.map(esc).join("<br>")}<br>Check that these yards are exactly as printed.</div>` : ""}
       ${nineTable(m, v, front, "OUT")}${nineTable(m, v, back, "IN")}
       ${v.notes && v.notes.length ? `<p class="muted">${v.notes.map(esc).join(" ")}</p>` : ""}
-      ${missingNine ? photoButtons(`Picture of ${missingNine}`) : `<details class="retake"><summary>Take a picture again</summary>${photoButtons()}</details>`}
+      ${missingNine ? photoButtons(`Picture of ${missingNine}`)
+        : !v.ok ? photoButtons("Take a closer picture of the half with red marks")
+        : `<details class="retake"><summary>Take a picture again</summary>${photoButtons()}</details>`}
       ${pick}
     </main>
     <footer class="foot">
@@ -286,7 +288,7 @@ function screenManualCourse() {
   const red = (on) => (on ? ' style="outline:3px solid var(--over);outline-offset:1px"' : "");
   const photo = `
       <span class="label">Read it from a picture of the club's scorecard</span>
-      <p class="muted">For the best reading, take one table at a time: holes 1 to 9, then holes 10 to 18. Lay the card flat, in good light.</p>
+      <p class="muted">Take one picture of the whole card: all 18 holes and every tee. Lay it flat, in good light. If part of it cannot be read, you are asked for a closer picture of just that half.</p>
       ${photoButtons()}
       ${S.cs.error ? `<div class="banner warn">${esc(S.cs.error)}</div>` : ""}
       ${sc && sc.tees.length > 1 && !sc.applied ? `<span class="label">The photo shows ${sc.tees.length} tees. Which one are you playing?</span>
