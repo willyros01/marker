@@ -153,3 +153,17 @@ test("U14 deleting a kept card removes it from the phone and from the waiting li
   assert.throws(() => store.deleteCard("b"), /posted in The Scorecard/);
   assert.deepEqual(local.finishedCards().map((c) => c.id), ["b"]);
 });
+
+test("U15 saved courses: a searched course replaces same-name copies; a course can be deleted from the device", async () => {
+  const local = await import("../../storage.js");
+  const mem = new Map();
+  local.useBackend({ getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) });
+  local.rememberConfirmed({ providerId: null, name: "Royal Ontario Golf Club", tees: [{}] });
+  local.rememberCourse({ providerId: "99", name: "Lakeview", tees: [{}] });
+  local.rememberCourse({ providerId: "kk", name: "royal ontario golf club ", tees: [{}, {}] });
+  assert.deepEqual(local.recentCourses().map((c) => local.courseKey(c)), ["kk", "99"]);
+  local.forgetCourse("99");
+  assert.deepEqual(local.recentCourses().map((c) => c.providerId), ["kk"]);
+  local.forgetCourse("nothing");
+  assert.equal(local.recentCourses().length, 1);
+});

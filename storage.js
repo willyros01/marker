@@ -74,11 +74,21 @@ export function rememberConfirmed(course) {
   save("courses", list.slice(0, 30));
 }
 
+export const courseKey = (c) => c.providerId || `manual:${String(c.name)}`;
+const sameName = (a, b) => String(a.name).trim().toLowerCase() === String(b.name).trim().toLowerCase();
+
+/* A course picked from a search or the list replaces every saved course of
+   the same name on this device, so it is never listed twice. */
 export function rememberCourse(course) {
-  const key = (c) => c.providerId || `manual:${String(c.name).toLowerCase()}`;
-  const list = recentCourses().filter((c) => key(c) !== key(course));
+  const list = recentCourses().filter((c) => courseKey(c) !== courseKey(course) && !sameName(c, course));
   list.unshift(course);
   save("courses", list.slice(0, 30));
+}
+
+/* Deleting a course saved on this device (never the shared list). Counts only
+   once the list without it is written and read back; otherwise it throws. */
+export function forgetCourse(key) {
+  save("courses", recentCourses().filter((c) => courseKey(c) !== key));
 }
 
 /* ---------------- preferences ---------------- */

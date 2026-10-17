@@ -179,9 +179,14 @@ function screenCourse() {
         const st = courseState(c);
         const meta = st === "blocked" ? "Withdrawn · cannot be used"
           : st === "check" ? "Withdrawn in The Scorecard · tap to look for corrected details"
-          : `${esc(c.where || "")} · ${c.tees.length} tee${c.tees.length === 1 ? "" : "s"}`;
-        return `
-        <button class="item" data-act="pick-saved" data-v="${esc(c.providerId || "manual:" + c.name)}"><span class="txt"><span class="name">${esc(c.name)}</span><span class="meta"${st ? ' style="color:var(--over)"' : ""}>${meta}</span></span></button>`;
+          : [esc(c.where || ""), `${c.tees.length} tee${c.tees.length === 1 ? "" : "s"}`].filter(Boolean).join(" · ");
+        const key = c.providerId || "manual:" + c.name;
+        /* Only a course kept on this device can be deleted; the shared list
+           changes only through a verified card. */
+        const mine = !cs.library.some((x) => (x.providerId || "manual:" + x.name) === key);
+        return `<div class="saved-row">
+        <button class="item" data-act="pick-saved" data-v="${esc(key)}"><span class="txt"><span class="name">${esc(c.name)}</span><span class="meta"${st ? ' style="color:var(--over)"' : ""}>${meta}</span></span></button>
+        ${mine ? `<button class="btn del" data-act="forget-course" data-v="${esc(key)}" aria-label="Delete ${esc(c.name)} from this device">Delete</button>` : ""}</div>`;
       }).join("")}</div>`
         : `<p class="muted">${q ? "No saved course matches. Search online, or enter the course yourself." : "No saved courses yet. Search online, or enter the course yourself."}</p>`}
       <button class="btn dashed" data-act="manual">Enter a course yourself</button>
@@ -772,6 +777,16 @@ const actions = {
     }
     try { local.rememberCourse(c); } catch {}
     chooseCourse(c);
+  },
+  "forget-course"(el) {
+    const key = el.dataset.v;
+    const c = local.recentCourses().find((x) => local.courseKey(x) === key);
+    if (!c) return;
+    if (!window.confirm(`Delete ${c.name} (${c.tees.length} tee${c.tees.length === 1 ? "" : "s"}) from the saved courses on this device? The shared course list is not changed.`)) return;
+    try { local.forgetCourse(key); }
+    catch (e) { fail(e); return; }
+    S.flash = `${c.name} is deleted from this device.`;
+    render();
   },
   manual() {
     S.cs.manual = newManual(S.cs.query || ""); S.cs.error = ""; S.cs.scan = null; S.cs.readings = [];

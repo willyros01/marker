@@ -65,6 +65,9 @@ p { margin: 0; line-height: 1.45; }
 .item .name { font-size: 19px; font-weight: 800; }
 .item .meta { font-size: 15px; color: var(--ink-3); }
 .item[disabled] { opacity: .5; }
+.saved-row { display: flex; gap: 8px; align-items: stretch; }
+.saved-row .item { flex: 1; min-width: 0; }
+.saved-row .del { flex-shrink: 0; color: var(--over); padding: 0 14px; }
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .names { display: flex; gap: 6px; padding: 12px 16px 0; }
