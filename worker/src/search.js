@@ -118,8 +118,9 @@ Each tee is one ROW of yardages, usually named by a colour (Black, Gold, Blue, W
 Read every table and answer with JSON only, in this shape:
 {"course": "<course name or empty>",
  "holes": [ { "hole": <hole number>, "par": <par>, "hcp": <handicap number>, "yards": { "<tee name>": <yards>, ... } }, ... one entry per hole column shown ],
- "tees": [ { "name": "<tee name>", "rating": <number or null>, "slope": <number or null>, "out": <OUT total or null>, "in": <IN total or null>, "total": <TOTAL (18 holes) or null> } ],
+ "tees": [ { "name": "<tee name>", "rating": <number or null>, "slope": <number or null>, "ratings": [ { "for": "<men | ladies | empty>", "rating": <number>, "slope": <number> } ], "out": <OUT total or null>, "in": <IN total or null>, "total": <TOTAL (18 holes) or null> } ],
  "parOut": <par OUT total or null>, "parIn": <par IN total or null> }
+Some tees show two ratings, one for men and one for ladies, e.g. "M 63.8 / 109" and "L 68.2 / 115": list BOTH in "ratings" (for: "men" and "ladies"); a tee with one rating has one entry in "ratings".
 Read each number from the column of its own hole. Use null for anything you cannot read. Never guess. Do not include OUT, IN or TOTAL columns as holes.
 For holes 10-18, a tee row may not be named; it is the same tee as the row in the same position (same colour) in the holes 1-9 table; if there is no holes 1-9 table, name it by its colour.`;
 
@@ -174,7 +175,7 @@ export function normalizeScan(raw) {
   checkSum(FRONT, r.parOut, pars, parDoubt);
   checkSum(BACK, r.parIn, pars, parDoubt);
 
-  const tees = [...named.values()].slice(0, 8).map((t) => {
+  const tees = [...named.values()].slice(0, 8).flatMap((t) => {
     const k = teeKey(t.name);
     const yards = Array.from({ length: 18 }, (_, i) => {
       const y = (byHole[i + 1] && byHole[i + 1].yards) || {};
@@ -184,14 +185,25 @@ export function normalizeScan(raw) {
     const yardDoubt = [];
     checkSum(FRONT, t.out, yards, yardDoubt);
     checkSum(BACK, t.in, yards, yardDoubt);
-    return {
-      name: String(t.name || "Tee").trim().slice(0, 40) || "Tee",
-      rating: within(num(t.rating), 55, 85),
-      slope: whole(t.slope, 55, 155),
+    const name = String(t.name || "Tee").trim().slice(0, 40) || "Tee";
+    const one = (label, rating, slope) => ({
+      name: label, base: teeKey(name),
+      rating: within(num(rating), 55, 85),
+      slope: whole(slope, 55, 155),
       out: whole(t.out, 400, 5000), in: whole(t.in, 400, 5000), total: whole(t.total, 1000, 10000),
       holes: Array.from({ length: 18 }, (_, i) => ({ par: pars[i], yards: yards[i], si: si[i] })),
       doubt: { par: parDoubt, yards: yardDoubt, si: siDoubt },
-    };
+    });
+    /* One coloured row with a men's and a ladies' rating is two tees with
+       the same yards (Lakeview's Red: M 63.8 / 109, L 68.2 / 115). */
+    const who = (f) => (/^(l|w|lad|wom|fem)/i.test(String(f || "").trim()) ? "ladies" : /^(m|men|male|gent)/i.test(String(f || "").trim()) ? "men" : "");
+    const rs = (Array.isArray(t.ratings) ? t.ratings : []).filter((x) => x && within(num(x.rating), 55, 85) != null);
+    const kinds = new Set(rs.map((x) => who(x.for)));
+    if (rs.length >= 2 && kinds.has("men") && kinds.has("ladies")) {
+      return ["men", "ladies"].map((k) => { const x = rs.find((y) => who(y.for) === k); return one(`${name} (${k})`, x.rating, x.slope); });
+    }
+    const single = rs.length === 1 ? rs[0] : t;
+    return [one(name, t.rating ?? single.rating, t.slope ?? single.slope)];
   }).filter((t) => t.holes.some((h) => h.yards != null));
   if (!tees.length) {
     if (!pars.some((p) => p != null)) throw new Error("SCAN_UNREADABLE");

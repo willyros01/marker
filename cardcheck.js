@@ -23,9 +23,19 @@ const FRONT = [1, 2, 3, 4, 5, 6, 7, 8, 9], BACK = [10, 11, 12, 13, 14, 15, 16, 1
 const sum = (arr, holes) => holes.reduce((a, n) => a + (arr[n - 1] == null ? NaN : arr[n - 1]), 0);
 const isNum = (v) => typeof v === "number" && Number.isFinite(v);
 
+function apply(tee, t, holes, withRating) {
+  if (withRating && t.rating != null) tee.rating = t.rating;
+  if (withRating && t.slope != null) tee.slope = t.slope;
+  if (holes.some((n) => n <= 9) && t.out != null) tee.out = t.out;
+  if (holes.some((n) => n >= 10) && t.in != null) tee.in = t.in;
+  if (t.total != null) tee.total = t.total;
+  for (const n of holes) tee.yards[n - 1] = t.holes && t.holes[n - 1] ? t.holes[n - 1].yards : null;
+}
+
 export function mergeReadings(readings) {
   const m = { course: "", read: [], par: Array(18).fill(null), hcp: Array(18).fill(null), parOut: null, parIn: null, tees: [] };
   const byKey = new Map();
+  const pendingPlain = new Map();
   for (const r of readings || []) {
     if (!r || !Array.isArray(r.holesRead)) continue;
     if (r.course && !m.course) m.course = r.course;
@@ -40,24 +50,39 @@ export function mergeReadings(readings) {
     for (const t of r.tees || []) {
       const k = teeKey(t.name);
       if (!k) continue;
+      const base = t.base || k;
+      /* A picture with a men's and a ladies' rating splits a colour into two
+         tees; another picture of the same colour (often the other nine, with
+         no ratings) fills both. */
+      if (k === base && !byKey.has(k) && m.tees.some((x) => x.base === base && x.key !== base)) {
+        for (const x of m.tees.filter((x) => x.base === base)) apply(x, t, holes, false);
+        continue;
+      }
+      if (k !== base && byKey.has(base)) {
+        const plain = byKey.get(base);
+        byKey.delete(base);
+        m.tees.splice(m.tees.indexOf(plain), 1);
+        for (const label of [k]) {
+          const tee = { ...plain, key: label, name: t.name, base, yards: plain.yards.slice() };
+          byKey.set(label, tee); m.tees.push(tee);
+        }
+        pendingPlain.set(base, plain);
+      }
       let tee = byKey.get(k);
       if (!tee) {
-        tee = { key: k, name: t.name, rating: null, slope: null, out: null, in: null, total: null, yards: Array(18).fill(null) };
+        const from = pendingPlain.get(base);
+        tee = from ? { ...from, key: k, name: t.name, base, yards: from.yards.slice() }
+          : { key: k, base, name: t.name, rating: null, slope: null, out: null, in: null, total: null, yards: Array(18).fill(null) };
         byKey.set(k, tee);
         m.tees.push(tee);
       }
-      if (t.rating != null) tee.rating = t.rating;
-      if (t.slope != null) tee.slope = t.slope;
-      if (holes.some((n) => n <= 9) && t.out != null) tee.out = t.out;
-      if (holes.some((n) => n >= 10) && t.in != null) tee.in = t.in;
-      if (t.total != null) tee.total = t.total;
-      for (const n of holes) tee.yards[n - 1] = t.holes && t.holes[n - 1] ? t.holes[n - 1].yards : null;
+      apply(tee, t, holes, true);
     }
     m.read = [...new Set([...m.read, ...holes])].sort((a, b) => a - b);
   }
   /* A tee name in capitals from one picture and in plain letters from the
      other is the same tee; show it the way the first picture had it, tidied. */
-  for (const t of m.tees) t.name = t.name.length > 2 && t.name === t.name.toUpperCase() ? t.name[0] + t.name.slice(1).toLowerCase() : t.name;
+  for (const t of m.tees) t.name = t.name.replace(/\b([A-Z])([A-Z]{2,})\b/g, (_, a, b) => a + b.toLowerCase());
   return m;
 }
 
