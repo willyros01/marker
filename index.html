@@ -29,7 +29,7 @@
    * then fetched under that version's own address, so a reload after an
    * update gets every new file, and nothing old mixes in. */
   (function () {
-    var FILES = ["app", "store", "card", "courses", "storage", "withdrawn", "model", "firebase-config"];
+    var FILES = ["app", "store", "card", "courses", "storage", "withdrawn", "cardcheck", "model", "firebase-config"];
     function start(v) {
       var q = v ? "?v=" + encodeURIComponent(v) : "";
       var map = { imports: {} };

@@ -151,3 +151,24 @@ test("E5 after a withdrawal: the withdrawn details are refused, a hand entry bec
   assert.equal((await fs.get("courses/K")).data.tees.length, 1, "the withdrawn course is never changed");
   assert.equal((await fs.get(`markerCourses/m-${round.data.courseId}`)).data.manual, true);
 });
+
+test("E6 a verified card replaces the saved course, over Firestore's real interface", async () => {
+  const { setWrite } = await import("../worker/src/firestore.js");
+  const search = await import("../worker/src/search.js");
+  const { reading } = await import("./unit/royal-ontario.mjs");
+  await fs.commit([
+    setWrite(fs, "markerScans/frontscan1", { uid: SCORER, anonymous: false, result: reading("front") }, { now: ["at"] }),
+    setWrite(fs, "markerScans/backscan01", { uid: SCORER, anonymous: false, result: reading("back") }, { now: ["at"] }),
+  ]);
+  const c = await search.verify(fs, { uid: SCORER, anonymous: false }, { scanIds: ["frontscan1", "backscan01"], replaceId: "77" });
+  assert.equal(c.providerId, "77");
+  const lib = (await fs.get("markerCourses/77")).data;
+  assert.equal(lib.source, "verified");
+  assert.equal(lib.tees.length, 5);
+  assert.match(lib.verifiedAt, /^\d{4}-/);
+  /* A phone still cannot write it. */
+  const phone = env.authenticatedContext(SCORER, { email: "member1@example.com", firebase: { sign_in_provider: "password" } }).firestore();
+  const { assertFails } = await import("@firebase/rules-unit-testing");
+  await assertFails(setDoc(doc(phone, "markerCourses", "77"), { name: "x" }));
+  await assertFails(getDoc(doc(phone, "markerScans", "frontscan1")));
+});

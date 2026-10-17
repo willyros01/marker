@@ -474,3 +474,68 @@ test("P3 all photos together stop at the day's total", async () => {
   const ai = { run: async () => ({ response: frontAnswer() }) };
   await assert.rejects(search.scan(fs, { uid: "m2", anonymous: false }, "data:image/png;base64,iVBO", ai), search.LimitReached);
 });
+
+/* ---------------- verified cards (Willy, 16 Oct 2026) ---------------- */
+
+import { reading as roReading } from "./royal-ontario.mjs";
+
+async function twoScans(fs, uid, anonymous = false) {
+  const ids = [];
+  for (const nine of ["front", "back"]) {
+    const ai = { run: async () => ({ response: { /* normalizeScan input shape */ } }) };
+    /* Store readings the way scan() does, without calling the AI. */
+    const id = `scan${nine}${uid}`.toLowerCase().replace(/[^a-z0-9]/g, "");
+    fs.docs.set(`markerScans/${id}`, { data: { uid, anonymous, result: roReading(nine), at: new Date().toISOString() }, updateTime: "t" });
+    ids.push(id);
+  }
+  return ids;
+}
+
+test("Y1 a signed-in scorer's verified card replaces the database copy and hides duplicates", async () => {
+  const fs = fakeFs({
+    "markerCourses/123": { providerId: "123", name: "Royal Ontario Golf Club", tees: [{ name: "White (M)", rating: 70.1, slope: 125, par: 72, holes }] },
+    "markerCourses/m-OLD": { providerId: "m-OLD", name: "royal ontario golf club", tees: [{ name: "White", rating: 69.7, slope: 130, par: 71, holes }], manual: true },
+    "markerCourses/999": { providerId: "999", name: "Glen Abbey", tees: [] },
+  });
+  const ids = await twoScans(fs, "m1");
+  const c = await search.verify(fs, { uid: "m1", anonymous: false }, { scanIds: ids, replaceId: "123" });
+  assert.equal(c.providerId, "123");
+  const lib = fs.data("markerCourses/123");
+  assert.equal(lib.source, "verified");
+  assert.equal(lib.verifiedBy, "m1");
+  assert.ok(lib.verifiedAt);
+  assert.equal(lib.tees.length, 5);
+  assert.equal(lib.tees.find((t) => t.name === "White").holes[2].par, 5);
+  assert.equal(fs.data("markerCourses/m-OLD").replacedBy, "123");
+  assert.equal(fs.data("markerCourses/999").replacedBy, undefined);
+  /* The golf course database never overwrites it again, and the old hand entry leads to it. */
+  search.forgetWithdrawn();
+  const real = globalThis.fetch; let hits = 0;
+  globalThis.fetch = async () => { hits++; return new Response("{}", { status: 500 }); };
+  try {
+    const again = await search.course(fs, { uid: "m1", anonymous: false }, "123", "K");
+    assert.equal(again.source, "verified"); assert.equal(hits, 0);
+    const viaOld = await search.course(fs, { uid: "m1", anonymous: false }, "m-OLD", "K");
+    assert.equal(viaOld.providerId, "123");
+  } finally { globalThis.fetch = real; }
+});
+
+test("Y2 only the scorer's own stored readings count; no account, no verification", async () => {
+  const fs = fakeFs();
+  const ids = await twoScans(fs, "m1");
+  await assert.rejects(search.verify(fs, { uid: "a1", anonymous: true }, { scanIds: ids }), /SIGN_IN/);
+  await assert.rejects(search.verify(fs, { uid: "m2", anonymous: false }, { scanIds: ids }), /NOT_VERIFIED/);
+  await assert.rejects(search.verify(fs, { uid: "m1", anonymous: false }, { scanIds: [ids[0]] }), /NOT_VERIFIED/, "half a card");
+  await assert.rejects(search.verify(fs, { uid: "m1", anonymous: false }, { scanIds: ["bad id!"] }), /NOT_VERIFIED/);
+  const c = await search.verify(fs, { uid: "m1", anonymous: false }, { scanIds: ids });
+  assert.equal(c.providerId, "v-royal-ontario-golf-club");
+});
+
+test("Y3 a reading is stored with its scorer when the picture is read", async () => {
+  const fs = fakeFs();
+  const ai = { run: async () => ({ response: frontAnswer() }) };
+  const r = await search.scan(fs, { uid: "m1", anonymous: false }, "data:image/jpeg;base64,/9j/", ai);
+  assert.match(r.scanId, /^[a-z0-9]{6,40}$/);
+  assert.equal(fs.data(`markerScans/${r.scanId}`).uid, "m1");
+  assert.equal(fs.data(`markerScans/${r.scanId}`).result.tees.length, 2);
+});

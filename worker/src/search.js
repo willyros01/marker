@@ -8,7 +8,8 @@
  */
 import * as courses from "../../courses.js";
 import * as W from "../../withdrawn.js";
-import { setWrite } from "./firestore.js";
+import { setWrite, updateWrite } from "./firestore.js";
+import * as check from "../../cardcheck.js";
 
 export const LIMITS = { anon: 10, member: 100, anonTotal: 300 };
 /* Reading a scorecard picture uses Cloudflare's free AI allowance (10,000
@@ -70,9 +71,15 @@ export async function course(fs, who, id, key) {
   const pid = String(id || "").trim();
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(pid)) throw new Error("NO_MATCH");
   const list = await withdrawnList(fs);
-  const saved = await fs.get(`markerCourses/${pid}`);
+  let saved = await fs.get(`markerCourses/${pid}`);
+  /* Replaced by a verified card: that card is the course now. */
+  if (saved && saved.data.replacedBy && /^[A-Za-z0-9_-]{1,64}$/.test(saved.data.replacedBy)) {
+    const better = await fs.get(`markerCourses/${saved.data.replacedBy}`);
+    if (better) return marked({ ...better.data, providerId: better.id }, list);
+  }
   const fromHand = !!W.scorecardIdOf(pid);
-  if (saved && Array.isArray(saved.data.tees) && saved.data.tees.length && (fromHand || !W.nameWithdrawn(list, saved.data.name))) {
+  const verified = saved && saved.data.source === "verified";
+  if (saved && Array.isArray(saved.data.tees) && saved.data.tees.length && (fromHand || verified || !W.nameWithdrawn(list, saved.data.name))) {
     if (fromHand && list.some((w) => w.id === W.scorecardIdOf(pid))) {
       return marked({ ...saved.data, providerId: pid, tees: saved.data.tees.map((t) => ({ ...t, withdrawn: true })) }, []);
     }
@@ -111,7 +118,7 @@ Each tee is one ROW of yardages, usually named by a colour (Black, Gold, Blue, W
 Read every table and answer with JSON only, in this shape:
 {"course": "<course name or empty>",
  "holes": [ { "hole": <hole number>, "par": <par>, "hcp": <handicap number>, "yards": { "<tee name>": <yards>, ... } }, ... one entry per hole column shown ],
- "tees": [ { "name": "<tee name>", "rating": <number or null>, "slope": <number or null>, "out": <OUT total or null>, "in": <IN total or null> } ],
+ "tees": [ { "name": "<tee name>", "rating": <number or null>, "slope": <number or null>, "out": <OUT total or null>, "in": <IN total or null>, "total": <TOTAL (18 holes) or null> } ],
  "parOut": <par OUT total or null>, "parIn": <par IN total or null> }
 Read each number from the column of its own hole. Use null for anything you cannot read. Never guess. Do not include OUT, IN or TOTAL columns as holes.
 For holes 10-18, a tee row may not be named; it is the same tee as the row in the same position (same colour) in the holes 1-9 table; if there is no holes 1-9 table, name it by its colour.`;
@@ -181,15 +188,16 @@ export function normalizeScan(raw) {
       name: String(t.name || "Tee").trim().slice(0, 40) || "Tee",
       rating: within(num(t.rating), 55, 85),
       slope: whole(t.slope, 55, 155),
+      out: whole(t.out, 400, 5000), in: whole(t.in, 400, 5000), total: whole(t.total, 1000, 10000),
       holes: Array.from({ length: 18 }, (_, i) => ({ par: pars[i], yards: yards[i], si: si[i] })),
       doubt: { par: parDoubt, yards: yardDoubt, si: siDoubt },
     };
   }).filter((t) => t.holes.some((h) => h.yards != null));
   if (!tees.length) {
     if (!pars.some((p) => p != null)) throw new Error("SCAN_UNREADABLE");
-    tees.push({ name: "Tee", rating: null, slope: null, holes: pars.map((p, i) => ({ par: p, yards: null, si: si[i] })), doubt: { par: parDoubt, yards: [], si: siDoubt } });
+    tees.push({ name: "Tee", rating: null, slope: null, out: null, in: null, holes: pars.map((p, i) => ({ par: p, yards: null, si: si[i] })), doubt: { par: parDoubt, yards: [], si: siDoubt } });
   }
-  return { course: String(r.course || "").trim().slice(0, 120), holesRead, tees };
+  return { course: String(r.course || "").trim().slice(0, 120), holesRead, tees, parOut: whole(r.parOut, 27, 45), parIn: whole(r.parIn, 27, 45) };
 }
 
 export async function scan(fs, who, image, ai) {
@@ -210,5 +218,56 @@ export async function scan(fs, who, image, ai) {
     if (/limit|quota|neurons|capacity|429/i.test(m)) throw new Error("SCAN_BUSY");
     throw new Error("SCAN_FAILED");
   }
-  return normalizeScan(out && out.response !== undefined ? out.response : out);
+  const result = normalizeScan(out && out.response !== undefined ? out.response : out);
+  /* Kept so a card can later be verified from what was READ, never from
+     values a phone sends (Willy: any change by hand makes it a hand entry). */
+  const scanId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+  try { await fs.commit([setWrite(fs, `markerScans/${scanId}`, { uid: who.uid, anonymous: !!who.anonymous, result }, { exists: false, now: ["at"] })]); }
+  catch { return result; }   /* reading still usable for the round; it just cannot be verified */
+  return { ...result, scanId };
+}
+
+/* ---------------- verifying a card from its readings ---------------- */
+
+const slug = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
+
+/* A signed-in scorer confirms that the readings match the club's card. The
+ * worker loads ITS OWN copies of those readings, puts them together and checks
+ * them (cardcheck.js). If the card is verified it replaces the course in the
+ * shared list, for every tee: the copy from the golf course database (the
+ * entry it was started from, `replaceId`) and any other entry of the same
+ * name, which are then hidden (replacedBy). The database never overwrites a
+ * verified course again (see course()). */
+export async function verify(fs, who, { scanIds, replaceId = null, name = "" } = {}, { now = Date.now() } = {}) {
+  if (!who || who.anonymous) throw new Error("SIGN_IN");
+  const ids = Array.isArray(scanIds) ? [...new Set(scanIds.map(String))].slice(0, 6) : [];
+  if (!ids.length || ids.some((id) => !/^[a-z0-9]{6,40}$/.test(id))) throw new Error("NOT_VERIFIED");
+  const readings = [];
+  for (const id of ids) {
+    const d = await fs.get(`markerScans/${id}`);
+    if (!d || d.data.uid !== who.uid) throw new Error("NOT_VERIFIED");
+    const at = Date.parse(d.data.at || "");
+    if (Number.isFinite(at) && now - at > 6 * 3600_000) throw new Error("NOT_VERIFIED");
+    readings.push(d.data.result);
+  }
+  const m = check.mergeReadings(readings);
+  if (String(name || "").trim()) m.course = String(name).trim().slice(0, 120);
+  const v = check.verifyCard(m, { lenientYards: check.LENIENT_YARDS });
+  if (!v.ok) { const e = new Error("NOT_VERIFIED"); e.problems = v.problems; throw e; }
+
+  const id = replaceId && /^[A-Za-z0-9_-]{1,64}$/.test(String(replaceId)) ? String(replaceId) : `v-${slug(m.course)}`;
+  const course = check.courseFromCard(m);
+  const existing = await fs.get(`markerCourses/${id}`);
+  const record = {
+    providerId: id, name: course.name, where: (existing && existing.data.where) || "", tees: course.tees,
+    source: "verified", verifiedBy: who.uid, scanIds: ids,
+  };
+  const writes = [setWrite(fs, `markerCourses/${id}`, record, { now: ["savedAt", "verifiedAt"] })];
+  const all = await fs.query("", "markerCourses", [], 500);
+  for (const d of all) {
+    if (d.id === id || W.lower(d.data.name) !== W.lower(course.name) || d.data.replacedBy) continue;
+    writes.push(updateWrite(fs, d.path, { replacedBy: id }, { updateTime: d.updateTime }));
+  }
+  await fs.commit(writes);
+  return { ...record, providerId: id };
 }

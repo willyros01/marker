@@ -124,3 +124,45 @@ p { margin: 0; line-height: 1.45; }
 .hole-row.hd { background: none; border: none; padding: 0 10px; font-size: 14px; font-weight: 800; letter-spacing: .06em; color: var(--ink-3); text-transform: uppercase; }
 .hole-row b { font-size: 20px; }
 .hole-row select, .hole-row .input { height: 48px; font-size: 19px; min-width: 0; width: 100%; }
+
+/* Reading a picture: the spinning wheel. */
+.reading { display: flex; gap: 16px; align-items: center; padding: 16px; border-radius: 14px; background: var(--green-soft); color: var(--green-dark); font-size: 18px; line-height: 1.4; }
+.wheel { width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; border: 5px solid rgba(46,85,65,.2); border-top-color: var(--green); animation: turn .9s linear infinite; }
+@keyframes turn { to { transform: rotate(360deg); } }
+
+/* Checking a card read from pictures: laid out like the club's card. */
+.verdict { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: 14px; font-size: 17px; line-height: 1.45; }
+.verdict .big { font-size: 40px; font-weight: 900; line-height: 1; min-width: 40px; text-align: center; }
+.verdict.ok { background: var(--green-soft); color: var(--green-dark); }
+.verdict.next { background: var(--warn-bg); color: var(--warn-ink); }
+.verdict.bad { background: #F8E1DC; color: #7A2A1C; }
+.cardwrap { overflow-x: auto; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; }
+.clubcard { border-collapse: collapse; width: 100%; min-width: 0; font-variant-numeric: tabular-nums; }
+.clubcard th, .clubcard td { padding: 9px 2px; text-align: center; font-size: 17px; border-bottom: 1px solid rgba(0,0,0,.08); }
+.clubcard td.tot { padding-right: 6px; }
+.clubcard th { text-align: left; padding-left: 8px; font-size: 15px; font-weight: 800; letter-spacing: .03em; white-space: nowrap; }
+.clubcard th small { display: block; font-size: 13px; font-weight: 600; opacity: .85; }
+.clubcard tr.hd { background: var(--green); color: #fff; }
+.clubcard tr.hd td, .clubcard tr.hd th { font-weight: 800; font-size: 15px; }
+.clubcard tr.hcp, .clubcard tr.par { background: #f4f1ea; color: var(--ink); }
+.clubcard tr.par td { font-weight: 800; }
+.clubcard td.tot { font-weight: 800; }
+.clubcard td.bad { background: #F8E1DC !important; color: #7A2A1C !important; font-weight: 900; outline: 2px solid var(--over); outline-offset: -2px; }
+.clubcard td.warnc { background: #FBEBC8 !important; color: #6b4a00 !important; outline: 2px solid #d9a321; outline-offset: -2px; }
+.clubcard td.mark { font-size: 20px; font-weight: 900; width: 34px; background: #fff; }
+.clubcard td.mok { color: var(--green); }
+.clubcard td.mwarn { color: #b7860b; }
+.clubcard td.mbad { color: var(--over); }
+details.retake summary { font-size: 17px; font-weight: 700; color: var(--green-dark); padding: 8px 0; cursor: pointer; }
+.clubcard .tick { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; margin-right: 6px; font-size: 14px; font-weight: 900; vertical-align: middle; background: #fff; }
+.clubcard .tick.tok { color: var(--green); }
+.clubcard .tick.twarn { color: #b7860b; }
+.clubcard .tick.tbad { color: #fff; background: var(--over); }
+.clubcard th small { padding-left: 28px; }
+@media (max-width: 520px) {
+  .clubcard th, .clubcard td { font-size: 14px; padding: 8px 1px; letter-spacing: -.02em; }
+  .clubcard th { padding-left: 5px; font-size: 13px; }
+  .clubcard th small { font-size: 11px; padding-left: 0; }
+  .clubcard .tick { width: 17px; height: 17px; font-size: 11px; margin-right: 3px; }
+}
+.clubcard .tick.tok { box-shadow: inset 0 0 0 1.5px currentColor; }

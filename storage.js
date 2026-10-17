@@ -66,6 +66,14 @@ export function dropFinished(id) {
 /* ---------------- courses used recently (offline choice) ---------------- */
 
 export const recentCourses = () => load("courses", []);
+/* A confirmed card replaces every other saved course of the same name. */
+export function rememberConfirmed(course) {
+  const same = (c) => String(c.name).trim().toLowerCase() === String(course.name).trim().toLowerCase();
+  const list = recentCourses().filter((c) => !same(c));
+  list.unshift({ ...course, confirmed: true });
+  save("courses", list.slice(0, 30));
+}
+
 export function rememberCourse(course) {
   const key = (c) => c.providerId || `manual:${String(c.name).toLowerCase()}`;
   const list = recentCourses().filter((c) => key(c) !== key(course));

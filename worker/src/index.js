@@ -5,6 +5,7 @@
  *   GET  /course?id=...      -> { course: {...} }        any sign-in, counted, saved to the library
  *   GET  /withdrawn          -> { courses: [...] }       withdrawn courses: names, tee figures, ids
  *   POST /scan  {image}      -> { scan: {course, tees} } any sign-in, counted: reads a scorecard photo
+ *   POST /verify {scanIds, replaceId?, name?} -> { course }  signed-in only: a verified card replaces the course
  *   POST /wake  {cardId}     -> { status, reason?, rounds? }   the card's own scorer only
  *   every 5 minutes          -> posts a card still waiting (one per run)
  *
@@ -70,6 +71,11 @@ export default {
         const body = await req.json().catch(() => ({}));
         try { return reply({ scan: await search.scan(fs, who, body.image, env.AI) }, 200, h); }
         catch (e) { return reply({ error: e instanceof search.LimitReached ? "SCAN_LIMIT" : e.message }, 200, h); }
+      }
+      if (url.pathname === "/verify" && req.method === "POST") {
+        const body = await req.json().catch(() => ({}));
+        try { return reply({ course: await search.verify(fs, who, body) }, 200, h); }
+        catch (e) { return reply({ error: e.message, problems: e.problems || [] }, 200, h); }
       }
       if (url.pathname === "/wake" && req.method === "POST") {
         if (who.anonymous) return reply({ error: "SIGN_IN" }, 403, h);

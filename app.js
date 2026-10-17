@@ -9,6 +9,7 @@ import * as courses from "./courses.js";
 import * as local from "./storage.js";
 import * as db from "./store.js";
 import * as W from "./withdrawn.js";
+import * as check from "./cardcheck.js";
 
 const VERSION = self.APP_VERSION || "dev";
 const app = document.getElementById("app");
@@ -26,7 +27,7 @@ const S = {
   picked: [],              /* players chosen: { name, golferId, assocId, groupName, index } */
   guestName: "",
   /* course choice */
-  cs: { query: "", results: [], library: [], error: "", manual: null, withdrawn: [], scan: null },
+  cs: { query: "", results: [], library: [], error: "", manual: null, withdrawn: [], scan: null, readings: [], pickTee: false },
   /* play */
   typing: false, typed: "", typeError: "",
   view: null,              /* a finished card being looked at */
@@ -155,7 +156,11 @@ function screenCourse() {
   const cs = S.cs;
   const q = cs.query.trim().toLowerCase();
   const seen = new Set();
-  const saved = [...cs.library, ...local.recentCourses()].filter((c) => {
+  /* One entry per course: a confirmed card (verified for everybody, or
+     confirmed on this phone) hides every other course of the same name. */
+  const all = [...cs.library, ...local.recentCourses()];
+  const confirmedNames = new Set(all.filter((c) => c.source === "verified" || c.confirmed).map((c) => String(c.name).trim().toLowerCase()));
+  const saved = all.filter((c) => !confirmedNames.has(String(c.name).trim().toLowerCase()) || c.source === "verified" || c.confirmed).filter((c) => {
     const k = c.providerId || `manual:${c.name.toLowerCase()}`;
     if (seen.has(k)) return false;
     seen.add(k);
@@ -184,23 +189,105 @@ function screenCourse() {
     <footer class="foot"><button class="btn" data-act="back-setup">← Back</button></footer>`;
 }
 
-function screenManualCourse() {
-  const m = S.cs.manual;
-  const sc = S.cs.scan;
-  const miss = m.miss || { par: [], si: [] };
-  const red = (on) => (on ? ' style="outline:3px solid var(--over);outline-offset:1px"' : "");
-  const photo = `
-      ${S.busy === "scan" ? `<div class="btn dashed">Reading the photo…</div>` : `
-      <span class="label">Read it from a picture of the club's scorecard</span>
-      <p class="muted">For the best reading, take one table at a time: holes 1 to 9, then holes 10 to 18. Lay the card flat, in good light.</p>
-      <div class="row2">
+/* The two picture buttons, or the spinning wheel while a picture is read. */
+function photoButtons(label = "") {
+  if (S.busy === "scan") return `<div class="reading" role="status"><span class="wheel" aria-hidden="true"></span>
+      <span><b>Reading the picture…</b><br>This can take up to half a minute.</span></div>`;
+  return `${label ? `<span class="label">${esc(label)}</span>` : ""}<div class="row2">
         <label class="btn dashed" style="position:relative">📷 Take a photo
           <input type="file" id="scanfile" accept="image/*" capture="environment" ${S.busy ? "disabled" : ""}
             style="position:absolute;inset:0;opacity:0;width:100%;height:100%"></label>
         <label class="btn dashed" style="position:relative">🖼 Photos or Files
           <input type="file" id="scanpick" accept="image/*" ${S.busy ? "disabled" : ""}
             style="position:absolute;inset:0;opacity:0;width:100%;height:100%"></label>
-      </div>`}
+      </div>`;
+}
+
+/* ---------------- checking a card read from pictures ---------------- */
+
+const TEE_COLOURS = {
+  black: ["#1d1d1b", "#fff"], gold: ["#a8781f", "#fff"], blue: ["#1f3b8f", "#fff"], white: ["#ffffff", "#1d1d1b"],
+  red: ["#8b1c1c", "#fff"], green: ["#2e6b3a", "#fff"], silver: ["#a7adb3", "#1d1d1b"], yellow: ["#e3c443", "#1d1d1b"],
+  orange: ["#d9822b", "#fff"], copper: ["#b05c2c", "#fff"], bronze: ["#8c6239", "#fff"], purple: ["#5b2b82", "#fff"],
+};
+const teeColour = (name) => {
+  const k = Object.keys(TEE_COLOURS).find((c) => String(name).toLowerCase().includes(c));
+  return k ? TEE_COLOURS[k] : ["#efe9dc", "#1d1d1b"];
+};
+
+function reviewState() {
+  const m = check.mergeReadings(S.cs.readings || []);
+  if (S.cs.manual && S.cs.manual.name) m.course = S.cs.manual.name;
+  const v = check.verifyCard(m, { lenientYards: check.LENIENT_YARDS });
+  return { m, v };
+}
+
+function nineTable(m, v, holes, word) {
+  const read = holes.every((n) => m.read.includes(n));
+  if (!read) return "";
+  const totalCol = word === "OUT" ? "out" : "in";
+  const parTotal = word === "OUT" ? m.parOut : m.parIn;
+  const parOk = word === "OUT" ? v.front : v.back;
+  const bad = (n, list) => list.includes(n);
+  const cell = (val, wrong) => `<td class="${wrong ? "bad" : ""}">${val == null ? "?" : esc(val)}</td>`;
+  const rows = m.tees.map((t) => {
+    const [bg, fg] = teeColour(t.name);
+    const tv = v.tees[t.key] || { yards: [], warnings: [] };
+    const nineBad = holes.some((n) => bad(n, tv.yards) || t.yards[n - 1] == null);
+    const warn = (tv.warnings || []).some((w) => w.includes(word));
+    const total = t[totalCol];
+    const mark = nineBad || total == null ? "✗" : warn ? "!" : "✓";
+    const rating = t.rating != null ? Number(t.rating).toFixed(1) : "?";
+    return `<tr style="background:${bg};color:${fg}"><th><span class="tick t${mark === "✓" ? "ok" : mark === "!" ? "warn" : "bad"}">${mark}</span>${esc(t.name)}${word === "OUT" ? `<small>${rating} / ${t.slope != null ? esc(t.slope) : "?"}</small>` : ""}</th>
+      ${holes.map((n) => cell(t.yards[n - 1], bad(n, tv.yards) || t.yards[n - 1] == null)).join("")}
+      <td class="tot ${warn ? "warnc" : total == null ? "bad" : ""}">${total == null ? "?" : esc(total)}</td></tr>`;
+  }).join("");
+  return `<div class="cardwrap"><table class="clubcard">
+    <tr class="hd"><th>Hole</th>${holes.map((n) => `<td>${n}</td>`).join("")}<td>${word}</td></tr>
+    ${rows}
+    <tr class="hcp"><th><span class="tick ${holes.some((n) => bad(n, v.holes.hcp)) ? "tbad" : "tok"}">${holes.some((n) => bad(n, v.holes.hcp)) ? "✗" : "✓"}</span>Handicap</th>${holes.map((n) => cell(m.hcp[n - 1], bad(n, v.holes.hcp))).join("")}<td></td></tr>
+    <tr class="par"><th><span class="tick ${parOk ? "tok" : "tbad"}">${parOk ? "✓" : "✗"}</span>Par</th>${holes.map((n) => cell(m.par[n - 1], bad(n, v.holes.par))).join("")}<td class="tot ${parOk ? "" : "bad"}">${parTotal == null ? "?" : esc(parTotal)}</td></tr>
+  </table></div>`;
+}
+
+function screenReview() {
+  const { m, v } = reviewState();
+  const front = [1, 2, 3, 4, 5, 6, 7, 8, 9], back = [10, 11, 12, 13, 14, 15, 16, 17, 18];
+  const has = (holes) => holes.every((n) => m.read.includes(n));
+  const missingNine = !has(front) ? "holes 1 to 9" : !has(back) ? "holes 10 to 18" : "";
+  const warnings = Object.entries(v.tees).flatMap(([k, t]) => (t.warnings || []).map((w) => `${m.tees.find((x) => x.key === k).name}: ${w}.`));
+  const status = v.ok
+    ? `<div class="verdict ok"><span class="big">✓</span><div><b>Everything on the card was read, and it all adds up.</b><br>${m.tees.length} tees, par ${v.par}. Compare it with the card one last time.</div></div>`
+    : missingNine
+      ? `<div class="verdict next"><span class="big">${has(front) || has(back) ? "½" : "?"}</span><div><b>Now take a picture of ${missingNine}.</b><br>${has(front) || has(back) ? "Half of the card is read." : ""}</div></div>`
+      : `<div class="verdict bad"><span class="big">✗</span><div><b>Not everything could be read or adds up.</b><br>${v.problems.map(esc).join("<br>")}</div></div>`;
+  const pick = S.cs.pickTee ? `<span class="label">Which tee do you want to correct by hand?</span><div class="list">${m.tees.map((t, i) => `
+      <button class="item" data-act="review-hand-tee" data-v="${i}"><span class="txt"><span class="name">${esc(t.name)}</span></span></button>`).join("")}</div>` : "";
+  const member = !!(user() && !user().anonymous);
+  return `${top("Check against the card", m.course || "The club's scorecard")}
+    <main class="body">${banner()}${S.cs.error ? `<div class="banner warn">${esc(S.cs.error)}</div>` : ""}
+      ${status}
+      ${warnings.length ? `<div class="banner warn"><b>The club's card itself does not add up here:</b><br>${warnings.map(esc).join("<br>")}<br>Check that these yards are exactly as printed.</div>` : ""}
+      ${nineTable(m, v, front, "OUT")}${nineTable(m, v, back, "IN")}
+      ${v.notes && v.notes.length ? `<p class="muted">${v.notes.map(esc).join(" ")}</p>` : ""}
+      ${missingNine ? photoButtons(`Picture of ${missingNine}`) : `<details class="retake"><summary>Take a picture again</summary>${photoButtons()}</details>`}
+      ${pick}
+    </main>
+    <footer class="foot">
+      ${v.ok ? `<button class="btn primary tall" data-act="review-ok" ${S.busy ? "disabled" : ""}><span>${S.busy === "verify" ? "Saving…" : "✓ This matches the card"}</span><small>${member ? "It becomes the course for every scorer." : "Used on this phone. Sign in to share it with every scorer."}</small></button>` : ""}
+      <button class="btn" data-act="review-hand">Correct it by hand instead</button>
+      <button class="btn" data-act="review-back">← Back</button></footer>`;
+}
+
+function screenManualCourse() {
+  const m = S.cs.manual;
+  const sc = S.cs.scan;
+  const miss = m.miss || { par: [], si: [] };
+  const red = (on) => (on ? ' style="outline:3px solid var(--over);outline-offset:1px"' : "");
+  const photo = `
+      <span class="label">Read it from a picture of the club's scorecard</span>
+      <p class="muted">For the best reading, take one table at a time: holes 1 to 9, then holes 10 to 18. Lay the card flat, in good light.</p>
+      ${photoButtons()}
       ${S.cs.error ? `<div class="banner warn">${esc(S.cs.error)}</div>` : ""}
       ${sc && sc.tees.length > 1 && !sc.applied ? `<span class="label">The photo shows ${sc.tees.length} tees. Which one are you playing?</span>
         <div class="list">${sc.tees.map((t, i) => `<button class="item" data-act="scan-pick" data-v="${i}"><span class="txt"><span class="name">${esc(t.name)}</span>
@@ -517,6 +604,7 @@ function render() {
     case "play": html = c ? (c.entry === "all" ? screenPlayAll(c) : screenPlayOne(c)) : screenStart(); break;
     case "card": html = c ? screenCard(c) : screenStart(); break;
     case "menu": html = c ? screenMenu(c) : screenStart(); break;
+    case "review": html = S.cs.manual ? screenReview() : screenSetup(); break;
     case "holes": html = S.setup && S.setup.tee ? screenHoles() : screenSetup(); break;
     case "finish": html = c ? screenFinish(c) : screenStart(); break;
     case "status": html = c ? screenStatus(c) : screenStart(); break;
@@ -660,7 +748,7 @@ const actions = {
     const c = all.find((x) => (x.providerId || "manual:" + x.name) === id);
     if (!c) return;
     const st = courseState(c);
-    if (st === "blocked") { needHandEntry(c.name); return; }
+    if (st === "blocked") { needHandEntry(c.name, c.providerId || null); return; }
     if (st === "check") {
       /* Withdrawn in The Scorecard: ask the golf course database again, its
          details may have been corrected since. */
@@ -673,10 +761,49 @@ const actions = {
     chooseCourse(c);
   },
   manual() {
-    S.cs.manual = newManual(S.cs.query || ""); S.cs.error = ""; S.cs.scan = null;
+    S.cs.manual = newManual(S.cs.query || ""); S.cs.error = ""; S.cs.scan = null; S.cs.readings = [];
     render();
   },
-  "manual-cancel"() { S.cs.manual = null; S.cs.scan = null; render(); },
+  "manual-cancel"() { S.cs.manual = null; S.cs.scan = null; S.cs.readings = []; render(); },
+  "review-back"() { go("course"); },
+  "review-hand"() { S.cs.pickTee = true; render(); },
+  "review-hand-tee"(el) {
+    /* Copied into the hand-entry screen; from there it is a hand entry. */
+    const { m } = reviewState();
+    const t = m.tees[Number(el.dataset.v)];
+    const mm = S.cs.manual;
+    mm.name = m.course || mm.name; mm.tee = t.name;
+    mm.rating = t.rating == null ? "" : String(t.rating); mm.slope = t.slope == null ? "" : String(t.slope);
+    mm.pars = m.par.map((p) => p || 4); mm.sis = m.hcp.map((h) => h || ""); mm.yards = t.yards.slice();
+    mm.miss = { rating: t.rating == null, slope: t.slope == null, par: m.par.map((p, i) => (p ? -1 : i)).filter((i) => i >= 0), si: m.hcp.map((h, i) => (h ? -1 : i)).filter((i) => i >= 0), yards: [] };
+    S.cs.pickTee = false; S.cs.readings = [];
+    go("course");
+  },
+  async "review-ok"() {
+    const { m, v } = reviewState();
+    if (!v.ok) return;
+    let course = { ...check.courseFromCard(m, { where: "" }), providerId: null };
+    if (user() && !user().anonymous) {
+      S.busy = "verify"; render();
+      try {
+        const saved = await db.verifyCourse({ scanIds: S.cs.readings.map((r) => r.scanId).filter(Boolean), replaceId: S.cs.manual.from || null, name: m.course });
+        course = saved;
+      } catch (e) {
+        S.busy = "";
+        S.cs.error = String(e && e.message) === "NOT_VERIFIED"
+          ? "The Scorecard could not confirm this card from the pictures. Take the pictures again, or correct it by hand."
+          : "The card could not be saved for everybody just now (no signal?). Try again, or correct it by hand.";
+        render(); return;
+      }
+      S.busy = "";
+    }
+    try { local.rememberConfirmed(course); } catch (e) { fail(e); return; }
+    S.cs.library = (S.cs.library || []).filter((c) => String(c.name).trim().toLowerCase() !== String(course.name).trim().toLowerCase()).concat([course]);
+    S.cs.manual = null; S.cs.readings = [];
+    chooseCourse(course);
+    S.flash = "Card confirmed. Choose your tee.";
+    render();
+  },
   "scan-pick"(el) { applyScan(S.cs.scan.tees[Number(el.dataset.v)]); },
   "manual-save"() {
     const m = S.cs.manual;
@@ -806,9 +933,10 @@ const actions = {
     const hs = Array.from({ length: 18 }, (_, i) => (t.holes || [])[i] || {});
     S.cs.manual = { ...newManual(s.course.name), tee: t.name, rating: t.rating == null ? "" : String(t.rating), slope: t.slope == null ? "" : String(t.slope),
       pars: hs.map((h) => Number(h.par) || 4), sis: hs.map((h) => (h.si ? Number(h.si) : "")), yards: hs.map((h) => (h.yards ? Number(h.yards) : null)), where: s.course.where || "" };
-    S.cs.scan = null; S.cs.error = "";
+    S.cs.manual.from = s.course.providerId || null;
+    S.cs.scan = null; S.cs.error = ""; S.cs.readings = [];
     go("course");
-    S.flash = "Correct what is wrong, then tap Use this course.";
+    S.flash = "Correct what is wrong, then tap Use this course. Or read the club's card from pictures.";
     render();
   },
   "back-play"() { const c = local.currentCard(); go(c && c.state === "finished" && card.cardComplete(c) ? "finish" : "play"); },
@@ -862,9 +990,10 @@ function newManual(name) {
   return { name, tee: "White", rating: "", slope: "", pars: Array(18).fill(4), sis: Array(18).fill(""), yards: Array(18).fill(null), providerId: null, where: "" };
 }
 
-function needHandEntry(name) {
+function needHandEntry(name, from = null) {
   S.busy = "";
-  S.cs.manual = newManual(name);
+  S.cs.manual = { ...newManual(name), from };
+  S.cs.readings = [];
   go("course");
   S.error = `${name} has been withdrawn from The Scorecard because its details may be wrong, and it cannot be used. Enter the course from the club's scorecard: type it in, or read it from a photo.`;
   render();
@@ -873,7 +1002,7 @@ function needHandEntry(name) {
 function chooseCourse(c) {
   const list = S.cs.withdrawn || [];
   c = { ...c, tees: (c.tees || []).map((t) => ({ ...t, withdrawn: !!t.withdrawn || W.teeWithdrawn(list, c.name, t) })) };
-  if (c.tees.length && c.tees.every((t) => t.withdrawn)) { needHandEntry(c.name); return; }
+  if (c.tees.length && c.tees.every((t) => t.withdrawn)) { needHandEntry(c.name, c.providerId || null); return; }
   S.busy = "";
   S.setup.course = c;
   const usable = c.tees.filter((t) => !t.withdrawn);
@@ -915,14 +1044,10 @@ async function readPhoto(file) {
     const image = await shrink(file);
     const result = await db.scanCard(image);
     S.busy = "";
-    S.cs.scan = { ...result, applied: false };
+    S.cs.readings = [...(S.cs.readings || []), result];
+    S.cs.pickTee = false;
     if (result.course && !S.cs.manual.name) S.cs.manual.name = result.course;
-    /* A second picture (the other nine) goes on the tee chosen from the first. */
-    const key = (n) => String(n || "").toLowerCase().replace(/[^a-z]/g, "");
-    const same = S.cs.manual.scanned && result.tees.find((t) => key(t.name) && key(t.name) === key(S.cs.manual.tee));
-    if (same) applyScan(same);
-    else if (result.tees.length === 1) applyScan(result.tees[0]);
-    else render();
+    go("review");
   } catch (e) {
     S.busy = ""; S.cs.error = courses.explain(e); render();
   }

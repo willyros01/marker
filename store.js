@@ -148,7 +148,8 @@ export async function gamesOn(group, date) {
 export async function library() {
   try {
     const snap = await fb.store.getDocs(col("markerCourses"));
-    const list = snap.docs.map((d) => d.data()).filter((c) => c && c.name && Array.isArray(c.tees));
+    /* Courses replaced by a verified card are hidden: one entry per course. */
+    const list = snap.docs.map((d) => ({ ...d.data(), providerId: d.data().providerId || d.id })).filter((c) => c && c.name && Array.isArray(c.tees) && !c.replacedBy);
     list.sort((a, b) => a.name.localeCompare(b.name));
     local.save("library", list);
     return list;
@@ -222,6 +223,14 @@ export const withdrawnSaved = () => local.load("withdrawn", []);
 export async function scanCard(image) {
   if (!user) throw new Error("UNREACHABLE");
   return (await callWorker("/scan", { method: "POST", body: { image } })).scan;
+}
+
+/* A signed-in scorer confirms the card: the worker checks its own copies of
+   the readings and, if verified, makes it THE course for everybody. */
+export async function verifyCourse({ scanIds, replaceId = null, name = "" }) {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  const r = await callWorker("/verify", { method: "POST", body: { scanIds, replaceId, name } });
+  return r.course;
 }
 
 /* ---------------- posting a finished card ---------------- */
