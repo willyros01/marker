@@ -1,0 +1,16 @@
+# Files packaged into the Android app. One path per line. Folders end with /.
+index.html
+styles.css
+version.js
+firebase-config.js
+icon.svg
+manifest.webmanifest
+app.js
+store.js
+card.js
+courses.js
+storage.js
+withdrawn.js
+cardcheck.js
+model.js
+vendor/

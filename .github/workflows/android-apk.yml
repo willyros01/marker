@@ -1,0 +1,95 @@
+name: Android APK
+
+# Builds The Marker for Android (same web files as the website), signed with
+# the permanent key from the two GitHub secrets, and records the result on the
+# ci-logs branch (logs/android/last-run.json). The Cuberoot site's publisher
+# reads that record and publishes the exact APK at
+# https://www.cuberoot-systems.com/downloads/marker.apk
+on:
+  push:
+    branches: [main]
+    paths:
+      - app.js
+      - store.js
+      - card.js
+      - courses.js
+      - storage.js
+      - withdrawn.js
+      - cardcheck.js
+      - model.js
+      - styles.css
+      - index.html
+      - version.js
+      - firebase-config.js
+      - icon.svg
+      - vendor/**
+      - capacitor.config.json
+      - build/www-files.txt
+      - build/android-*.sh
+      - .github/workflows/android-apk.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only to record the result on the ci-logs branch
+
+concurrency:
+  group: marker-android-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      MARKER_ANDROID_KEYSTORE_BASE64: ${{ secrets.MARKER_ANDROID_KEYSTORE_BASE64 }}
+      MARKER_ANDROID_PASSWORD: ${{ secrets.MARKER_ANDROID_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Tools for the launcher icons
+        run: sudo apt-get install -y -qq librsvg2-bin >/dev/null
+      - name: Build the signed APK
+        run: bash build/android-build.sh 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
+      - name: Upload the APK
+        id: up
+        uses: actions/upload-artifact@v4
+        with:
+          name: marker-android-apk
+          path: out/*.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Record the result
+        if: always()
+        env:
+          OUTCOME: ${{ job.status }}
+          ARTIFACT_ID: ${{ steps.up.outputs.artifact-id }}
+        run: |
+          set -e
+          V=$(python3 -c "import re;print(re.search(r'APP_VERSION\s*=\s*\"([0-9.]+)\"',open('version.js').read()).group(1))")
+          APK=$(ls out/*.apk 2>/dev/null | head -1 || true)
+          node -e '
+          const fs=require("fs");const e=process.env;
+          const r={workflow:"Marker Android APK",branch:"main",run_id:Number(e.GITHUB_RUN_ID),run_number:Number(e.GITHUB_RUN_NUMBER),
+            source_sha:e.GITHUB_SHA,version:process.argv[1],outcome:e.OUTCOME,
+            artifact_id:e.ARTIFACT_ID?Number(e.ARTIFACT_ID):null,apk_name:process.argv[2]?require("path").basename(process.argv[2]):null,
+            run_url:`https://github.com/${e.GITHUB_REPOSITORY}/actions/runs/${e.GITHUB_RUN_ID}`,reported_at:new Date().toISOString()};
+          fs.writeFileSync("/tmp/last-run.json",JSON.stringify(r,null,2)+"\n");' "$V" "$APK"
+          cat /tmp/last-run.json
+          cp build.log /tmp/build.log 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          for try in 1 2 3; do
+            git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+            mkdir -p logs/android/runs
+            cp /tmp/last-run.json logs/android/last-run.json
+            cp /tmp/build.log "logs/android/runs/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}.log" 2>/dev/null || true
+            git add logs && git commit -qm "Android APK ${GITHUB_RUN_NUMBER}: ${OUTCOME}" && git push -q origin ci-logs && break
+            sleep 5
+          done
