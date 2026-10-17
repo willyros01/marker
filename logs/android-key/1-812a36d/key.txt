@@ -1,0 +1,6 @@
+base64 characters (spaces and line breaks removed): 32 (expected 5752)
+password characters: 0 (expected 32)
+decoded: yes
+opens with the password: NO
+keytool error: java.io.IOException: DerInputStream.getLength(): lengthTag=68, too big.
+java.io.IOException: DerInputStream.getLength(): lengthTag=68, too big.
