@@ -330,7 +330,11 @@ function screenPlayers() {
     const tab = S.groupTab;
     const list = S.golfers[tab];
     if (!S.groups.length) groupPart = `<div class="banner warn">You are not a member of any group yet, so golfers cannot be chosen. Add players as guests below.</div>`;
-    else groupPart = `<div class="tabs">${S.groups.map((g) => `<button class="choice ${g.id === tab ? "on" : ""}" data-act="tab" data-v="${esc(g.id)}">${esc(g.name)}</button>`).join("")}</div>
+    else groupPart = `<label class="field"><span class="label">Group</span>
+        <select class="input groupsel" id="groupsel" aria-label="Group">${S.groups.map((g) => {
+          const n = S.picked.filter((p) => p.assocId === g.id).length;
+          return `<option value="${esc(g.id)}" ${g.id === tab ? "selected" : ""}>${esc(g.name)}${n ? ` (${n} chosen)` : ""}</option>`;
+        }).join("")}</select></label>
       ${list === undefined ? `<p class="muted">Loading golfers…</p>` : `<div class="list">${list.map((g) => {
         const on = S.picked.some((p) => p.golferId === g.golferId);
         const off = full && !on;
@@ -1099,6 +1103,7 @@ function confirmLeave(cur) {
 
 /* Typing straight into a score box in "all four" mode. */
 document.addEventListener("change", (e) => {
+  if (e.target.id === "groupsel") { actions.tab({ dataset: { v: e.target.value } }); return; }
   if (e.target.id === "scanfile" || e.target.id === "scanpick") { readPhoto(e.target.files && e.target.files[0]); e.target.value = ""; return; }
   const m = S.cs.manual;
   if (m && e.target.dataset.hole != null) m.pars[Number(e.target.dataset.hole)] = Number(e.target.value);
