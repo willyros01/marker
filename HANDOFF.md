@@ -38,3 +38,9 @@ NEXT BUILD in The Marker (Willy, 16 Oct 7:48 pm; build after 8:40 pm, not before
   one entry per course, no duplicates (today Royal Ontario shows twice: database copy and the hand
   entry). Signed-in: replaces the shared course list too; no account: only on that phone.
 - The Scorecard side (recalculation, * on game scores, tee source field) waits for the freeze.
+
+16 Oct 2026, 10:03 pm: Willy's functional test passed. A real card was scored on his phone, posted,
+and appeared in The Scorecard straight away (worker live on Cloudflare, rules published by mk2.txt).
+Still open: picture reading untested live (Cloudflare's free AI allowance ran out on 16 Oct; Willy's
+Lakeview card read by hand verified OK); proposed, awaiting go-ahead: count real AI cost per picture
+and show pictures left today. Later with OK: copy rules into the scorecard repo; iPhone/Android builds.
