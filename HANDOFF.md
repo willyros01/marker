@@ -44,3 +44,14 @@ and appeared in The Scorecard straight away (worker live on Cloudflare, rules pu
 Still open: picture reading untested live (Cloudflare's free AI allowance ran out on 16 Oct; Willy's
 Lakeview card read by hand verified OK); proposed, awaiting go-ahead: count real AI cost per picture
 and show pictures left today. Later with OK: copy rules into the scorecard repo; iPhone/Android builds.
+
+TOMORROW (17 Oct, Willy): 8 am check of Cloudflare's AI allowance (reminder set), then picture
+test (Lakeview, typed name "Lakeview Golf Course"). Then native builds of The Marker:
+- Android: new permanent signing key (made outside the repo, sent to Willy), he adds secrets
+  MARKER_ANDROID_KEYSTORE_BASE64 and MARKER_ANDROID_PASSWORD; build job like Scorecard's
+  android-apk.yml; Cuberoot publisher like publish-scorecard-apk.yml.
+- iPhone: Willy creates the app in App Store Connect (The Marker, io.github.willyros01.marker)
+  and adds ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8, APPLE_TEAM_ID to the marker repo (asked
+  whether the .p8 file is still at hand); TestFlight job like Scorecard's ios-testflight.yml.
+Done 16 Oct late: 0.5.4 (AI cost counted, pictures left shown); Scorecard firestore.rules on
+main/v2/android now match live (Marker additions), Scorecard's own rules tests passed.
