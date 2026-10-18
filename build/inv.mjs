@@ -11,7 +11,7 @@ console.log(`top-level collections: ${root.join(', ')}`);
 const tally = {};
 let withLegacy = 0;
 for (const u of users) {
-  const ids = (await call(`${u.name.replace("/documents/", "/documents/")}:listCollectionIds`, { pageSize: 50 })).collectionIds || [];
+  const ids = (await call(`https://firestore.googleapis.com/v1/${u.name}:listCollectionIds`, { pageSize: 50 })).collectionIds || [];
   for (const c of ids) tally[c] = (tally[c] || 0) + 1;
   if (ids.some((c) => !["terms", "prefs"].includes(c))) withLegacy++;
 }
