@@ -37,6 +37,24 @@ const S = {
 const esc = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const shiftDate = (iso, days) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + days); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const iso = (y, m, d) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+const daysIn = (y, m) => new Date(y, m, 0).getDate();
+/* A round is never dated after today (The Scorecard refuses future cards). */
+const notFuture = (d) => (d > today() ? today() : d);
+/* Month, day and year lists under the date, to jump to any date in the last
+   few years without stepping one day at a time. */
+function datePicker(date) {
+  const [y, m, d] = date.split("-").map(Number);
+  const now = new Date().getFullYear();
+  const opt = (v, label, on) => `<option value="${v}" ${on ? "selected" : ""}>${label}</option>`;
+  const years = []; for (let k = now; k >= now - 4; k--) years.push(k);
+  const days = []; for (let k = 1; k <= daysIn(y, m); k++) days.push(k);
+  return `<div class="datepick">
+    <select data-date="m" aria-label="Month">${MONTHS.map((n, i) => opt(i + 1, n, i + 1 === m)).join("")}</select>
+    <select data-date="d" aria-label="Day">${days.map((k) => opt(k, k, k === d)).join("")}</select>
+    <select data-date="y" aria-label="Year">${years.map((k) => opt(k, k, k === y)).join("")}</select></div>`;
+}
 const niceDate = (iso) => { try { return new Date(iso + "T12:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); } catch { return iso; } };
 const first = (name) => String(name || "").split(" ")[0];
 const user = () => db.currentUser();
@@ -124,7 +142,8 @@ function screenSetup() {
   return `${top("Set up the round", member() ? user().email : "Playing without an account", netPill())}
     <main class="body">${banner()}
       <div class="field"><span class="label">Date</span>
-        <div class="stepper"><button data-act="date" data-v="-1" aria-label="Day before">−</button><div class="val">${esc(niceDate(s.date))}</div><button data-act="date" data-v="1" aria-label="Day after">+</button></div></div>
+        <div class="stepper"><button data-act="date" data-v="-1" aria-label="Day before">−</button><div class="val">${esc(niceDate(s.date))}</div><button data-act="date" data-v="1" aria-label="Day after" ${s.date >= today() ? "disabled" : ""}>+</button></div>
+        ${datePicker(s.date)}</div>
       <div class="field"><span class="label">Course</span>
         <button class="btn" style="justify-content:flex-start" data-act="go-course">${c ? esc(c.name) : "Choose a course"} ▸</button></div>
       ${c ? `<div class="field"><span class="label">Tee</span><div class="list">${tees.map((t, i) => t.withdrawn ? `
@@ -708,7 +727,7 @@ const actions = {
     render();
   },
   resume() { const c = local.currentCard(); go(c.state === "finished" ? "finish" : "play"); },
-  date(el) { S.setup.date = shiftDate(S.setup.date, Number(el.dataset.v)); S.setup.game = null; render(); loadGames(); },
+  date(el) { S.setup.date = notFuture(shiftDate(S.setup.date, Number(el.dataset.v))); S.setup.game = null; render(); loadGames(); },
   "go-course"() {
     S.cs.error = ""; S.cs.results = []; S.cs.withdrawn = db.withdrawnSaved(); go("course");
     db.library().then((l) => { S.cs.library = l; if (S.screen === "course" && !S.cs.manual) render(); });
@@ -1133,6 +1152,14 @@ function confirmLeave(cur) {
 /* Typing straight into a score box in "all four" mode. */
 document.addEventListener("change", (e) => {
   if (e.target.id === "groupsel") { actions.tab({ dataset: { v: e.target.value } }); return; }
+  if (e.target.dataset && e.target.dataset.date && S.setup) {
+    /* One list changed: keep the other two, and keep the day inside the month. */
+    let [y, m, d] = S.setup.date.split("-").map(Number);
+    const v = Number(e.target.value);
+    if (e.target.dataset.date === "y") y = v; else if (e.target.dataset.date === "m") m = v; else d = v;
+    S.setup.date = notFuture(iso(y, m, Math.min(d, daysIn(y, m))));
+    S.setup.game = null; render(); loadGames(); return;
+  }
   if (e.target.id === "scanfile" || e.target.id === "scanpick") { readPhoto(e.target.files && e.target.files[0]); e.target.value = ""; return; }
   const m = S.cs.manual;
   if (m && e.target.dataset.hole != null) m.pars[Number(e.target.dataset.hole)] = Number(e.target.value);

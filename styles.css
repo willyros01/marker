@@ -54,6 +54,9 @@ p { margin: 0; line-height: 1.45; }
 .input:focus { outline: 3px solid var(--green-soft); border-color: var(--green); }
 .stepper { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 6px; }
 .stepper button { width: 60px; height: 52px; border-radius: 10px; border: none; background: var(--green-soft); color: var(--green); font-size: 28px; font-weight: 800; }
+.datepick { display: grid; grid-template-columns: 1.6fr 0.9fr 1.1fr; gap: 8px; margin-top: 8px; }
+.datepick select { min-height: 56px; font-size: 21px; font-weight: 700; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); padding: 0 10px; min-width: 0; }
+.stepper button[disabled] { opacity: .35; }
 .stepper .val { flex: 1; text-align: center; font-size: 26px; font-weight: 800; }
 
 .list { display: flex; flex-direction: column; gap: 8px; }
