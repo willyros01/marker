@@ -717,7 +717,10 @@ function screenView(c) {
     <main class="body" style="padding:10px">${banner()}${cardGrid(c, false)}${summaries(c)}
       ${c.state === "failed" && c.postError ? `<div class="banner warn">${esc(c.postError)}</div>` : ""}</main>
     <footer class="foot"><button class="btn primary" data-act="share-view">Share the card</button>
-      ${c.state === "posted" && user() && !user().anonymous ? `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>` : ""}
+      ${c.state === "posted" && user() && !user().anonymous
+        ? (S.mine && S.mine.editable.some((x) => x.cardId === c.id)
+          ? `<button class="btn" data-act="repost-card" data-v="${esc(c.id)}">✎ Edit and re-post</button>`
+          : `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>`) : ""}
       ${card.canDelete(c) ? `<button class="btn" data-act="delete-card" style="color:var(--over)">Delete this card</button>` : ""}
       <button class="btn" data-act="history">← Back</button></footer>`;
 }
@@ -1136,6 +1139,10 @@ const actions = {
     render();
   },
   async "correct-card"(el) {
+    /* Rounds deleted in The Scorecard since: the card is edited and re-posted
+       instead (Willy, 18 Oct 2026). */
+    if (!(S.mine && S.mine.editable.some((x) => x.cardId === el.dataset.v))) await refreshMine(true);
+    if (S.mine && S.mine.editable.some((x) => x.cardId === el.dataset.v)) return actions["repost-card"](el);
     const cur = local.currentCard();
     if (cur && !cur.correcting && (cur.state === "playing" || cur.state === "finished")) {
       S.error = "A round is in progress on this phone. Finish it (or end it from its Menu) before correcting another card.";
@@ -1242,7 +1249,7 @@ const actions = {
     if (!window.confirm("Cancel the re-post? Nothing is posted.")) return;
     local.clearCurrent(); go("history");
   },
-  view(el) { S.view = local.finishedCards().find((c) => c.id === el.dataset.v) || null; go("view"); },
+  view(el) { S.view = local.finishedCards().find((c) => c.id === el.dataset.v) || null; go("view"); refreshMine(); },
   "delete-card"() {
     const c = S.view;
     if (!c) return;

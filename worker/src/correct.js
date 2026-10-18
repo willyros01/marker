@@ -74,7 +74,7 @@ async function load(fs, sub) {
   for (const p of c.players) {
     const rid = rounds[p.golferId];
     const r = rid ? await fs.get(`associations/${p.assocId}/rounds/${rid}`) : null;
-    if (!r) refuse(`${full(p.name)}'s round from this card was deleted in The Scorecard, so the card can no longer be corrected here. An owner or admin can enter the round again.`);
+    if (!r) refuse(`${full(p.name)}'s round from this card was deleted in The Scorecard, so the card can no longer be corrected. Open Your cards and tap Re-post to fix the scores and post it again.`);
     /* The handicap frozen on the round when it was posted, never today's. */
     const index = r.data.indexAtEntry == null ? null : Number(r.data.indexAtEntry);
     players.push({ name: p.name || "", golferId: p.golferId, assocId: p.assocId, guest: false, index, ch: card.courseHandicapFor(index, roundTee(tee, r)), scores: Object.fromEntries(order.map((n) => [n, p.scores[n]])) });
