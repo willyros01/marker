@@ -462,7 +462,11 @@ function footPlay(c, n) {
   const next = done
     ? (last ? `<button class="btn primary" data-act="finish">Finish</button>` : `<button class="btn primary" data-act="next">Hole ${c.order[c.order.indexOf(n) + 1]} →</button>`)
     : `<div class="btn dashed" style="color:var(--ink-3)">${left} to go</div>`;
-  return `<footer class="foot"><div class="row3">
+  /* Fixing a score after the round: once the change is made, straight back
+     to the finish screen instead of walking through the remaining holes. */
+  const fixing = c.fixing && card.cardComplete(c)
+    ? `<button class="btn primary" data-act="finish">✓ Done fixing — back to the totals</button>` : "";
+  return `<footer class="foot">${fixing}<div class="row3">
       <button class="btn" data-act="prev" ${c.pos === 0 ? "disabled" : ""}>← Back</button>
       <button class="btn" data-act="card">Card</button>${next}</div></footer>`;
 }
@@ -576,8 +580,10 @@ function cardGrid(c, interactive) {
 }
 
 function screenCard(c) {
+  const howTo = c.state === "finished" || c.fixing
+    ? `<div class="banner" style="font-size:21px;font-weight:700">To fix a score, tap that hole's row. Change the score, then tap ✓ Done fixing.</div>` : "";
   return `${top("The card", "Tap a hole to go back and change it")}
-    <main class="body" style="padding:10px">${banner()}${cardGrid(c, true)}</main>
+    <main class="body" style="padding:10px">${banner()}${howTo}${cardGrid(c, true)}</main>
     <footer class="foot"><button class="btn primary" data-act="back-play">Back to hole ${esc(c.order[c.pos])} →</button>
       <button class="btn" data-act="share-card">Share the card</button></footer>`;
 }
@@ -605,6 +611,7 @@ function screenFinish(c) {
     <main class="body">${banner()}<p class="muted">Check the totals before posting. Adjusted applies net double bogey on each hole, worked out for you.</p>
       ${summaries(c)}</main>
     <footer class="foot">${postBtn}<div class="row2"><button class="btn" data-act="share-card">Share the card</button><button class="btn" data-act="card">Review card</button></div>
+      <button class="btn" data-act="fix-score">✎ Fix a score</button>
       ${check.ok ? "" : `<button class="btn" data-act="done">Done</button>`}</footer>`;
 }
 
@@ -1055,8 +1062,9 @@ const actions = {
     render();
   },
   "back-play"() { const c = local.currentCard(); go(c && c.state === "finished" && card.cardComplete(c) ? "finish" : "play"); },
-  jump(el) { updateCard((c) => ({ ...c, pos: Number(el.dataset.v), who: 0, state: "playing" })); go("play"); },
-  finish() { updateCard((c) => ({ ...c, state: "finished" })); go("finish"); },
+  jump(el) { updateCard((c) => ({ ...c, pos: Number(el.dataset.v), who: 0, state: "playing", fixing: c.fixing || c.state === "finished" })); go("play"); },
+  "fix-score"() { updateCard((c) => ({ ...c, fixing: true })); go("card"); },
+  finish() { updateCard((c) => ({ ...c, state: "finished", fixing: false })); go("finish"); },
   post() {
     const c = local.currentCard();
     try { db.queuePost(c); } catch (e) { fail(e); return; }
