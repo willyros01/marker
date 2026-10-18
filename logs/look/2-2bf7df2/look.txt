@@ -1,0 +1,6 @@
+Lakeview course fields: club, country, createdBy, createdVia, location, name, tees | id field: undefined
+Royal Ontario course fields: club, country, createdBy, id, location, name, tees | id field: "v1-course-0ya4t98r"
+Courses without an id field: mvdak5q2dikg2u "Lakeview Golf Course" (id field undefined)
+Rounds with gameId msngo2mu2yqef3: 54, dates 2025-05-18 to 2026-07-26
+That game document exists: false
+Rounds entered by The Marker in Golfing Buddies: 
