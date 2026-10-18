@@ -1,0 +1,26 @@
+users/{uid} entries: 162
+top-level collections: accountEmails, associations, blockedDomains, courses, golferNames, golfers, groupCreators, joinCodes, markerConfig, markerCourses, markerLimits, markerScans, markerSubmissions, migrations, publicApplications, settings, userGroups, users
+node:internal/deps/undici/undici:15270
+      Error.captureStackTrace(err);
+            ^
+
+TypeError: Failed to parse URL from projects/scorecard-f41b8/databases/(default)/documents/users/05pVeUlDblNHDQPhyCpTTEiiGM93:listCollectionIds
+    at node:internal/deps/undici/undici:15270:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async call (file:///home/runner/work/marker/marker/build/inv.mjs:5:47)
+    at async file:///home/runner/work/marker/marker/build/inv.mjs:14:16 {
+  [cause]: TypeError: Invalid URL
+      at new URL (node:internal/url:818:25)
+      at new Request (node:internal/deps/undici/undici:9926:25)
+      at fetch (node:internal/deps/undici/undici:10655:25)
+      at fetch (node:internal/deps/undici/undici:15268:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:75:12)
+      at call (file:///home/runner/work/marker/marker/build/inv.mjs:5:53)
+      at file:///home/runner/work/marker/marker/build/inv.mjs:14:22
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    code: 'ERR_INVALID_URL',
+    input: 'projects/scorecard-f41b8/databases/(default)/documents/users/05pVeUlDblNHDQPhyCpTTEiiGM93:listCollectionIds'
+  }
+}
+
+Node.js v22.23.3
