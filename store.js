@@ -189,6 +189,8 @@ async function callWorker(path, { method = "GET", body = null } = {}) {
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 || res.status === 403) throw new Error("SIGN_IN");
   if (!res.ok) throw new Error("UNREACHABLE");
+  /* A refusal carries its reason in plain words. */
+  if (data.error === "REFUSED") throw new Error(data.reason || "The Scorecard refused this.");
   if (data.error) throw new Error(data.error);
   return data;
 }
@@ -367,4 +369,25 @@ async function postOne(c) {
   } catch {
     return "waiting";
   }
+}
+
+/* ---------------- correcting a posted card ---------------- */
+
+/* The posted cards this account may correct: its own for 24 hours, and every
+   card of a group it owns or runs. The worker decides, not the phone. */
+export async function correctableCards() {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  return (await callWorker("/correctable", { method: "POST", body: {} })).cards || [];
+}
+
+/* One posted card, as the worker kept it, with each golfer's frozen handicap. */
+export async function cardForCorrection(cardId) {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  return callWorker("/correction-card", { method: "POST", body: { cardId } });
+}
+
+/* Saved only when the worker has written everything in one commit. */
+export async function saveCorrection(cardId, scores) {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  return callWorker("/correct", { method: "POST", body: { cardId, scores } });
 }

@@ -90,7 +90,7 @@ export function checkCard(c, today) {
 
 /* The tee to post with: the library's when the course is in it (the phone's
    copy could be old or altered), the card's own for a course typed in by hand. */
-async function teeFor(fs, c) {
+export async function teeFor(fs, c) {
   const pid = c.course && c.course.providerId ? String(c.course.providerId) : "";
   if (pid && /^[A-Za-z0-9_-]{1,64}$/.test(pid)) {
     const lib = await fs.get(`markerCourses/${pid}`);
@@ -265,7 +265,9 @@ export async function plan(fs, sub, today) {
     }
   }
 
-  writes.push(updateWrite(fs, sub.path, { status: STATUS.POSTED, reason: "", rounds, courseId },
+  /* The tee the rounds were worked out with, kept for corrections (the
+     phone's copy is never trusted, and the library's may change later). */
+  writes.push(updateWrite(fs, sub.path, { status: STATUS.POSTED, reason: "", rounds, courseId, postedTee: tee },
     { updateTime: sub.updateTime, now: ["postedAt"] }));
   return { writes, rounds };
 }

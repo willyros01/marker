@@ -139,10 +139,11 @@ function screenStart() {
   const u = user();
   const cards = local.finishedCards();
   const resume = cur && (cur.state === "playing" || cur.state === "finished")
-    ? `<button class="btn primary tall" data-act="resume"><span>Continue your round</span><small>${esc(cur.course.name)} · ${esc(niceDate(cur.date))} · hole ${esc(cur.order[cur.pos])}</small></button>` : "";
+    ? `<button class="btn primary tall" data-act="resume"><span>${cur.correcting ? "Continue your correction" : "Continue your round"}</span><small>${esc(cur.course.name)} · ${esc(niceDate(cur.date))}${cur.correcting ? "" : ` · hole ${esc(cur.order[cur.pos])}`}</small></button>` : "";
   let who;
   if (u && !u.anonymous) {
     who = `<button class="btn ${resume ? "" : "primary"} tall" data-act="new-round"><span>Start a new round</span><small>Signed in as ${esc(u.email)}. Rounds are posted to The Scorecard.</small></button>
+      <button class="btn" data-act="go-corrections">✎ Correct a posted card</button>
       <button class="btn" data-act="sign-out">Sign out</button>`;
   } else {
     who = `<button class="btn ${resume ? "" : "primary"} tall" data-act="go-signin"><span>Sign in with The Scorecard</span><small>Pick golfers from your groups. Scores are posted for them.</small></button>
@@ -535,7 +536,8 @@ function screenMenu(c) {
       <button class="btn tall" data-act="card"><span>See the whole card</span><small>Every hole, with par, yards and handicap number. Tap a hole to go to it.</small></button>
       <button class="btn tall" data-act="share-card"><span>Share the card</span><small>WhatsApp, email or text message.</small></button>
       <button class="btn tall" data-act="to-start"><span>Go to the start screen</span><small>The round stays on this phone. "Continue your round" brings you back to this hole.</small></button>
-      <button class="btn tall" data-act="end-round" style="color:var(--over)"><span>End this round without posting</span><small>The card is kept under "Your cards" and is never posted.</small></button>
+      ${c.correcting ? `<button class="btn tall" data-act="cancel-correction" style="color:var(--over)"><span>Cancel the correction</span><small>Nothing is changed in The Scorecard.</small></button>`
+        : `<button class="btn tall" data-act="end-round" style="color:var(--over)"><span>End this round without posting</span><small>The card is kept under "Your cards" and is never posted.</small></button>`}
     </main>
     <footer class="foot"><button class="btn primary" data-act="back-play">Back to hole ${esc(c.order[c.pos])} →</button></footer>`;
 }
@@ -602,6 +604,7 @@ function summaries(c) {
 }
 
 function screenFinish(c) {
+  if (c.correcting) return screenCorrectFinish(c);
   const check = card.postable(c);
   const n = c.players.filter((p) => !p.guest).length;
   const postBtn = check.ok
@@ -613,6 +616,38 @@ function screenFinish(c) {
     <footer class="foot">${postBtn}<div class="row2"><button class="btn" data-act="share-card">Share the card</button><button class="btn" data-act="card">Review card</button></div>
       <button class="btn" data-act="fix-score">✎ Fix a score</button>
       ${check.ok ? "" : `<button class="btn" data-act="done">Done</button>`}</footer>`;
+}
+
+/* ---------------- correcting a posted card ---------------- */
+
+const correctionWhy = (e) => {
+  const m = String((e && e.message) || e);
+  if (m === "OFFLINE") return "No signal. A correction needs a connection. Nothing was changed; try again when you have signal.";
+  if (m === "UNREACHABLE" || m === "TRY_LATER") return "The Scorecard could not be reached. Nothing was changed. Try again in a moment.";
+  if (m === "SIGN_IN") return "Sign in again with your Scorecard account, then try again.";
+  return m;
+};
+
+function screenCorrections() {
+  const list = S.corrections;
+  const rows = !list ? `<p class="muted">Looking for cards you can correct…</p>`
+    : !list.length ? `<p>No posted card can be corrected by you right now.</p><p class="muted">The scorer can correct a card for 24 hours after posting it. An owner or admin of the group can correct any card of the group, at any time.</p>`
+    : `<div class="list">${list.map((x) => `
+      <button class="item" data-act="correct-card" data-v="${esc(x.cardId)}"><span class="txt"><span class="name">${esc(x.course)} · ${esc(niceDate(x.date))}</span>
+        <span class="meta">${esc(x.players.join(", "))}<br>${x.as === "scorer" ? `Your card · until ${esc(new Date(x.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }))}` : "As owner or admin of the group"}${x.corrections ? ` · corrected ${x.corrections}×` : ""}</span></span></button>`).join("")}</div>`;
+  return `${top("Correct a posted card", "Cards already in The Scorecard")}
+    <main class="body">${banner()}${rows}</main>
+    <footer class="foot"><button class="btn" data-act="to-start">← Back</button></footer>`;
+}
+
+function screenCorrectFinish(c) {
+  return `${top("Correct the card", `${c.course.name} · ${niceDate(c.date)}`)}
+    <main class="body">${banner()}
+      <div class="banner" style="font-size:20px;font-weight:700">This card is already in The Scorecard. Fix the wrong scores, then tap Save the correction. Each golfer's round and handicap index are corrected together, in one save.</div>
+      ${summaries(c)}</main>
+    <footer class="foot"><button class="btn primary" data-act="save-correction" ${S.busy ? "disabled" : ""}>${S.busy === "correct" ? "Saving…" : "Save the correction"}</button>
+      <button class="btn" data-act="fix-score">✎ Fix a score</button>
+      <button class="btn" data-act="cancel-correction" style="color:var(--over)">Cancel the correction</button></footer>`;
 }
 
 function screenStatus(c) {
@@ -654,6 +689,7 @@ function screenView(c) {
     <main class="body" style="padding:10px">${banner()}${cardGrid(c, false)}${summaries(c)}
       ${c.state === "failed" && c.postError ? `<div class="banner warn">${esc(c.postError)}</div>` : ""}</main>
     <footer class="foot"><button class="btn primary" data-act="share-view">Share the card</button>
+      ${c.state === "posted" && user() && !user().anonymous ? `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>` : ""}
       ${card.canDelete(c) ? `<button class="btn" data-act="delete-card" style="color:var(--over)">Delete this card</button>` : ""}
       <button class="btn" data-act="history">← Back</button></footer>`;
 }
@@ -699,6 +735,7 @@ function render() {
     case "review": html = S.cs.manual ? screenReview() : screenSetup(); break;
     case "holes": html = S.setup && S.setup.tee ? screenHoles() : screenSetup(); break;
     case "finish": html = c ? screenFinish(c) : screenStart(); break;
+    case "corrections": html = screenCorrections(); break;
     case "status": html = c ? screenStatus(c) : screenStart(); break;
     case "history": html = screenHistory(); break;
     case "view": html = S.view ? screenView(S.view) : screenHistory(); break;
@@ -1041,6 +1078,7 @@ const actions = {
   "end-round"() {
     const c = local.currentCard();
     if (!c) { go("start"); return; }
+    if (c.correcting) { actions["cancel-correction"](); return; }
     if (!window.confirm(`End the round at ${c.course.name} without posting? The card is kept under "Your cards".`)) return;
     try { local.keepFinished({ ...c, state: "ended" }); local.clearCurrent(); }
     catch (e) { fail(e); return; }
@@ -1063,6 +1101,62 @@ const actions = {
   },
   "back-play"() { const c = local.currentCard(); go(c && c.state === "finished" && card.cardComplete(c) ? "finish" : "play"); },
   jump(el) { updateCard((c) => ({ ...c, pos: Number(el.dataset.v), who: 0, state: "playing", fixing: c.fixing || c.state === "finished" })); go("play"); },
+  async "go-corrections"() {
+    S.corrections = null; go("corrections");
+    try { S.corrections = await db.correctableCards(); }
+    catch (e) { S.corrections = []; S.error = correctionWhy(e); }
+    render();
+  },
+  async "correct-card"(el) {
+    const cur = local.currentCard();
+    if (cur && !cur.correcting && (cur.state === "playing" || cur.state === "finished")) {
+      S.error = "A round is in progress on this phone. Finish it (or end it from its Menu) before correcting another card.";
+      render(); return;
+    }
+    S.busy = "load"; S.flash = "Opening the card…"; render();
+    try {
+      const x = await db.cardForCorrection(el.dataset.v);
+      const k = x.card;
+      let c = card.newCard({
+        id: k.id, mode: "member", date: k.date, course: k.course, tee: k.tee, holes: k.holes, start: k.start,
+        entry: (local.prefs().entry || "one"), game: k.game,
+        players: k.players.map((p) => ({ name: p.name, golferId: p.golferId, assocId: p.assocId, groupName: "", index: (x.handicaps.find((h) => h.golferId === p.golferId) || {}).index ?? null })),
+      });
+      c = { ...c, order: k.order.map(Number), players: c.players.map((p, i) => ({ ...p, scores: Object.fromEntries(Object.entries(k.players[i].scores).map(([n, v]) => [Number(n), v])) })) };
+      c = { ...c, state: "finished", correcting: { cardId: k.id, as: x.as, until: x.until } };
+      local.saveCurrent(c);
+      S.busy = ""; S.flash = ""; go("finish");
+    } catch (e) { S.busy = ""; S.flash = ""; S.error = correctionWhy(e); render(); }
+  },
+  async "save-correction"() {
+    const c = local.currentCard();
+    if (!c || !c.correcting || S.busy) return;
+    const scores = Object.fromEntries(c.players.map((p) => [p.golferId, Object.fromEntries(c.order.map((n) => [String(n), p.scores[n]]))]));
+    S.busy = "correct"; render();
+    try {
+      const r = await db.saveCorrection(c.correcting.cardId, scores);
+      S.busy = "";
+      if (r.status === "unchanged") { S.flash = "No score was changed, so nothing was saved."; render(); return; }
+      /* The card kept on this phone shows the corrected scores too. */
+      const kept = local.finishedCards().find((x) => x.id === c.correcting.cardId);
+      if (kept) {
+        try {
+          local.keepFinished({ ...kept, players: kept.players.map((p) => {
+            const f = c.players.find((q) => q.golferId && q.golferId === p.golferId);
+            return f ? { ...p, scores: f.scores } : p;
+          }) });
+        } catch {}
+      }
+      local.clearCurrent();
+      go("start");
+      S.flash = `Corrected in The Scorecard: ${r.changed.join(", ")}. Their rounds and handicap indexes are up to date.`;
+      render();
+    } catch (e) { S.busy = ""; S.error = correctionWhy(e); render(); }
+  },
+  "cancel-correction"() {
+    if (!window.confirm("Cancel the correction? Nothing is changed in The Scorecard.")) return;
+    local.clearCurrent(); go("start");
+  },
   "fix-score"() { updateCard((c) => ({ ...c, fixing: true })); go("card"); },
   finish() { updateCard((c) => ({ ...c, state: "finished", fixing: false })); go("finish"); },
   post() {
@@ -1072,6 +1166,7 @@ const actions = {
   },
   done() {
     const c = local.currentCard();
+    if (c && c.correcting) { local.clearCurrent(); go("start"); return; }
     if (c) { try { local.keepFinished(c.state === "finished" ? { ...c } : c); } catch {} }
     local.clearCurrent();
     go("start");

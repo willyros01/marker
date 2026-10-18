@@ -174,3 +174,38 @@ test("E6 a verified card replaces the saved course, over Firestore's real interf
   await assertFails(setDoc(doc(phone, "markerCourses", "77"), { name: "x" }));
   await assertFails(getDoc(doc(phone, "markerScans", "frontscan1")));
 });
+
+test("E7 a posted card is corrected over Firestore's real interface: one commit, preconditions honoured", async () => {
+  const fix = await import("../worker/src/correct.js");
+  const c = finishedCard();
+  await dropOff(c);
+  const r = await processSubmission(fs, c.id, { today: "2026-10-16" });
+  assert.equal(r.status, "posted", r.reason);
+  const before = (await fs.get(`associations/G1/rounds/${r.rounds.A}`)).data;
+  const sub = (await fs.get(`markerSubmissions/${c.id}`)).data;
+  assert.ok(sub.postedTee && sub.postedTee.rating === 68.8, "the tee used is kept for corrections");
+  const scores = Object.fromEntries(sub.card.players.map((p) => [p.golferId, { ...p.scores }]));
+  const firstHole = String(sub.card.order[0]);
+  scores.A[firstHole] = Number(scores.A[firstHole]) - 1;
+  const out = await fix.correct(fs, { uid: SCORER, anonymous: false }, { cardId: c.id, scores });
+  assert.equal(out.status, "corrected");
+  const after = (await fs.get(`associations/G1/rounds/${r.rounds.A}`)).data;
+  assert.equal(after.gross, before.gross - 1);
+  assert.equal(after.corrections.length, 1);
+  assert.equal(after.corrections[0].before.gross, before.gross);
+  const golfer = (await fs.get("golfers/A")).data;
+  assert.equal(golfer.recentWindow.find((e) => e.roundId === r.rounds.A).differential, after.differential);
+  assert.equal(golfer.handicapIndex, model.displayIndex(golfer.recentWindow));
+  assert.equal((await fs.get("associations/G1/directory/A")).data.handicapIndex, golfer.handicapIndex);
+  assert.match((await fs.get(`markerSubmissions/${c.id}`)).data.correctedAt, /^\d{4}-/);
+  /* The round changed in The Scorecard since: refused, nothing written. */
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const { updateDoc } = await import("firebase/firestore");
+    await updateDoc(doc(ctx.firestore(), `associations/G1/rounds/${r.rounds.A}`), { gross: 99 });
+  });
+  await assert.rejects(fix.correct(fs, { uid: SCORER, anonymous: false }, { cardId: c.id, scores }), /changed in The Scorecard/);
+  /* The phone still cannot read anybody's submissions but its own, nor write a round. */
+  const phone = env.authenticatedContext("member2", { email: "m2@example.com", firebase: { sign_in_provider: "password" } }).firestore();
+  const { assertFails } = await import("@firebase/rules-unit-testing");
+  await assertFails(getDoc(doc(phone, "markerSubmissions", c.id)));
+});
