@@ -1,0 +1,4 @@
+users/{uid} entries: 162
+top-level collections: accountEmails, associations, blockedDomains, courses, golferNames, golfers, groupCreators, joinCodes, markerConfig, markerCourses, markerLimits, markerScans, markerSubmissions, migrations, publicApplications, settings, userGroups, users
+subcollections under users (count of accounts having each): {"terms":162,"prefs":2,"data":1}
+accounts with anything besides terms and prefs (version 1 leftovers): 1
