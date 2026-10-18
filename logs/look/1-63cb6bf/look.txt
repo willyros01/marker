@@ -1,0 +1,49 @@
+Groups: PUBLIC="Public group", mss0iqvqder7g2="Golfing Buddies", mstjip6n4yzfhh="Philippine Golfers", mv41i2sx1c9tyw="Apple Test Group"
+
+Courses (42), most recently changed first:
+  mvdak5q2dikg2u "Lakeview Golf Course" tees=1 changed 2026-10-18T03:54:19.826325Z createdVia=marker withdrawn=false
+  v1-course-0ya4t98r "Royal Ontario Golf Club" tees=8 changed 2026-10-17T15:55:23.513278Z createdVia=- withdrawn=false
+  mu1oq1pmuzq741 "Luisita Golf And Country Club" tees=7 changed 2026-09-14T20:19:22.692837Z createdVia=- withdrawn=false
+  mtfxev37vt061v "Manila Southwoods Golf & Country Club — Legends" tees=7 changed 2026-08-30T14:50:35.564940Z createdVia=- withdrawn=false
+  mtfxe5kgeof76d "Manila Southwoods Golf & Country Club — Masters" tees=8 changed 2026-08-30T14:50:05.531402Z createdVia=- withdrawn=false
+  mtfx9jnxn29iga "Manila Golf & Country Club" tees=5 changed 2026-08-30T14:49:27.738849Z createdVia=- withdrawn=false
+  mtfx8db6g8tolw "Pipers Heath Golf Club" tees=8 changed 2026-08-30T14:45:47.937926Z createdVia=- withdrawn=false
+  mtfx6l8c1vh75n "North Granite Ridge Golf Club" tees=7 changed 2026-08-30T14:45:03.777925Z createdVia=- withdrawn=false
+  mtfx5d6cj17g80 "Credit Valley Golf And Country Club" tees=20 changed 2026-08-30T14:43:16.852821Z createdVia=- withdrawn=false
+  v1-course-6yqshpm7 "Philippine Navy Golf Club" tees=3 changed 2026-08-23T03:33:07.534718Z createdVia=- withdrawn=false
+  mst2j17103e4d3 "Angus Glen Golf Club — North Course" tees=7 changed 2026-08-23T03:23:20.727841Z createdVia=- withdrawn=false
+  mt579pcgfgv7co "Camp John Hay Golf Club" tees=7 changed 2026-08-23T02:41:24.004797Z createdVia=- withdrawn=false
+
+Courses named like Lakeview:
+  mvdak5q2dikg2u "Lakeview Golf Course" changed 2026-10-18T03:54:19.826325Z tees=[["mvdak5q20tj2up","White",68.6,120]]
+
+Marker cards (3):
+  mvbq5tma152okk status=posted date=2026-10-16 course="Royal Ontario Golf Club" game=null courseId=v1-course-0ya4t98r rounds=4 changed 2026-10-17T01:57:48.257177Z
+  mvckp9ko2gxu6k status=posted date=2026-10-17 course="Royal Ontario Golf Club" game=null courseId=v1-course-0ya4t98r rounds=4 changed 2026-10-17T15:55:23.513278Z
+  mvd9fqrz6musio status=posted date=2025-07-17 course="Lakeview Golf Course" game=null courseId=mvdak5q2dikg2u rounds=3 changed 2026-10-18T03:54:19.826325Z
+
+Games of "Public group" (0):
+Rounds: 3. Entered by The Marker or changed since 17 Oct:
+Rounds per game: {}
+
+Games of "Golfing Buddies" (6):
+  msswfx9y81u9ls name="Sunday Game at Royal Ontario at 2 pm" 2026-08-09 courseId=v1-course-0ya4t98r -> "Royal Ontario Golf Club" archived=false changed 2026-09-30T20:27:37.430711Z
+  mt0ymqnvz9m5bx name="Fellowship Game at Braeben" 2026-08-19 courseId=v1-course-4g82ws18 -> "Braeben Golf Course" archived=false changed 2026-10-01T13:52:07.816153Z
+  mtbx9lo1hak3xb name="" 2026-08-26 courseId=mt3thk2ad8cdlc -> "Lionhead Golf And Country Club — Masters Course" archived=false changed 2026-10-01T13:52:07.816153Z
+  muihpe13dctcfv name="Ronnie Rosales Memorial Tournament" 2026-09-26 courseId=mso0kmpaiunu6y -> "Carlisle Golf And Country Club — South/East" archived=false changed 2026-10-01T13:52:07.816153Z
+  muyq2ns85bnboa name="Golf Buddies Wednesday game" 2026-10-07 courseId=v1-course-0ya4t98r -> "Royal Ontario Golf Club" archived=false changed 2026-10-14T04:25:20.679275Z
+  mv5w9b3vtmetf5 name="ROGC Sunday - Oct 12, 2026" 2026-10-12 courseId=v1-course-0ya4t98r -> "Royal Ontario Golf Club" archived=false changed 2026-10-15T22:24:31.713080Z
+Rounds: 100. Entered by The Marker or changed since 17 Oct:
+Rounds per game: {"msswfx9y81u9ls":8,"msngo2mu2yqef3":54,"mt0ymqnvz9m5bx":4,"mtbx9lo1hak3xb":5,"muyq2ns85bnboa":6,"mv5w9b3vtmetf5":4}
+
+Games of "Philippine Golfers" (4):
+  msvbwkok1kaoyp name="Villamot Friendship Game" 2026-08-09 courseId=mst2kk4aztybka -> "Villamor Golf Club" archived=false changed 2026-10-01T13:52:07.816153Z
+  mstnmcfgbcyygo name="Pagong Cup" 2026-08-13 to 2026-08-14 courseId=v1-course-egds19lt -> "Anvaya Cove Golf & Sports Club" archived=false changed 2026-10-01T13:52:07.816153Z
+  msuj6lcqhd0d41 name="Practice Round PNGC" 2026-08-15 courseId=v1-course-6yqshpm7 -> "Philippine Navy Golf Club" archived=false changed 2026-10-01T13:52:07.816153Z
+  mt4m92llrys047 name="Fiesta Tournament" 2026-08-22 courseId=msvu6cs2ot7f3l -> "Caliraya Springs Golf Club — Arnold Palmer" archived=false changed 2026-09-30T20:29:05.871483Z
+Rounds: 36. Entered by The Marker or changed since 17 Oct:
+Rounds per game: {"mstnmcfgbcyygo":12,"msuj6lcqhd0d41":6,"msvbwkok1kaoyp":6,"mt4m92llrys047":7}
+
+Games of "Apple Test Group" (0):
+Rounds: 0. Entered by The Marker or changed since 17 Oct:
+Rounds per game: {}
