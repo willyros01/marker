@@ -1,0 +1,26 @@
+Marker cards dated 2025: 1
+  card mvd9fqrz6musio: date 2025-07-17, course "Lakeview Golf Course", tee White 68.6/120, game null, status posted, postedAt 2026-10-18T03:54:19.798Z, courseId mvdak5q2dikg2u, rounds 3
+
+Scorecard courses: 42
+  course mvdak5q2dikg2u: "Lakeview Golf Course" updated 2026-10-18T03:54:19.826325Z createdVia marker tees mvdak5q20tj2up:White 68.6/120
+  course v1-course-0ya4t98r: "Royal Ontario Golf Club" updated 2026-10-17T15:55:23.513278Z createdVia - tees v1-tee-royal-ontario-golf-club-black-m:Black. (M) 73.7/150; v1-tee-royal-ontario-golf-club-gold-m:Gold. (M) 73/148; v1-tee-royal-ontario-golf-club-blue-m:Blue. (M) 70.5/138; v1-tee-royal-ontario-golf-club-white-m:White. (M) 68.8/133; v1-tee-royal-ontario-golf-club-red-m:Red. (M) 65.7/122; v1-tee-royal-ontario-golf-club-white-f-w:White. (F) (W) 74.2/141; v1-tee-royal-ontario-golf-club-red-f-w:Red. (F) (W) 70.8/127; mvckvlj1r68rn5:White 69.7/130
+
+Group PUBLIC "Public group": 0 games, 0 touching 2025, 0 changed since 17 Oct
+  rounds: 3 total, 0 dated 2025, 0 via The Marker, 0 changed since 17 Oct
+  2025 rounds by course: {}
+  2025 rounds by game: {}
+
+Group mss0iqvqder7g2 "Golfing Buddies": 6 games, 0 touching 2025, 0 changed since 17 Oct
+  rounds: 100 total, 35 dated 2025, 0 via The Marker, 0 changed since 17 Oct
+  2025 rounds by course: {"Royal Ontario Golf Club":35}
+  2025 rounds by game: {"msngo2mu2yqef3":35}
+
+Group mstjip6n4yzfhh "Philippine Golfers": 4 games, 0 touching 2025, 0 changed since 17 Oct
+  rounds: 36 total, 0 dated 2025, 0 via The Marker, 0 changed since 17 Oct
+  2025 rounds by course: {}
+  2025 rounds by game: {}
+
+Group mv41i2sx1c9tyw "Apple Test Group": 0 games, 0 touching 2025, 0 changed since 17 Oct
+  rounds: 0 total, 0 dated 2025, 0 via The Marker, 0 changed since 17 Oct
+  2025 rounds by course: {}
+  2025 rounds by game: {}
