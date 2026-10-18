@@ -11,6 +11,14 @@ for (const s of posted) {
   const c = s.data.card || {};
   console.log(`${s.id.slice(0, 6)} ${c.date} ${(c.course || {}).name} players=${(c.players || []).length} scorer=${String(s.data.scorer).slice(0, 5)} repostedAs=${s.data.repostedAs || ""} hidden=${!!s.data.repostHidden}`);
 }
+for (const s of posted) {
+  console.log(`${s.id.slice(0, 6)} hidden: ${JSON.stringify(s.data.repostHidden)} at ${s.data.repostHiddenAt} corrections=${s.data.corrections || 0}`);
+  for (const p of s.data.card.players) {
+    const rid = (s.data.rounds || {})[p.golferId];
+    const r = rid ? await fs.get(`associations/${p.assocId}/rounds/${rid}`) : null;
+    console.log(`  ${p.name}: ${r ? "round still there" : "round gone"}`);
+  }
+}
 const lake = posted.find((s) => (s.data.card || {}).date === "2025-07-17");
 if (!lake) { console.log("no Lakeview card"); process.exit(0); }
 for (const p of lake.data.card.players) {
