@@ -134,6 +134,7 @@ test("W5 a new course goes into The Scorecard once; the same course and tee are 
   const course = fs.data(courses[0]);
   assert.equal(course.name, "Royal Ontario");
   assert.equal(course.createdBy, SCORER);
+  assert.equal(course.id, courses[0].split("/")[1], "the course keeps its own id inside: The Scorecard reads it from there");
   submission(fs, "c2", { players: [player("A", "G1", "Ana Cruz")] });
   await post(fs, "c2");
   assert.equal([...fs.docs.keys()].filter((k) => /^courses\/[^/]+$/.test(k)).length, 1);

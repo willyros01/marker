@@ -100,6 +100,7 @@ test("E1 a card dropped off by a phone is posted by the worker, all of it in one
   const courses = await fs.query("", "courses", [], 10);
   assert.equal(courses.length, 1);
   assert.equal(courses[0].data.name, "Wack Wack — East");
+  assert.equal(courses[0].data.id, courses[0].id, "the course keeps its own id inside, as The Scorecard reads it");
 });
 
 test("E2 the same card twice: posted once", async () => {
@@ -150,6 +151,7 @@ test("E5 after a withdrawal: the withdrawn details are refused, a hand entry bec
   assert.notEqual(round.data.courseId, "K");
   assert.equal((await fs.get("courses/K")).data.tees.length, 1, "the withdrawn course is never changed");
   assert.equal((await fs.get(`markerCourses/m-${round.data.courseId}`)).data.manual, true);
+  assert.equal((await fs.get(`courses/${round.data.courseId}`)).data.id, round.data.courseId);
 });
 
 test("E6 a verified card replaces the saved course, over Firestore's real interface", async () => {

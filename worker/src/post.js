@@ -194,7 +194,10 @@ export async function plan(fs, sub, today) {
     courseId = created.id;
     teeId = created.tees[0].id;
     const { id, ...data } = created;
-    writes.push(setWrite(fs, `courses/${id}`, { ...data, createdVia: "marker" }, { exists: false }));
+    /* The Scorecard reads a course's id from inside the document, so it must be
+       stored there too (a course saved without it showed up in place of every
+       missing course: Willy, 18 Oct 2026). */
+    writes.push(setWrite(fs, `courses/${id}`, { id, ...data, createdVia: "marker" }, { exists: false }));
     /* Entered by hand: kept in The Marker's course list too, holes and all,
        so other scorers can pick it instead of typing it again. */
     if (!fromDatabase) {
