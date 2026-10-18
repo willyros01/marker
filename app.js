@@ -42,18 +42,67 @@ const iso = (y, m, d) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStar
 const daysIn = (y, m) => new Date(y, m, 0).getDate();
 /* A round is never dated after today (The Scorecard refuses future cards). */
 const notFuture = (d) => (d > today() ? today() : d);
-/* Month, day and year lists under the date, to jump to any date in the last
-   few years without stepping one day at a time. */
-function datePicker(date) {
-  const [y, m, d] = date.split("-").map(Number);
-  const now = new Date().getFullYear();
-  const opt = (v, label, on) => `<option value="${v}" ${on ? "selected" : ""}>${label}</option>`;
-  const years = []; for (let k = now; k >= now - 4; k--) years.push(k);
-  const days = []; for (let k = 1; k <= daysIn(y, m); k++) days.push(k);
-  return `<div class="datepick">
-    <select data-date="m" aria-label="Month">${MONTHS.map((n, i) => opt(i + 1, n, i + 1 === m)).join("")}</select>
-    <select data-date="d" aria-label="Day">${days.map((k) => opt(k, k, k === d)).join("")}</select>
-    <select data-date="y" aria-label="Year">${years.map((k) => opt(k, k, k === y)).join("")}</select></div>`;
+/* The Scorecard's own calendar, the same on every phone and tablet (the
+   iPad's built-in date picker could not change month or year reliably). */
+const cal = { open: false, month: null, pick: null, typed: "" };
+function shiftMonth(ym, by) {
+  const [y, m] = ym.split("-").map(Number);
+  const total = y * 12 + (m - 1) + by;
+  return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, "0")}`;
+}
+function dayGrid(ym) {
+  const [y, m] = ym.split("-").map(Number);
+  const lead = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;   /* Monday first */
+  const cells = [];
+  for (let i = 0; i < lead; i++) cells.push(null);
+  for (let d = 1; d <= daysIn(y, m); d++) cells.push(d);
+  return cells;
+}
+function datePicker(value) {
+  const btn = `<button class="datebtn" data-act="cal-open"><span>${esc(niceDate(value))}</span><span class="datebtn-hint">${cal.open ? "▲" : "▾"}</span></button>`;
+  if (!cal.open) return btn;
+  const showing = cal.month || value.slice(0, 7);
+  const now = today();
+  const thisYear = Number(now.slice(0, 4));
+  const years = []; for (let y = thisYear; y >= thisYear - 9; y--) years.push(y);
+  return `${btn}<div class="cal">
+    <div class="cal-head">
+      <button class="cal-arrow" data-act="cal-prev" aria-label="Previous month">‹</button>
+      <div class="cal-title">
+        <button class="cal-jump" data-act="cal-months">${MONTHS[Number(showing.slice(5, 7)) - 1]}</button>
+        <button class="cal-jump" data-act="cal-years">${showing.slice(0, 4)}</button>
+      </div>
+      <button class="cal-arrow" data-act="cal-next" aria-label="Next month">›</button>
+    </div>
+    ${cal.pick === "months" ? `<div class="cal-pick">${MONTHS.map((n, i) => {
+      const ym = `${showing.slice(0, 4)}-${String(i + 1).padStart(2, "0")}`;
+      return `<button class="cal-pick-btn ${ym === showing ? "picked" : ""}" data-act="cal-month" data-v="${ym}">${n.slice(0, 3)}</button>`;
+    }).join("")}</div>` : ""}
+    ${cal.pick === "years" ? `<div class="cal-pick">${years.map((y) => {
+      const ym = `${y}-${showing.slice(5, 7)}`;
+      return `<button class="cal-pick-btn ${String(y) === showing.slice(0, 4) ? "picked" : ""}" data-act="cal-month" data-v="${ym}">${y}</button>`;
+    }).join("")}</div>` : ""}
+    <div class="cal-week">${["M", "T", "W", "T", "F", "S", "S"].map((d) => `<span>${d}</span>`).join("")}</div>
+    <div class="cal-grid">${dayGrid(showing).map((d) => {
+      if (d === null) return `<span class="cal-blank"></span>`;
+      const day = `${showing}-${String(d).padStart(2, "0")}`;
+      return `<button class="cal-day ${day === value ? "picked" : ""} ${day === now ? "today" : ""}" data-act="cal-day" data-v="${day}" ${day > now ? "disabled" : ""}>${d}</button>`;
+    }).join("")}</div>
+    <div class="cal-typed">
+      <span class="label">Or type it</span>
+      <input class="input" id="caltyped" inputmode="numeric" placeholder="2025 05 18" value="${esc(cal.typed)}" autocomplete="off">
+      <button class="btn" data-act="cal-typed">Use what I typed</button>
+    </div>
+    <div class="cal-foot">
+      <button class="btn" data-act="cal-today">Today</button>
+      <button class="btn primary" data-act="cal-close">Use this date</button>
+    </div>
+  </div>`;
+}
+function setRoundDate(d) {
+  S.setup.date = notFuture(d); S.setup.game = null;
+  cal.open = false; cal.month = null; cal.pick = null; cal.typed = "";
+  render(); loadGames();
 }
 const niceDate = (iso) => { try { return new Date(iso + "T12:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); } catch { return iso; } };
 const first = (name) => String(name || "").split(" ")[0];
@@ -142,7 +191,6 @@ function screenSetup() {
   return `${top("Set up the round", member() ? user().email : "Playing without an account", netPill())}
     <main class="body">${banner()}
       <div class="field"><span class="label">Date</span>
-        <div class="stepper"><button data-act="date" data-v="-1" aria-label="Day before">−</button><div class="val">${esc(niceDate(s.date))}</div><button data-act="date" data-v="1" aria-label="Day after" ${s.date >= today() ? "disabled" : ""}>+</button></div>
         ${datePicker(s.date)}</div>
       <div class="field"><span class="label">Course</span>
         <button class="btn" style="justify-content:flex-start" data-act="go-course">${c ? esc(c.name) : "Choose a course"} ▸</button></div>
@@ -728,6 +776,26 @@ const actions = {
   },
   resume() { const c = local.currentCard(); go(c.state === "finished" ? "finish" : "play"); },
   date(el) { S.setup.date = notFuture(shiftDate(S.setup.date, Number(el.dataset.v))); S.setup.game = null; render(); loadGames(); },
+  "cal-open"() { cal.open = !cal.open; cal.month = null; cal.pick = null; cal.typed = ""; render(); },
+  "cal-prev"() { cal.month = shiftMonth(cal.month || S.setup.date.slice(0, 7), -1); cal.pick = null; render(); },
+  "cal-next"() { cal.month = shiftMonth(cal.month || S.setup.date.slice(0, 7), 1); cal.pick = null; render(); },
+  "cal-months"() { cal.pick = cal.pick === "months" ? null : "months"; render(); },
+  "cal-years"() { cal.pick = cal.pick === "years" ? null : "years"; render(); },
+  "cal-month"(el) { cal.month = el.dataset.v; cal.pick = null; render(); },
+  "cal-day"(el) { setRoundDate(el.dataset.v); },
+  "cal-today"() { setRoundDate(today()); },
+  "cal-close"() { cal.open = false; cal.month = null; cal.pick = null; render(); },
+  "cal-typed"() {
+    /* Any separator, or none: year, month, day. Only a real date, not in the future. */
+    const digits = cal.typed.replace(/\D/g, "");
+    const t = digits.length === 8 ? `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}` : "";
+    const [y, m, d] = t ? t.split("-").map(Number) : [];
+    const real = t && new Date(Date.UTC(y, m - 1, d));
+    if (!t) { S.error = "Type the date as year, month, day — for example 2025 05 18."; render(); return; }
+    if (real.getUTCFullYear() !== y || real.getUTCMonth() !== m - 1 || real.getUTCDate() !== d) { S.error = "That is not a real date."; render(); return; }
+    if (t > today()) { S.error = "A round cannot have been played in the future."; render(); return; }
+    S.error = ""; setRoundDate(t);
+  },
   "go-course"() {
     S.cs.error = ""; S.cs.results = []; S.cs.withdrawn = db.withdrawnSaved(); go("course");
     db.library().then((l) => { S.cs.library = l; if (S.screen === "course" && !S.cs.manual) render(); });
@@ -1152,14 +1220,6 @@ function confirmLeave(cur) {
 /* Typing straight into a score box in "all four" mode. */
 document.addEventListener("change", (e) => {
   if (e.target.id === "groupsel") { actions.tab({ dataset: { v: e.target.value } }); return; }
-  if (e.target.dataset && e.target.dataset.date && S.setup) {
-    /* One list changed: keep the other two, and keep the day inside the month. */
-    let [y, m, d] = S.setup.date.split("-").map(Number);
-    const v = Number(e.target.value);
-    if (e.target.dataset.date === "y") y = v; else if (e.target.dataset.date === "m") m = v; else d = v;
-    S.setup.date = notFuture(iso(y, m, Math.min(d, daysIn(y, m))));
-    S.setup.game = null; render(); loadGames(); return;
-  }
   if (e.target.id === "scanfile" || e.target.id === "scanpick") { readPhoto(e.target.files && e.target.files[0]); e.target.value = ""; return; }
   const m = S.cs.manual;
   if (m && e.target.dataset.hole != null) m.pars[Number(e.target.dataset.hole)] = Number(e.target.value);
@@ -1179,6 +1239,7 @@ document.addEventListener("input", (e) => {
   if (e.target.id === "guest") S.guestName = e.target.value;
   if (e.target.id === "typed") S.typed = e.target.value;
   if (e.target.id === "cq") S.cs.query = e.target.value;
+  if (e.target.id === "caltyped") cal.typed = e.target.value;
   /* The hand-entered course is kept as it is typed, so nothing is lost if the
      screen is drawn again (for example when the course list arrives). */
   const m = S.cs.manual;

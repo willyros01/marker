@@ -54,8 +54,6 @@ p { margin: 0; line-height: 1.45; }
 .input:focus { outline: 3px solid var(--green-soft); border-color: var(--green); }
 .stepper { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 6px; }
 .stepper button { width: 60px; height: 52px; border-radius: 10px; border: none; background: var(--green-soft); color: var(--green); font-size: 28px; font-weight: 800; }
-.datepick { display: grid; grid-template-columns: 1.6fr 0.9fr 1.1fr; gap: 8px; margin-top: 8px; }
-.datepick select { min-height: 56px; font-size: 21px; font-weight: 700; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); padding: 0 10px; min-width: 0; }
 .stepper button[disabled] { opacity: .35; }
 .stepper .val { flex: 1; text-align: center; font-size: 26px; font-weight: 800; }
 
@@ -176,3 +174,26 @@ details.retake summary { font-size: 17px; font-weight: 700; color: var(--green-d
 /* The group chooser on the players screen. */
 .groupsel { height: 60px; font-size: 20px; font-weight: 700; appearance: none; -webkit-appearance: none;
   background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='12'%3E%3Cpath d='M1 1l8 9 8-9' fill='none' stroke='%232E5541' stroke-width='3'/%3E%3C/svg%3E") no-repeat right 16px center; padding-right: 48px; }
+
+/* The Scorecard's calendar */
+.datebtn { width: 100%; min-height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); font-size: 24px; font-weight: 800; }
+.datebtn-hint { color: var(--ink-3); font-size: 20px; }
+.cal { margin-top: 8px; background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 12px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cal-arrow { width: 52px; height: 48px; border-radius: 10px; font-size: 28px; line-height: 1; border: 1.5px solid var(--line); background: var(--card); }
+.cal-title { display: flex; gap: 10px; align-items: center; }
+.cal-jump { font-weight: 800; font-size: 22px; background: none; border: 0; border-bottom: 2px dashed var(--line-strong); padding: 2px 4px; }
+.cal-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 12px 0 4px; }
+.cal-pick-btn { min-height: 52px; border-radius: 10px; font-size: 19px; border: 1.5px solid var(--line); background: var(--card); }
+.cal-pick-btn.picked { background: var(--green); color: #fff; border-color: var(--green); font-weight: 800; }
+.cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-week { margin: 12px 0 4px; }
+.cal-week span { text-align: center; font-size: 15px; color: var(--ink-3); font-weight: 700; min-width: 0; }
+.cal-day { aspect-ratio: 1; min-width: 0; border-radius: 10px; border: 1.5px solid transparent; background: var(--card); font-size: 19px; font-weight: 600; }
+.cal-day:disabled { opacity: .3; }
+.cal-day.today { border-color: var(--line-strong); font-weight: 800; }
+.cal-day.picked { background: var(--green); color: #fff; font-weight: 800; border-color: var(--green); }
+.cal-blank { min-width: 0; aspect-ratio: 1; }
+.cal-typed { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 8px; }
+.cal-foot { display: flex; gap: 10px; margin-top: 12px; }
+.cal-foot .btn { flex: 1; }
