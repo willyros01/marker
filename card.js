@@ -139,7 +139,7 @@ export function postable(card) {
   if (card.holes !== "18") return { ok: false, why: "The Scorecard keeps 18-hole rounds only, so a 9-hole card is shared, not posted." };
   if (!Number(card.tee.rating) || !Number(card.tee.slope)) return { ok: false, why: "This tee has no rating and slope, which a handicap needs. Share the card instead." };
   const missing = members.filter((p) => card.order.some((n) => !entered(p.scores[n])));
-  if (missing.length) return { ok: false, why: `Every hole needs a score first (${missing.map((p) => p.name.split(" ")[0]).join(", ")}).` };
+  if (missing.length) return { ok: false, why: `Every hole needs a score first (${missing.map((p) => p.name).join(", ")}).` };
   return { ok: true, members };
 }
 

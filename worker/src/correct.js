@@ -27,7 +27,8 @@ import { Refusal, STATUS, checkCard, checkTee, teeFor } from "./post.js";
 
 export const CORRECT_HOURS = 24;
 const refuse = (why) => { throw new Refusal(why); };
-const first = (name) => String(name || "A golfer").split(" ")[0];
+/* Full names in every message: a group can have two golfers with the same first name. */
+const full = (name) => String(name || "").trim() || "A golfer";
 const ms = (t) => (typeof t === "string" ? Date.parse(t) : Number(t) || NaN);
 
 /* Is this caller an owner or admin of the group? */
@@ -73,7 +74,7 @@ async function load(fs, sub) {
   for (const p of c.players) {
     const rid = rounds[p.golferId];
     const r = rid ? await fs.get(`associations/${p.assocId}/rounds/${rid}`) : null;
-    if (!r) refuse(`${first(p.name)}'s round from this card was deleted in The Scorecard, so the card can no longer be corrected here. An owner or admin can enter the round again.`);
+    if (!r) refuse(`${full(p.name)}'s round from this card was deleted in The Scorecard, so the card can no longer be corrected here. An owner or admin can enter the round again.`);
     /* The handicap frozen on the round when it was posted, never today's. */
     const index = r.data.indexAtEntry == null ? null : Number(r.data.indexAtEntry);
     players.push({ name: p.name || "", golferId: p.golferId, assocId: p.assocId, guest: false, index, ch: card.courseHandicapFor(index, roundTee(tee, r)), scores: Object.fromEntries(order.map((n) => [n, p.scores[n]])) });
@@ -85,7 +86,7 @@ async function load(fs, sub) {
     const r = docs[i].data;
     const expect = card.roundFor({ ...trusted, tee: roundTee(tee, docs[i]) }, i, { uid: r.enteredBy, courseId: r.courseId, teeId: r.teeId, roundId: docs[i].id });
     if (Number(r.gross) !== expect.gross || JSON.stringify(r.holes || null) !== JSON.stringify(expect.holes)) {
-      refuse(`${first(p.name)}'s round was changed in The Scorecard after this card was posted, so the card and the round no longer agree. An owner or admin can correct it in The Scorecard.`);
+      refuse(`${full(p.name)}'s round was changed in The Scorecard after this card was posted, so the card and the round no longer agree. An owner or admin can correct it in The Scorecard.`);
     }
   });
   return { c, order, tee, players, docs, trusted };
@@ -108,19 +109,97 @@ const summary = (sub, r) => {
   };
 };
 
-/* The posted cards this caller may correct, newest first. */
-export async function correctable(fs, who, { now = Date.now(), limit = 40 } = {}) {
-  if (!who || who.anonymous) refuse("Sign in to correct a card.");
+/* Each golfer's round from the card: the document, or null when it was
+   deleted in The Scorecard. */
+async function roundsOf(fs, sub) {
+  const c = sub.data.card || {};
+  const rounds = sub.data.rounds || {};
+  const out = [];
+  for (const p of c.players || []) {
+    const rid = rounds[p.golferId];
+    out.push(rid ? await fs.get(`associations/${p.assocId}/rounds/${rid}`) : null);
+  }
+  return out;
+}
+
+/* May this caller re-post the card: its scorer, or an owner or admin of every
+   group on it. No time limit: the rounds are gone, nothing is overwritten. */
+async function mayRepost(fs, who, sub, cache = new Map()) {
+  if (sub.data.scorer === who.uid) return true;
+  return (await rights(fs, who, sub, 0, cache)).as === "admin";
+}
+
+/* A card whose rounds were (some or all) deleted in The Scorecard can be
+   re-posted: only the golfers whose rounds are gone go on the new card. */
+const repostable = (sub) => !sub.data.repostedAs && !sub.data.repostHidden;
+
+/* Everything the Your cards screen needs from The Scorecard, newest first:
+   - correctable: posted cards this caller may correct, every round still there;
+   - editable: cards with deleted rounds this caller may re-post, with the
+     golfers whose rounds are gone and their index today. */
+export async function myCards(fs, who, { now = Date.now(), limit = 40 } = {}) {
+  if (!who || who.anonymous) refuse("Sign in to see your cards.");
   const posted = await fs.query("", "markerSubmissions", [["status", "EQUAL", STATUS.POSTED]], 500);
   const cache = new Map();
-  const out = [];
+  const correctable = [];
+  const editable = [];
   for (const s of posted) {
     if (!s.data.card) continue;
     const r = await rights(fs, who, s, now, cache);
-    if (r.as) out.push(summary(s, r));
+    const canRepost = repostable(s) && (r.as === "admin" || s.data.scorer === who.uid);
+    if (!r.as && !canRepost) continue;
+    const docs = await roundsOf(fs, s);
+    const gone = docs.map((d, i) => (d ? null : i)).filter((i) => i !== null);
+    if (!gone.length) { if (r.as) correctable.push(summary(s, r)); continue; }
+    if (!canRepost) continue;
+    const c = s.data.card;
+    const players = [];
+    for (const i of gone) {
+      const p = c.players[i];
+      const g = await fs.get(`golfers/${p.golferId}`);
+      players.push({ ...p, index: g ? model.effectiveIndex(g.data).index : null });
+    }
+    editable.push({ ...summary(s, r), gone: players.map((p) => p.name || ""), card: { ...c, players } });
   }
-  out.sort((a, b) => (b.date + b.cardId).localeCompare(a.date + a.cardId));
-  return out.slice(0, limit);
+  const order = (a, b) => (b.date + b.cardId).localeCompare(a.date + a.cardId);
+  return { correctable: correctable.sort(order).slice(0, limit), editable: editable.sort(order).slice(0, limit) };
+}
+
+/* The posted cards this caller may correct (kept for The Marker 0.6.0). */
+export async function correctable(fs, who, opts = {}) {
+  return (await myCards(fs, who, opts)).correctable;
+}
+
+/* Hide a card with deleted rounds from the list. Nothing in The Scorecard changes. */
+export async function hideEditable(fs, who, cardId) {
+  if (!who || who.anonymous) refuse("Sign in to see your cards.");
+  const sub = await fs.get(`markerSubmissions/${String(cardId || "").slice(0, 80)}`);
+  if (!sub || sub.data.status !== STATUS.POSTED) refuse("This card is not posted in The Scorecard.");
+  if (!(await mayRepost(fs, who, sub))) refuse("Only the scorer, or an owner or admin of the group, can hide this card.");
+  try {
+    await fs.commit([updateWrite(fs, sub.path, { repostHidden: { by: who.uid } }, { updateTime: sub.updateTime, now: ["repostHiddenAt"] })]);
+  } catch (e) {
+    if (e.conflict) refuse("This card changed a moment ago. Open Your cards again.");
+    throw e;
+  }
+  return { status: "hidden" };
+}
+
+/* Called while posting a re-posted card (post.js): the old card, checked.
+   Every golfer on the new card who was on the old one must have lost that
+   round, so nobody is ever counted twice. Returns the write marking the old
+   card as re-posted, to go in the same commit as the new rounds. */
+export async function repostWrite(fs, sub, oldId) {
+  const old = await fs.get(`markerSubmissions/${String(oldId || "").slice(0, 80)}`);
+  if (!old || old.data.status !== STATUS.POSTED || !old.data.card) refuse("The card this one re-posts is not in The Scorecard.");
+  if (old.data.repostedAs && old.data.repostedAs !== sub.id) refuse("That card has already been re-posted.");
+  if (!(await mayRepost(fs, { uid: sub.data.scorer }, old))) refuse("Only the scorer, or an owner or admin of the group, can re-post this card.");
+  const docs = await roundsOf(fs, old);
+  const before = new Map((old.data.card.players || []).map((p, i) => [p.golferId, docs[i]]));
+  for (const p of sub.data.card.players || []) {
+    if (before.get(p.golferId)) refuse(`${full(p.name)}'s round from the card of ${old.data.card.date} is still in The Scorecard, so posting it again would count it twice. Take ${full(p.name)} off this card.`);
+  }
+  return updateWrite(fs, old.path, { repostedAs: sub.id }, { updateTime: old.updateTime });
 }
 
 /* One card, ready to be corrected on the phone. */
@@ -176,7 +255,7 @@ export async function correct(fs, who, { cardId, scores } = {}, { now = Date.now
 
     /* The golfer's index, when this round counts in it. */
     const g = await fs.get(`golfers/${players[i].golferId}`);
-    if (!g) refuse(`${first(players[i].name)} is no longer in The Scorecard.`);
+    if (!g) refuse(`${full(players[i].name)} is no longer in The Scorecard.`);
     const win = Array.isArray(g.data.recentWindow) ? g.data.recentWindow : [];
     if (!win.some((e) => e.roundId === doc.id)) continue;
     const window = win.map((e) => (e.roundId === doc.id ? { ...e, differential: after.differential } : e));

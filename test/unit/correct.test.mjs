@@ -126,3 +126,80 @@ test("C6 the card for correction carries each golfer's frozen handicap", async (
   assert.equal(c.handicaps.length, 2);
   assert.ok(c.until);
 });
+
+/* 0.6.1 (Willy, 18 Oct 2026): a card whose rounds were deleted in The
+   Scorecard is not correctable; it is "editable": re-post it as a new card
+   (only the golfers whose rounds are gone) or hide it. */
+const repostSub = (fs, id, players, repostOf = "c1", scorer = SCORER) => {
+  const old = fs.data("markerSubmissions/c1").card;
+  fs.docs.set(`markerSubmissions/${id}`, { data: { scorer, status: "sent", createdAt: "t", app: "0.6.1", card: { ...old, id, repostOf, players } }, updateTime: "2026-10-18T01:00:00.000Z" });
+};
+
+test("C7 deleted rounds: not correctable, editable with only the golfers whose rounds are gone, full names", async () => {
+  const { fs, rounds } = await posted();
+  fs.docs.delete(`associations/G1/rounds/${rounds.B}`);
+  const m = await fix.myCards(fs, who(SCORER), { now: postedAt(fs) + 3600_000 });
+  assert.equal(m.correctable.length, 0);
+  assert.equal(m.editable.length, 1);
+  assert.deepEqual(m.editable[0].gone, ["Ben Reyes"]);
+  assert.deepEqual(m.editable[0].card.players.map((p) => p.golferId), ["B"]);
+  assert.equal(m.editable[0].card.players[0].index, 18);
+  assert.equal((await fix.myCards(fs, who(OTHER))).editable.length, 0, "another member never sees it");
+  assert.equal((await fix.myCards(fs, who(SCORER), { now: postedAt(fs) + 30 * 86400_000 })).editable.length, 1, "the scorer, with no time limit");
+  await assert.rejects(fix.cardForCorrection(fs, who(SCORER), "c1", { now: postedAt(fs) }), /Ben Reyes's round/);
+});
+
+test("C8 re-post: posted as a new card, the old card marked in the same commit, then gone from the list", async () => {
+  const { fs, rounds } = await posted();
+  fs.docs.delete(`associations/G1/rounds/${rounds.B}`);
+  const old = fs.data("markerSubmissions/c1").card;
+  repostSub(fs, "c2", [{ ...old.players[1], scores: scoresOf(5) }]);
+  const commits = fs.commits.length;
+  const r = await processSubmission(fs, "c2", { today: TODAY });
+  assert.equal(r.status, "posted");
+  assert.equal(fs.commits.length, commits + 1, "one commit");
+  assert.equal(fs.data("markerSubmissions/c1").repostedAs, "c2");
+  assert.ok(fs.data(`associations/G1/rounds/${r.rounds.B}`));
+  assert.equal(fs.data("golfers/B").roundCount, 2, "the old posting plus the re-post (this fake store does not undo counts on delete)");
+  const m = await fix.myCards(fs, who(SCORER), { now: postedAt(fs) });
+  assert.equal(m.editable.length, 0);
+});
+
+test("C9 re-post refused when a golfer's old round is still there (never counted twice), or already re-posted", async () => {
+  const { fs, rounds } = await posted();
+  fs.docs.delete(`associations/G1/rounds/${rounds.B}`);
+  const old = fs.data("markerSubmissions/c1").card;
+  repostSub(fs, "c2", old.players);
+  const r = await processSubmission(fs, "c2", { today: TODAY });
+  assert.equal(r.status, "refused");
+  assert.match(r.reason, /Ana Cruz's round .* still in The Scorecard/);
+  assert.equal(fs.data("golfers/A").roundCount, 6, "nothing written");
+  repostSub(fs, "c3", [old.players[1]]);
+  assert.equal((await processSubmission(fs, "c3", { today: TODAY })).status, "posted");
+  repostSub(fs, "c4", [old.players[1]]);
+  const again = await processSubmission(fs, "c4", { today: TODAY });
+  assert.equal(again.status, "refused");
+  assert.match(again.reason, /already been re-posted/);
+});
+
+test("C10 hide: only the scorer or an admin; nothing in The Scorecard changes", async () => {
+  const { fs, rounds } = await posted();
+  fs.docs.delete(`associations/G1/rounds/${rounds.A}`);
+  fs.docs.delete(`associations/G1/rounds/${rounds.B}`);
+  assert.equal((await fix.myCards(fs, who(ADMIN))).editable.length, 1, "an admin sees it too");
+  await assert.rejects(fix.hideEditable(fs, who(OTHER), "c1"), /Only the scorer/);
+  const golferB = JSON.stringify(fs.data("golfers/B"));
+  await fix.hideEditable(fs, who(ADMIN), "c1");
+  assert.equal((await fix.myCards(fs, who(SCORER))).editable.length, 0);
+  assert.equal(JSON.stringify(fs.data("golfers/B")), golferB);
+});
+
+test("C11 a member who is not the scorer nor an admin cannot re-post somebody else's card", async () => {
+  const { fs, rounds } = await posted();
+  fs.docs.delete(`associations/G1/rounds/${rounds.B}`);
+  const old = fs.data("markerSubmissions/c1").card;
+  repostSub(fs, "c6", [old.players[1]], "c1", OTHER);
+  const r = await processSubmission(fs, "c6", { today: TODAY });
+  assert.equal(r.status, "refused");
+  assert.match(r.reason, /Only the scorer/);
+});

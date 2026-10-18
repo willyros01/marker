@@ -20,6 +20,7 @@ import * as model from "../../model.js";
 import * as card from "../../card.js";
 import * as W from "../../withdrawn.js";
 import { setWrite, updateWrite } from "./firestore.js";
+import { repostWrite } from "./correct.js";
 
 export const STATUS = { SENT: "sent", POSTED: "posted", REFUSED: "refused" };
 
@@ -28,7 +29,8 @@ export class Refusal extends Error {}
 const refuse = (why) => { throw new Refusal(why); };
 
 const isDate = (s) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`));
-const first = (name) => String(name || "A golfer").split(" ")[0];
+/* Full names in every message: a group can have two golfers with the same first name. */
+const full = (name) => String(name || "").trim() || "A golfer";
 const lower = (s) => String(s || "").trim().toLowerCase();
 
 /* ---------------- checks that need nothing but the card ---------------- */
@@ -75,12 +77,12 @@ export function checkCard(c, today) {
   const ids = new Set();
   for (const p of players) {
     if (!p || typeof p.golferId !== "string" || !p.golferId || typeof p.assocId !== "string" || !p.assocId) refuse("A golfer on the card is not from a group.");
-    if (ids.has(p.golferId)) refuse(`${first(p.name)} is on the card twice.`);
+    if (ids.has(p.golferId)) refuse(`${full(p.name)} is on the card twice.`);
     ids.add(p.golferId);
     const scores = p.scores && typeof p.scores === "object" ? p.scores : {};
     for (const n of order) {
       const s = scores[n];
-      if (!(s === card.PICKED_UP || (Number.isInteger(s) && s >= 1 && s <= 20))) refuse(`${first(p.name)} has no score on hole ${n}.`);
+      if (!(s === card.PICKED_UP || (Number.isInteger(s) && s >= 1 && s <= 20))) refuse(`${full(p.name)} has no score on hole ${n}.`);
     }
   }
   return order;
@@ -163,6 +165,10 @@ export async function plan(fs, sub, today) {
   const order = checkCard(c, today);
 
   if (await fs.get(`accountDeletions/${scorer}`)) refuse("The scorer's account is being deleted.");
+  /* A card re-posted from one whose rounds were deleted in The Scorecard:
+     the old card is marked in the same commit, and refused if any golfer's
+     old round is still there (never counted twice). */
+  const repost = c.repostOf ? await repostWrite(fs, sub, c.repostOf) : null;
 
   const tee = await teeFor(fs, c);
   const courses = await fs.query("", "courses", [], 1000);
@@ -212,7 +218,7 @@ export async function plan(fs, sub, today) {
   const players = [];
   const golfers = [];
   for (const p of c.players) {
-    const who = first(p.name);
+    const who = full(p.name);
     if (!(await fs.get(`associations/${p.assocId}/members/${scorer}`))) refuse(`The scorer is not a member of ${who}'s group.`);
     const g = await fs.get(`golfers/${p.golferId}`);
     if (!g) refuse(`${who} is no longer in The Scorecard.`);
@@ -267,6 +273,7 @@ export async function plan(fs, sub, today) {
 
   /* The tee the rounds were worked out with, kept for corrections (the
      phone's copy is never trusted, and the library's may change later). */
+  if (repost) writes.push(repost);
   writes.push(updateWrite(fs, sub.path, { status: STATUS.POSTED, reason: "", rounds, courseId, postedTee: tee },
     { updateTime: sub.updateTime, now: ["postedAt"] }));
   return { writes, rounds };

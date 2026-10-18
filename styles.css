@@ -197,3 +197,16 @@ details.retake summary { font-size: 17px; font-weight: 700; color: var(--green-d
 .cal-typed { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 8px; }
 .cal-foot { display: flex; gap: 10px; margin-top: 12px; }
 .cal-foot .btn { flex: 1; }
+
+/* 0.6.1: start screen and Your cards */
+.btn.big { min-height: 170px; }
+.btn.big span:first-child { font-size: 26px; }
+.btn.big small { font-size: 18px; }
+.btn.split { justify-content: space-between; text-align: left; }
+.badge { background: #B7791F; color: #fff; border-radius: 999px; padding: 4px 12px; font-size: 16px; font-weight: 800; }
+.who { text-align: center; font-size: 16px; color: var(--ink-3); }
+h3.sec { font-family: var(--serif); font-size: 23px; font-weight: 600; margin: 4px 0 -4px; }
+.item.amb { background: #FBEFD9; border: 2px solid #C98A1B; }
+.item.amb .meta { color: #5C3D0A; }
+.item .row2 { margin-top: 8px; }
+.item .row2 .btn { min-height: 50px; }

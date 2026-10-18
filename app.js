@@ -31,6 +31,7 @@ const S = {
   /* play */
   typing: false, typed: "", typeError: "",
   view: null,              /* a finished card being looked at */
+  mine: null,              /* from The Scorecard: { correctable, editable } */
   share: null,             /* text for the share screen */
 };
 
@@ -138,26 +139,40 @@ function screenStart() {
   const cur = local.currentCard();
   const u = user();
   const cards = local.finishedCards();
+  const signedIn = !!(u && !u.anonymous);
+  const what = cur && cur.correcting ? "Continue your correction" : cur && cur.repostOf ? "Continue your re-post" : "Continue your round";
   const resume = cur && (cur.state === "playing" || cur.state === "finished")
-    ? `<button class="btn primary tall" data-act="resume"><span>${cur.correcting ? "Continue your correction" : "Continue your round"}</span><small>${esc(cur.course.name)} · ${esc(niceDate(cur.date))}${cur.correcting ? "" : ` · hole ${esc(cur.order[cur.pos])}`}</small></button>` : "";
-  let who;
-  if (u && !u.anonymous) {
-    who = `<button class="btn ${resume ? "" : "primary"} tall" data-act="new-round"><span>Start a new round</span><small>Signed in as ${esc(u.email)}. Rounds are posted to The Scorecard.</small></button>
-      <button class="btn" data-act="go-corrections">✎ Correct a posted card</button>
-      <button class="btn" data-act="sign-out">Sign out</button>`;
+    ? `<button class="btn primary tall" data-act="resume"><span>${what}</span><small>${esc(cur.course.name)} · ${esc(niceDate(cur.date))}${cur.correcting || cur.state === "finished" ? "" : ` · hole ${esc(cur.order[cur.pos])}`}</small></button>` : "";
+  const editable = signedIn && S.mine ? S.mine.editable.length : 0;
+  let main;
+  if (signedIn) {
+    main = `<button class="btn ${resume ? "" : "primary"} tall big" data-act="new-round"><span>⛳ Start a new round</span><small>Rounds are posted to The Scorecard.</small></button>
+      <button class="btn split" data-act="history"><span>Your cards</span>${editable ? `<span class="badge">${editable} editable</span>` : ""}</button>`;
   } else {
-    who = `<button class="btn ${resume ? "" : "primary"} tall" data-act="go-signin"><span>Sign in with The Scorecard</span><small>Pick golfers from your groups. Scores are posted for them.</small></button>
-      <button class="btn outline tall" data-act="play-anon"><span>Play without an account</span><small>Type the players' names. Keep and share the card; nothing is posted.</small></button>`;
+    main = `<button class="btn ${resume ? "" : "primary"} tall" data-act="go-signin"><span>Sign in with The Scorecard</span><small>Pick golfers from your groups. Scores are posted for them.</small></button>
+      <button class="btn outline tall" data-act="play-anon"><span>Play without an account</span><small>Type the players' names. Keep and share the card; nothing is posted.</small></button>
+      ${cards.length ? `<button class="btn split" data-act="history"><span>Your cards</span></button>` : ""}`;
   }
   return `${top("The Marker", "Hole-by-hole scorecard", netPill())}
-    <main class="body">${banner()}${resume}${who}
-      ${cards.length ? `<button class="btn dashed" data-act="history">Your cards (${cards.length})</button>` : ""}
-      <p class="muted">Every score is saved on this phone the moment you enter it, so a lost signal or a flat battery loses nothing.</p>
-    </main>
-    <footer class="foot"><div class="links">
+    <main class="body">${banner()}${resume}${main}</main>
+    <footer class="foot">${signedIn ? `<div class="who">Signed in as ${esc(u.email)}</div><button class="btn" data-act="sign-out">Sign out</button>` : ""}
+      <div class="links">
       <a href="https://www.cuberoot-systems.com/scorecard/support/" target="_blank" rel="noopener">Support</a>
       <a href="https://www.cuberoot-systems.com/scorecard/privacy/" target="_blank" rel="noopener">Privacy</a>
       <span class="muted">v${esc(VERSION)}</span></div></footer>`;
+}
+
+/* The Your cards lists from The Scorecard: asked for again at most once a
+   minute (or at once when `force`), kept until the next answer. */
+let mineAt = 0;
+async function refreshMine(force = false) {
+  const u = user();
+  if (!u || u.anonymous) { S.mine = null; return; }
+  if (navigator.onLine === false) return;
+  if (!force && Date.now() - mineAt < 60000) return;
+  mineAt = Date.now();
+  try { S.mine = await db.myCards(); } catch { /* the last list stays */ }
+  if (["start", "history"].includes(S.screen)) render();
 }
 
 /* ---------------- sign in ---------------- */
@@ -610,12 +625,15 @@ function screenFinish(c) {
   const postBtn = check.ok
     ? `<button class="btn primary" data-act="post">Post ${n} round${n === 1 ? "" : "s"} to The Scorecard</button>`
     : `<div class="banner warn">${esc(check.why)}</div>`;
-  return `${top("Round finished", `${c.course.name} · ${niceDate(c.date)}`)}
-    <main class="body">${banner()}<p class="muted">Check the totals before posting. Adjusted applies net double bogey on each hole, worked out for you.</p>
+  const intro = c.repostOf
+    ? `<div class="banner" style="font-size:20px;font-weight:700">Re-posting a card whose rounds were deleted in The Scorecard. Fix the wrong scores with ✎ Fix a score, then post it as a new card.</div>`
+    : `<p class="muted">Check the totals before posting. Adjusted applies net double bogey on each hole, worked out for you.</p>`;
+  return `${top(c.repostOf ? "Re-post the card" : "Round finished", `${c.course.name} · ${niceDate(c.date)}`)}
+    <main class="body">${banner()}${intro}
       ${summaries(c)}</main>
     <footer class="foot">${postBtn}<div class="row2"><button class="btn" data-act="share-card">Share the card</button><button class="btn" data-act="card">Review card</button></div>
       <button class="btn" data-act="fix-score">✎ Fix a score</button>
-      ${check.ok ? "" : `<button class="btn" data-act="done">Done</button>`}</footer>`;
+      ${c.repostOf ? `<button class="btn" data-act="cancel-repost" style="color:var(--over)">Cancel the re-post</button>` : check.ok ? "" : `<button class="btn" data-act="done">Done</button>`}</footer>`;
 }
 
 /* ---------------- correcting a posted card ---------------- */
@@ -637,7 +655,7 @@ function screenCorrections() {
         <span class="meta">${esc(x.players.join(", "))}<br>${x.as === "scorer" ? `Your card · until ${esc(new Date(x.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }))}` : "As owner or admin of the group"}${x.corrections ? ` · corrected ${x.corrections}×` : ""}</span></span></button>`).join("")}</div>`;
   return `${top("Correct a posted card", "Cards already in The Scorecard")}
     <main class="body">${banner()}${rows}</main>
-    <footer class="foot"><button class="btn" data-act="to-start">← Back</button></footer>`;
+    <footer class="foot"><button class="btn" data-act="history">← Back</button></footer>`;
 }
 
 function screenCorrectFinish(c) {
@@ -677,10 +695,20 @@ function screenStatus(c) {
 
 function screenHistory() {
   const cards = local.finishedCards();
-  return `${top("Your cards", "Kept on this phone")}
-    <main class="body">${banner()}<div class="list">${cards.map((c) => `
-      <button class="item" data-act="view" data-v="${esc(c.id)}"><span class="txt"><span class="name">${esc(c.course.name)}</span>
-        <span class="meta">${esc(niceDate(c.date))} · ${esc(c.players.map((p) => first(p.name)).join(", "))} · ${c.state === "posted" ? "posted" : c.state === "posting" ? (c.sent ? "being checked" : "waiting to send") : c.state === "failed" ? "not posted" : "not posted"}</span></span></button>`).join("")}</div></main>
+  const signedIn = !!(user() && !user().anonymous);
+  const editable = signedIn && S.mine ? S.mine.editable : [];
+  const gone = editable.length ? `<h3 class="sec">Deleted in The Scorecard</h3><div class="list">${editable.map((x) => `
+      <div class="item amb"><span class="txt"><span class="name">${esc(x.course)} · ${esc(niceDate(x.date))}</span>
+        <span class="meta">${x.gone.length === x.players.length ? "Rounds deleted." : `Rounds deleted: ${esc(x.gone.join(", "))}.`}</span>
+        <span class="row2"><button class="btn primary" data-act="repost-card" data-v="${esc(x.cardId)}" ${S.busy ? "disabled" : ""}>Re-post</button>
+        <button class="btn" data-act="hide-editable" data-v="${esc(x.cardId)}" ${S.busy ? "disabled" : ""}>Hide</button></span></span></div>`).join("")}</div>` : "";
+  const list = cards.length ? `<div class="list">${cards.map((c) => `
+      <button class="item" data-act="view" data-v="${esc(c.id)}"><span class="txt"><span class="name">${esc(c.course.name)} · ${esc(niceDate(c.date))}</span>
+        <span class="meta">${esc(c.players.map((p) => p.name).join(", "))} · ${c.state === "posted" ? "posted" : c.state === "posting" ? (c.sent ? "being checked" : "waiting to send") : "not posted"}</span></span></button>`).join("")}</div>`
+    : `<p class="muted">No cards on this phone yet.</p>`;
+  return `${top("Your cards", "The Marker")}
+    <main class="body">${banner()}${gone}${gone ? `<h3 class="sec">On this phone</h3>` : ""}${list}
+      ${signedIn ? `<button class="btn" data-act="go-corrections">✎ Correct a posted card</button>` : ""}</main>
     <footer class="foot"><button class="btn" data-act="home">← Back</button></footer>`;
 }
 
@@ -786,7 +814,7 @@ function setScoreNow(pi, value) {
 }
 
 const actions = {
-  home() { go("start"); },
+  home() { go("start"); refreshMine(); },
   "go-signin"() { go("signin"); },
   async "sign-in"() {
     const email = document.getElementById("email").value;
@@ -802,7 +830,7 @@ const actions = {
     try { await db.sendReset(email); S.flash = `If ${email} has an account, a reset email is on its way.`; S.error = ""; render(); }
     catch { S.error = "The reset email could not be sent. Check the signal and try again."; render(); }
   },
-  async "sign-out"() { await db.signOut(); S.groups = []; S.golfers = {}; S.flash = "Signed out."; go("start"); },
+  async "sign-out"() { await db.signOut(); S.groups = []; S.golfers = {}; S.mine = null; mineAt = 0; S.flash = "Signed out."; go("start"); },
   async "play-anon"() {
     /* Not awaited: with a poor signal the anonymous sign-in can take a while,
        and nothing on the next screens needs it except searching online. */
@@ -1170,6 +1198,7 @@ const actions = {
     if (c) { try { local.keepFinished(c.state === "finished" ? { ...c } : c); } catch {} }
     local.clearCurrent();
     go("start");
+    refreshMine(true);
   },
   "share-card"() { const c = local.currentCard(); if (c) share(card.shareText(c), S.screen); },
   "share-view"() { if (S.view) share(card.shareText(S.view), "view"); },
@@ -1179,7 +1208,40 @@ const actions = {
     catch { S.error = "This browser would not copy. Press and hold the text below, then choose Copy."; }
     render();
   },
-  history() { go("history"); },
+  history() { go("history"); refreshMine(true); },
+  async "repost-card"(el) {
+    const x = S.mine && S.mine.editable.find((k) => k.cardId === el.dataset.v);
+    if (!x) return;
+    const cur = local.currentCard();
+    if (cur && (cur.state === "playing" || cur.state === "finished")) {
+      S.error = "A round is in progress on this phone. Finish it (or end it from its Menu) before re-posting a card.";
+      render(); return;
+    }
+    const k = x.card;
+    let c = card.newCard({
+      mode: "member", date: k.date, course: k.course, tee: k.tee, holes: k.holes, start: k.start,
+      entry: (local.prefs().entry || "one"), game: k.game,
+      players: k.players.map((p) => ({ name: p.name, golferId: p.golferId, assocId: p.assocId, groupName: "", index: p.index })),
+    });
+    c = { ...c, order: k.order.map(Number), players: c.players.map((p, i) => ({ ...p, scores: Object.fromEntries(Object.entries(k.players[i].scores).map(([n, v]) => [Number(n), v])) })) };
+    c = { ...c, state: "finished", repostOf: x.cardId };
+    local.saveCurrent(c);
+    go("finish");
+  },
+  async "hide-editable"(el) {
+    if (S.busy) return;
+    if (!window.confirm("Hide this card? It is only taken off this list. Nothing changes in The Scorecard.")) return;
+    S.busy = "hide"; render();
+    try {
+      await db.hideEditable(el.dataset.v);
+      S.mine = { ...S.mine, editable: S.mine.editable.filter((k) => k.cardId !== el.dataset.v) };
+      S.busy = ""; S.flash = "The card is hidden."; render();
+    } catch (e) { S.busy = ""; S.error = correctionWhy(e); render(); }
+  },
+  "cancel-repost"() {
+    if (!window.confirm("Cancel the re-post? Nothing is posted.")) return;
+    local.clearCurrent(); go("history");
+  },
   view(el) { S.view = local.finishedCards().find((c) => c.id === el.dataset.v) || null; go("view"); },
   "delete-card"() {
     const c = S.view;
@@ -1389,11 +1451,12 @@ async function boot() {
   render();
   try { await db.init(); }
   catch (e) { S.error = "No connection to The Scorecard right now. You can still play and share; posting waits for the signal."; }
-  db.onChange(() => { if (["start", "status", "history"].includes(S.screen)) render(); });
+  db.onChange(() => { if (["start", "status", "history"].includes(S.screen)) render(); refreshMine(); });
   window.__markerBooted = true;
   const c = local.currentCard();
   if (c && c.state === "posting") S.screen = "status";
   render();
+  refreshMine(true);
 }
 addEventListener("online", () => render());
 addEventListener("offline", () => render());

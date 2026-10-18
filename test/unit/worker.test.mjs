@@ -191,7 +191,7 @@ const refusedFor = async (t, mutate, why) => {
 };
 
 test("W10 cards that must not be posted are refused, with the reason, and nothing is written", async () => {
-  await refusedFor("group not mine", { card: { players: [player("D", "G3", "Dan Go")] } }, /not a member of Dan's group/);
+  await refusedFor("group not mine", { card: { players: [player("D", "G3", "Dan Go")] } }, /not a member of Dan Go's group/);
   await refusedFor("archived", { card: { players: [player("Z", "G1", "Zed Old")] } }, /archived/);
   await refusedFor("not on roster", { card: { players: [player("C", "G1", "Cora Lim")] } }, /no longer on the group's roster/);
   await refusedFor("unknown golfer", { card: { players: [player("Q", "G1", "Quin")] } }, /no longer in The Scorecard/);

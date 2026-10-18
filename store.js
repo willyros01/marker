@@ -319,6 +319,7 @@ export function submissionCard(c) {
       holes: (c.tee.holes || []).map((h) => ({ par: h.par, yards: h.yards == null ? null : h.yards, si: h.si == null ? null : h.si })),
     },
     game: c.game ? { id: c.game.id, name: c.game.name || "", assocId: c.game.assocId } : null,
+    ...(c.repostOf ? { repostOf: c.repostOf } : {}),
     players: members.map((p) => ({
       golferId: p.golferId, assocId: p.assocId, name: p.name,
       scores: Object.fromEntries(c.order.map((n) => [String(n), p.scores[n]])),
@@ -378,6 +379,20 @@ async function postOne(c) {
 export async function correctableCards() {
   if (!user || user.anonymous) throw new Error("SIGN_IN");
   return (await callWorker("/correctable", { method: "POST", body: {} })).cards || [];
+}
+
+/* Everything Your cards needs from The Scorecard: cards to correct, and
+   cards whose rounds were deleted (editable: re-post or hide). */
+export async function myCards() {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  const r = await callWorker("/my-cards", { method: "POST", body: {} });
+  return { correctable: r.correctable || [], editable: r.editable || [] };
+}
+
+/* Takes a card with deleted rounds off the list. Nothing in The Scorecard changes. */
+export async function hideEditable(cardId) {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  return callWorker("/hide-editable", { method: "POST", body: { cardId } });
 }
 
 /* One posted card, as the worker kept it, with each golfer's frozen handicap. */
