@@ -1,1 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#2E5541"/><rect x="132" y="96" width="248" height="320" rx="22" fill="#F7F4EC"/><g stroke="#2E5541" stroke-width="10" stroke-linecap="round"><path d="M168 170h176M168 226h176M168 282h176M168 338h110"/></g><path d="M300 330l118-118 28 28-118 118-38 10z" fill="#E0B341" stroke="#24463A" stroke-width="8" stroke-linejoin="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#2E5541"/>
+<rect x="120" y="80" width="272" height="352" rx="22" fill="#F7F4EC"/>
+<ellipse cx="256" cy="196" rx="92" ry="26" fill="#7FA36A"/>
+<path d="M240 196V96" stroke="#24463A" stroke-width="10" stroke-linecap="round"/>
+<path d="M240 100l72 22-72 22z" fill="#B4402F"/>
+<circle cx="240" cy="196" r="9" fill="#24463A"/>
+<g stroke="#2E5541" stroke-width="10" stroke-linecap="round"><path d="M160 268h192M160 318h192M160 368h120"/></g>
+<g fill="#E0B341"><rect x="300" y="352" width="52" height="32" rx="6"/></g>
+</svg>
