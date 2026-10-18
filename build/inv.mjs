@@ -4,8 +4,10 @@ const P = process.env.PROJECT, T = process.env.TOKEN;
 const base = `https://firestore.googleapis.com/v1/projects/${P}/databases/(default)/documents`;
 const call = async (url, body) => { const r = await fetch(url, { method: body ? "POST" : "GET", headers: { Authorization: `Bearer ${T}`, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined }); return r.json(); };
 let users = [], tok = "";
-do { const j = await call(`${base}/users?pageSize=300&showMissing=true&mask.fieldPaths=__none__${tok ? "&pageToken=" + tok : ""}`); users = users.concat(j.documents || []); tok = j.nextPageToken || ""; } while (tok);
+do { const j = await call(`${base}/users?pageSize=300&showMissing=true${tok ? "&pageToken=" + tok : ""}`); if (j.error) console.log("list error: " + JSON.stringify(j.error).slice(0, 300)); users = users.concat(j.documents || []); tok = j.nextPageToken || ""; } while (tok);
 console.log(`users/{uid} entries: ${users.length}`);
+const root = (await call(`${base}:listCollectionIds`, { pageSize: 100 })).collectionIds || [];
+console.log(`top-level collections: ${root.join(', ')}`);
 const tally = {};
 let withLegacy = 0;
 for (const u of users) {
