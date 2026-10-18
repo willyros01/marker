@@ -143,7 +143,7 @@ function screenStart() {
   const what = cur && cur.correcting ? "Continue your correction" : cur && cur.repostOf ? "Continue your re-post" : "Continue your round";
   const resume = cur && (cur.state === "playing" || cur.state === "finished")
     ? `<button class="btn primary tall" data-act="resume"><span>${what}</span><small>${esc(cur.course.name)} · ${esc(niceDate(cur.date))}${cur.correcting || cur.state === "finished" ? "" : ` · hole ${esc(cur.order[cur.pos])}`}</small></button>` : "";
-  const editable = signedIn && S.mine ? S.mine.editable.length : 0;
+  const editable = signedIn && S.mine ? S.mine.editable.filter((x) => !x.hidden).length : 0;
   let main;
   if (signedIn) {
     main = `<button class="btn ${resume ? "" : "primary"} tall big" data-act="new-round"><span>⛳ Start a new round</span><small>Rounds are posted to The Scorecard.</small></button>
@@ -696,7 +696,7 @@ function screenStatus(c) {
 function screenHistory() {
   const cards = local.finishedCards();
   const signedIn = !!(user() && !user().anonymous);
-  const editable = signedIn && S.mine ? S.mine.editable : [];
+  const editable = signedIn && S.mine ? S.mine.editable.filter((x) => !x.hidden) : [];
   const gone = editable.length ? `<h3 class="sec">Deleted in The Scorecard</h3><div class="list">${editable.map((x) => `
       <div class="item amb"><span class="txt"><span class="name">${esc(x.course)} · ${esc(niceDate(x.date))}</span>
         <span class="meta">${x.gone.length === x.players.length ? "Rounds deleted." : `Rounds deleted: ${esc(x.gone.join(", "))}.`}</span>
@@ -1241,7 +1241,7 @@ const actions = {
     S.busy = "hide"; render();
     try {
       await db.hideEditable(el.dataset.v);
-      S.mine = { ...S.mine, editable: S.mine.editable.filter((k) => k.cardId !== el.dataset.v) };
+      S.mine = { ...S.mine, editable: S.mine.editable.map((k) => (k.cardId === el.dataset.v ? { ...k, hidden: true } : k)) };
       S.busy = ""; S.flash = "The card is hidden."; render();
     } catch (e) { S.busy = ""; S.error = correctionWhy(e); render(); }
   },

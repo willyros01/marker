@@ -190,7 +190,9 @@ test("C10 hide: only the scorer or an admin; nothing in The Scorecard changes", 
   await assert.rejects(fix.hideEditable(fs, who(OTHER), "c1"), /Only the scorer/);
   const golferB = JSON.stringify(fs.data("golfers/B"));
   await fix.hideEditable(fs, who(ADMIN), "c1");
-  assert.equal((await fix.myCards(fs, who(SCORER))).editable.length, 0);
+  const after = (await fix.myCards(fs, who(SCORER))).editable;
+  assert.equal(after.filter((x) => !x.hidden).length, 0, "off the list");
+  assert.equal(after.length, 1, "still offered when the card is opened");
   assert.equal(JSON.stringify(fs.data("golfers/B")), golferB);
 });
 

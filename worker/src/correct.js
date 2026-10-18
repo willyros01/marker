@@ -131,7 +131,7 @@ async function mayRepost(fs, who, sub, cache = new Map()) {
 
 /* A card whose rounds were (some or all) deleted in The Scorecard can be
    re-posted: only the golfers whose rounds are gone go on the new card. */
-const repostable = (sub) => !sub.data.repostedAs && !sub.data.repostHidden;
+const repostable = (sub) => !sub.data.repostedAs;
 
 /* Everything the Your cards screen needs from The Scorecard, newest first:
    - correctable: posted cards this caller may correct, every round still there;
@@ -159,7 +159,9 @@ export async function myCards(fs, who, { now = Date.now(), limit = 40 } = {}) {
       const g = await fs.get(`golfers/${p.golferId}`);
       players.push({ ...p, index: g ? model.effectiveIndex(g.data).index : null });
     }
-    editable.push({ ...summary(s, r), gone: players.map((p) => p.name || ""), card: { ...c, players } });
+    /* Hidden ones come too, marked: they are left off the list and the count,
+       but opening the card on the phone still offers Edit and re-post. */
+    editable.push({ ...summary(s, r), hidden: !!s.data.repostHidden, gone: players.map((p) => p.name || ""), card: { ...c, players } });
   }
   const order = (a, b) => (b.date + b.cardId).localeCompare(a.date + a.cardId);
   return { correctable: correctable.sort(order).slice(0, limit), editable: editable.sort(order).slice(0, limit) };
