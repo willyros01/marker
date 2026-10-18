@@ -1215,7 +1215,7 @@ const actions = {
     catch { S.error = "This browser would not copy. Press and hold the text below, then choose Copy."; }
     render();
   },
-  history() { go("history"); refreshMine(true); },
+  history() { db.dropReplaced(); go("history"); refreshMine(true); },
   async "repost-card"(el) {
     const x = S.mine && S.mine.editable.find((k) => k.cardId === el.dataset.v);
     if (!x) return;
@@ -1462,6 +1462,7 @@ async function boot() {
   window.__markerBooted = true;
   const c = local.currentCard();
   if (c && c.state === "posting") S.screen = "status";
+  try { db.dropReplaced(); } catch {}
   render();
   refreshMine(true);
 }

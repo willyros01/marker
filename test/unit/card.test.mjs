@@ -167,3 +167,17 @@ test("U15 saved courses: a searched course replaces same-name copies; a course c
   local.forgetCourse("nothing");
   assert.equal(local.recentCourses().length, 1);
 });
+
+test("U16 a re-posted card replaces the old copy on the phone, only once it is posted", async () => {
+  const local = await import("../../storage.js");
+  const store = await import("../../store.js");
+  const mem = new Map();
+  local.useBackend({ getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) });
+  local.keepFinished({ id: "old", state: "posted" });
+  local.keepFinished({ id: "new", state: "posting", repostOf: "old" });
+  store.dropReplaced();
+  assert.deepEqual(local.finishedCards().map((c) => c.id).sort(), ["new", "old"], "kept while the re-post is not posted");
+  local.keepFinished({ id: "new", state: "posted", repostOf: "old" });
+  store.dropReplaced();
+  assert.deepEqual(local.finishedCards().map((c) => c.id), ["new"]);
+});

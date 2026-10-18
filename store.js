@@ -294,6 +294,15 @@ export function deleteCard(id) {
   if (cur && cur.id === id) local.clearCurrent();
 }
 
+/* A re-posted card replaces the old one on this phone once it is posted
+   (Willy, 18 Oct 2026: keep the corrected copy, not both). Only this phone's
+   copy goes; the old card's rounds were already deleted in The Scorecard. */
+export function dropReplaced() {
+  for (const c of local.finishedCards()) {
+    if (c.repostOf && c.state === "posted") { try { local.dropFinished(c.repostOf); } catch {} }
+  }
+}
+
 function dropFromOutbox(id) {
   local.save("outbox", local.load("outbox", []).filter((x) => x !== id));
 }
@@ -328,7 +337,7 @@ export function submissionCard(c) {
 }
 
 function settle(c, status, reason) {
-  if (status === "posted") { updateCard(c, { state: "posted", sent: true, postError: "", postedAt: Date.now() }); return "posted"; }
+  if (status === "posted") { updateCard(c, { state: "posted", sent: true, postError: "", postedAt: Date.now() }); dropReplaced(); return "posted"; }
   if (status === "refused") { updateCard(c, { state: "failed", sent: true, postError: reason || "The Scorecard did not accept this card." }); return "failed"; }
   if (!c.sent) updateCard(c, { sent: true });
   return "waiting";
