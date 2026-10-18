@@ -1,19 +1,26 @@
-/* inv.mjs — READ-ONLY (Willy, 18 Oct 2026, 1:32 am: verify what is still open).
- * Are version 1 records still under users/{uid}? Counts only; writes nothing. */
-const P = process.env.PROJECT, T = process.env.TOKEN;
-const base = `https://firestore.googleapis.com/v1/projects/${P}/databases/(default)/documents`;
-const call = async (url, body) => { const r = await fetch(url, { method: body ? "POST" : "GET", headers: { Authorization: `Bearer ${T}`, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined }); return r.json(); };
-let users = [], tok = "";
-do { const j = await call(`${base}/users?pageSize=300&showMissing=true${tok ? "&pageToken=" + tok : ""}`); if (j.error) console.log("list error: " + JSON.stringify(j.error).slice(0, 300)); users = users.concat(j.documents || []); tok = j.nextPageToken || ""; } while (tok);
-console.log(`users/{uid} entries: ${users.length}`);
-const root = (await call(`${base}:listCollectionIds`, { pageSize: 100 })).collectionIds || [];
-console.log(`top-level collections: ${root.join(', ')}`);
-const tally = {};
-let withLegacy = 0;
-for (const u of users) {
-  const ids = (await call(`https://firestore.googleapis.com/v1/${u.name}:listCollectionIds`, { pageSize: 50 })).collectionIds || [];
-  for (const c of ids) tally[c] = (tally[c] || 0) + 1;
-  if (ids.some((c) => !["terms", "prefs"].includes(c))) withLegacy++;
+/* inv.mjs — READ-ONLY (Willy, 18 Oct 2026, 3:04 am: why the Lakeview card
+ * shows no Re-post). Runs the worker's own Your-cards list as the scorer and
+ * counts the requests it needs. Writes nothing. */
+import { client } from "../worker/src/firestore.js";
+import * as fix from "../worker/src/correct.js";
+let calls = 0;
+const fs = client({ project: process.env.PROJECT, token: async () => process.env.TOKEN, fetchFn: (...a) => { calls++; return fetch(...a); } });
+const posted = await fs.query("", "markerSubmissions", [["status", "EQUAL", "posted"]], 500);
+console.log(`posted cards: ${posted.length}`);
+for (const s of posted) {
+  const c = s.data.card || {};
+  console.log(`${s.id.slice(0, 6)} ${c.date} ${(c.course || {}).name} players=${(c.players || []).length} scorer=${String(s.data.scorer).slice(0, 5)} repostedAs=${s.data.repostedAs || ""} hidden=${!!s.data.repostHidden}`);
 }
-console.log(`subcollections under users (count of accounts having each): ${JSON.stringify(tally)}`);
-console.log(`accounts with anything besides terms and prefs (version 1 leftovers): ${withLegacy}`);
+const lake = posted.find((s) => (s.data.card || {}).date === "2025-07-17");
+if (!lake) { console.log("no Lakeview card"); process.exit(0); }
+for (const p of lake.data.card.players) {
+  const rid = (lake.data.rounds || {})[p.golferId];
+  const r = rid ? await fs.get(`associations/${p.assocId}/rounds/${rid}`) : null;
+  console.log(`  ${p.name}: round ${rid ? rid.slice(0, 6) : "none"} ${r ? "still there" : "gone"}`);
+}
+calls = 0;
+try {
+  const m = await fix.myCards(fs, { uid: lake.data.scorer, anonymous: false });
+  console.log(`myCards as scorer: correctable=${m.correctable.length} editable=${m.editable.length} (${m.editable.map((x) => x.cardId.slice(0, 6) + " gone:" + x.gone.join("/")).join(", ")})`);
+} catch (e) { console.log("myCards failed: " + e.message); }
+console.log(`requests needed: ${calls} (a free-plan worker call is allowed 50)`);
