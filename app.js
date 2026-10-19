@@ -157,7 +157,7 @@ function screenStart() {
     <main class="body">${banner()}${resume}${main}</main>
     <footer class="foot">${signedIn ? `<div class="who">Signed in as ${esc(u.email)}</div><button class="btn" data-act="sign-out">Sign out</button>` : ""}
       <div class="links">
-      <a href="https://www.cuberoot-systems.com/scorecard/support/" target="_blank" rel="noopener">Support</a>
+      <a href="https://www.cuberoot-systems.com/marker/guide/" target="_blank" rel="noopener">Support</a>
       <a href="https://www.cuberoot-systems.com/scorecard/privacy/" target="_blank" rel="noopener">Privacy</a>
       <span class="muted">v${esc(VERSION)}</span></div></footer>`;
 }
