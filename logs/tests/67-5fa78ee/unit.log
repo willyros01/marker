@@ -1,0 +1,482 @@
+
+> test
+> node --test test/unit/*.test.mjs
+
+TAP version 13
+# Subtest: U1 playing order wraps from the starting hole
+ok 1 - U1 playing order wraps from the starting hole
+  ---
+  duration_ms: 2.699391
+  type: 'test'
+  ...
+# Subtest: U2 course handicap matches The Scorecard's formula
+ok 2 - U2 course handicap matches The Scorecard's formula
+  ---
+  duration_ms: 0.470141
+  type: 'test'
+  ...
+# Subtest: U3 strokes received follow stroke index, including plus handicaps
+ok 3 - U3 strokes received follow stroke index, including plus handicaps
+  ---
+  duration_ms: 0.306605
+  type: 'test'
+  ...
+# Subtest: U4 net double bogey caps the adjusted score; no index caps at par plus five
+ok 4 - U4 net double bogey caps the adjusted score; no index caps at par plus five
+  ---
+  duration_ms: 1.086226
+  type: 'test'
+  ...
+# Subtest: U5 a picked-up hole counts as its cap
+ok 5 - U5 a picked-up hole counts as its cap
+  ---
+  duration_ms: 0.491721
+  type: 'test'
+  ...
+# Subtest: U6 scores outside 1-20 are refused
+ok 6 - U6 scores outside 1-20 are refused
+  ---
+  duration_ms: 0.963225
+  type: 'test'
+  ...
+# Subtest: U7 a full card: totals, net and completeness
+ok 7 - U7 a full card: totals, net and completeness
+  ---
+  duration_ms: 3.810053
+  type: 'test'
+  ...
+# Subtest: U8 posting rules: members, 18 holes, rated tee, every hole
+ok 8 - U8 posting rules: members, 18 holes, rated tee, every hole
+  ---
+  duration_ms: 1.531411
+  type: 'test'
+  ...
+# Subtest: U9 the round posted is The Scorecard's own shape, with the card and holes attached
+ok 9 - U9 the round posted is The Scorecard's own shape, with the card and holes attached
+  ---
+  duration_ms: 2.08538
+  type: 'test'
+  ...
+# Subtest: U10 the game is attached only to rounds in the game's group
+ok 10 - U10 the game is attached only to rounds in the game's group
+  ---
+  duration_ms: 0.947336
+  type: 'test'
+  ...
+# Subtest: U11 what is dropped off for posting carries members and scores only, never guests
+ok 11 - U11 what is dropped off for posting carries members and scores only, never guests
+  ---
+  duration_ms: 4.208189
+  type: 'test'
+  ...
+# Subtest: U12 the shared text lists every player and every hole
+ok 12 - U12 the shared text lists every player and every hole
+  ---
+  duration_ms: 0.8479
+  type: 'test'
+  ...
+# Subtest: U13 only cards that were never posted, and are not being checked, may be deleted
+ok 13 - U13 only cards that were never posted, and are not being checked, may be deleted
+  ---
+  duration_ms: 0.20812
+  type: 'test'
+  ...
+# Subtest: U14 deleting a kept card removes it from the phone and from the waiting list
+ok 14 - U14 deleting a kept card removes it from the phone and from the waiting list
+  ---
+  duration_ms: 1.427446
+  type: 'test'
+  ...
+# Subtest: U15 saved courses: a searched course replaces same-name copies; a course can be deleted from the device
+ok 15 - U15 saved courses: a searched course replaces same-name copies; a course can be deleted from the device
+  ---
+  duration_ms: 0.721723
+  type: 'test'
+  ...
+# Subtest: U16 a re-posted card replaces the old copy on the phone, only once it is posted
+ok 16 - U16 a re-posted card replaces the old copy on the phone, only once it is posted
+  ---
+  duration_ms: 0.584666
+  type: 'test'
+  ...
+# Subtest: U17 a posted card can be removed from the phone only; an unposted one cannot this way
+ok 17 - U17 a posted card can be removed from the phone only; an unposted one cannot this way
+  ---
+  duration_ms: 0.6615
+  type: 'test'
+  ...
+# Subtest: K1 the true sums of the club's card (the test data itself is right)
+ok 18 - K1 the true sums of the club's card (the test data itself is right)
+  ---
+  duration_ms: 1.746995
+  type: 'test'
+  ...
+# Subtest: K2 two pictures, nine by nine, make one verified card with every tee
+ok 19 - K2 two pictures, nine by nine, make one verified card with every tee
+  ---
+  duration_ms: 6.263463
+  type: 'test'
+  ...
+# Subtest: K3 one nine only is not verified, and says what is missing
+ok 20 - K3 one nine only is not verified, and says what is missing
+  ---
+  duration_ms: 0.765395
+  type: 'test'
+  ...
+# Subtest: K4 every tee must be complete, not only the one played
+ok 21 - K4 every tee must be complete, not only the one played
+  ---
+  duration_ms: 0.678252
+  type: 'test'
+  ...
+# Subtest: K5 pars, handicap numbers, totals and ratings are all checked
+ok 22 - K5 pars, handicap numbers, totals and ratings are all checked
+  ---
+  duration_ms: 3.105912
+  type: 'test'
+  ...
+# Subtest: K6 a retaken picture replaces the holes it shows
+ok 23 - K6 a retaken picture replaces the holes it shows
+  ---
+  duration_ms: 0.760335
+  type: 'test'
+  ...
+# Subtest: K7 a misprinted nine total is accepted only when the card's 18-hole total proves it
+ok 24 - K7 a misprinted nine total is accepted only when the card's 18-hole total proves it
+  ---
+  duration_ms: 0.807835
+  type: 'test'
+  ...
+# Subtest: K8 one picture of the whole card is enough when everything is read
+ok 25 - K8 one picture of the whole card is enough when everything is read
+  ---
+  duration_ms: 0.526737
+  type: 'test'
+  ...
+# Subtest: C1 the scorer corrects a score: round, index, directory and card change together, with a record
+ok 26 - C1 the scorer corrects a score: round, index, directory and card change together, with a record
+  ---
+  duration_ms: 30.519738
+  type: 'test'
+  ...
+# Subtest: C2 after 24 hours the scorer may not; an admin may, at any time; another member never
+ok 27 - C2 after 24 hours the scorer may not; an admin may, at any time; another member never
+  ---
+  duration_ms: 7.733728
+  type: 'test'
+  ...
+# Subtest: C3 refused when The Scorecard changed or deleted the round since posting; nothing written
+ok 28 - C3 refused when The Scorecard changed or deleted the round since posting; nothing written
+  ---
+  duration_ms: 2.682049
+  type: 'test'
+  ...
+# Subtest: C4 bad scores are refused; the same scores change nothing; a second correction builds on the first
+ok 29 - C4 bad scores are refused; the same scores change nothing; a second correction builds on the first
+  ---
+  duration_ms: 8.383768
+  type: 'test'
+  ...
+# Subtest: C5 a golfer changed at the same moment: the whole correction is refused, nothing half-written
+ok 30 - C5 a golfer changed at the same moment: the whole correction is refused, nothing half-written
+  ---
+  duration_ms: 5.750711
+  type: 'test'
+  ...
+# Subtest: C6 the card for correction carries each golfer's frozen handicap
+ok 31 - C6 the card for correction carries each golfer's frozen handicap
+  ---
+  duration_ms: 1.973837
+  type: 'test'
+  ...
+# Subtest: C7 deleted rounds: not correctable, editable with only the golfers whose rounds are gone, full names
+ok 32 - C7 deleted rounds: not correctable, editable with only the golfers whose rounds are gone, full names
+  ---
+  duration_ms: 3.089632
+  type: 'test'
+  ...
+# Subtest: C8 re-post: posted as a new card, the old card marked in the same commit, then gone from the list
+ok 33 - C8 re-post: posted as a new card, the old card marked in the same commit, then gone from the list
+  ---
+  duration_ms: 4.304991
+  type: 'test'
+  ...
+# Subtest: C12 the scorer may re-post for 24 hours after posting; an owner or admin at any time
+ok 34 - C12 the scorer may re-post for 24 hours after posting; an owner or admin at any time
+  ---
+  duration_ms: 3.277776
+  type: 'test'
+  ...
+# Subtest: C9 re-post refused when a golfer's old round is still there (never counted twice), or already re-posted
+ok 35 - C9 re-post refused when a golfer's old round is still there (never counted twice), or already re-posted
+  ---
+  duration_ms: 3.929927
+  type: 'test'
+  ...
+# Subtest: C10 hide: only the scorer or an admin; nothing in The Scorecard changes
+ok 36 - C10 hide: only the scorer or an admin; nothing in The Scorecard changes
+  ---
+  duration_ms: 4.064099
+  type: 'test'
+  ...
+# Subtest: C11 a member who is not the scorer nor an admin cannot re-post somebody else's card
+ok 37 - C11 a member who is not the scorer nor an admin cannot re-post somebody else's card
+  ---
+  duration_ms: 1.842754
+  type: 'test'
+  ...
+# Subtest: D1 deleting a card's rounds: rounds gone, windows rebuilt from the remaining rounds, one commit; the card becomes editable
+ok 38 - D1 deleting a card's rounds: rounds gone, windows rebuilt from the remaining rounds, one commit; the card becomes editable
+  ---
+  duration_ms: 3.726295
+  type: 'test'
+  ...
+# Subtest: D2 delete rights: the scorer for 24 hours, an owner or admin at any time, another member never
+ok 39 - D2 delete rights: the scorer for 24 hours, an owner or admin at any time, another member never
+  ---
+  duration_ms: 2.812673
+  type: 'test'
+  ...
+# Subtest: D3 a round or golfer changed at the same moment: nothing is deleted
+ok 40 - D3 a round or golfer changed at the same moment: nothing is deleted
+  ---
+  duration_ms: 2.326542
+  type: 'test'
+  ...
+# Subtest: D4 a card with deleted rounds can be deleted for good: off the lists, never re-posted, nothing else changes
+ok 41 - D4 a card with deleted rounds can be deleted for good: off the lists, never re-posted, nothing else changes
+  ---
+  duration_ms: 4.18205
+  type: 'test'
+  ...
+# Subtest: L1 a red row with men's and ladies' ratings becomes two tees with the same yards
+ok 42 - L1 a red row with men's and ladies' ratings becomes two tees with the same yards
+  ---
+  duration_ms: 11.084561
+  type: 'test'
+  ...
+# Subtest: L2 one picture of the whole Lakeview card is verified, with four tees
+ok 43 - L2 one picture of the whole Lakeview card is verified, with four tees
+  ---
+  duration_ms: 5.251025
+  type: 'test'
+  ...
+# Subtest: L3 two pictures: the split red row is completed by a plain red row, in either order
+ok 44 - L3 two pictures: the split red row is completed by a plain red row, in either order
+  ---
+  duration_ms: 1.800736
+  type: 'test'
+  ...
+# Subtest: W1 a member's card posts every golfer, in their own group, in one commit
+ok 45 - W1 a member's card posts every golfer, in their own group, in one commit
+  ---
+  duration_ms: 15.694554
+  type: 'test'
+  ...
+# Subtest: W2 the library's tee is used, not the phone's copy
+ok 46 - W2 the library's tee is used, not the phone's copy
+  ---
+  duration_ms: 1.63716
+  type: 'test'
+  ...
+# Subtest: W3 indexes come from the golfer records; picked-up holes count as net double bogey
+ok 47 - W3 indexes come from the golfer records; picked-up holes count as net double bogey
+  ---
+  duration_ms: 2.050334
+  type: 'test'
+  ...
+# Subtest: W4 windows, indexes, round counts and directory entries move with the rounds
+ok 48 - W4 windows, indexes, round counts and directory entries move with the rounds
+  ---
+  duration_ms: 1.570504
+  type: 'test'
+  ...
+# Subtest: W5 a new course goes into The Scorecard once; the same course and tee are reused
+ok 49 - W5 a new course goes into The Scorecard once; the same course and tee are reused
+  ---
+  duration_ms: 2.495318
+  type: 'test'
+  ...
+# Subtest: W6 an existing course without this tee gets the tee added
+ok 50 - W6 an existing course without this tee gets the tee added
+  ---
+  duration_ms: 1.085786
+  type: 'test'
+  ...
+# Subtest: W7 posting twice writes nothing twice
+ok 51 - W7 posting twice writes nothing twice
+  ---
+  duration_ms: 1.417117
+  type: 'test'
+  ...
+# Subtest: W8 a golfer changed by somebody else meanwhile: read again, post once
+ok 52 - W8 a golfer changed by somebody else meanwhile: read again, post once
+  ---
+  duration_ms: 2.509845
+  type: 'test'
+  ...
+# Subtest: W9 only the scorer can wake their card
+ok 53 - W9 only the scorer can wake their card
+  ---
+  duration_ms: 0.678091
+  type: 'test'
+  ...
+# Subtest: W10 cards that must not be posted are refused, with the reason, and nothing is written
+ok 54 - W10 cards that must not be posted are refused, with the reason, and nothing is written
+  ---
+  duration_ms: 5.570283
+  type: 'test'
+  ...
+# Subtest: W11 a game counts only for golfers of its group, and only on its day
+ok 55 - W11 a game counts only for golfers of its group, and only on its day
+  ---
+  duration_ms: 2.341429
+  type: 'test'
+  ...
+# Subtest: W12 the sweep posts a card whose wake-up never arrived, one per run
+ok 56 - W12 the sweep posts a card whose wake-up never arrived, one per run
+  ---
+  duration_ms: 2.193382
+  type: 'test'
+  ...
+# Subtest: W13 one card stays well inside the free plan's 50 requests
+ok 57 - W13 one card stays well inside the free plan's 50 requests
+  ---
+  duration_ms: 1.014282
+  type: 'test'
+  ...
+# Subtest: W14 a tee's numbers are checked
+ok 58 - W14 a tee's numbers are checked
+  ---
+  duration_ms: 0.652994
+  type: 'test'
+  ...
+# Subtest: L1 without an account: 10 searches a day each; members 100
+ok 59 - L1 without an account: 10 searches a day each; members 100
+  ---
+  duration_ms: 4.076883
+  type: 'test'
+  ...
+# Subtest: L2 all players without an account stop at 300 a day together
+ok 60 - L2 all players without an account stop at 300 a day together
+  ---
+  duration_ms: 0.378239
+  type: 'test'
+  ...
+# Subtest: L3 a course fetched once is saved for everybody and not counted again
+ok 61 - L3 a course fetched once is saved for everybody and not counted again
+  ---
+  duration_ms: 21.98662
+  type: 'test'
+  ...
+# Subtest: V1 a Firebase sign-in is checked properly
+ok 62 - V1 a Firebase sign-in is checked properly
+  ---
+  duration_ms: 42.145109
+  type: 'test'
+  ...
+# Subtest: R1 health, CORS for the app's site only, and nothing without a sign-in
+ok 63 - R1 health, CORS for the app's site only, and nothing without a sign-in
+  ---
+  duration_ms: 3.756863
+  type: 'test'
+  ...
+# Subtest: X1 a course entered by hand after a withdrawal is accepted as a new course, and shared in the course list
+ok 64 - X1 a course entered by hand after a withdrawal is accepted as a new course, and shared in the course list
+  ---
+  duration_ms: 1.593677
+  type: 'test'
+  ...
+# Subtest: X2 the withdrawn details are refused however they come: typed in by hand, or from the database
+ok 65 - X2 the withdrawn details are refused however they come: typed in by hand, or from the database
+  ---
+  duration_ms: 1.68586
+  type: 'test'
+  ...
+# Subtest: X3 corrected details from the golf course database are accepted after a withdrawal
+ok 66 - X3 corrected details from the golf course database are accepted after a withdrawal
+  ---
+  duration_ms: 0.979917
+  type: 'test'
+  ...
+# Subtest: X4 a hand-entered course that is itself withdrawn later is refused
+ok 67 - X4 a hand-entered course that is itself withdrawn later is refused
+  ---
+  duration_ms: 0.548649
+  type: 'test'
+  ...
+# Subtest: X5 looking a course up after a withdrawal asks the database again and marks withdrawn tees
+ok 68 - X5 looking a course up after a withdrawal asks the database again and marks withdrawn tees
+  ---
+  duration_ms: 1.702452
+  type: 'test'
+  ...
+# Subtest: P1 a table read by hole number: only those holes, totals checked, nothing invented
+ok 69 - P1 a table read by hole number: only those holes, totals checked, nothing invented
+  ---
+  duration_ms: 1.774286
+  type: 'test'
+  ...
+# Subtest: P2 numbers that do not add up to the card's totals, or repeat, are flagged
+ok 70 - P2 numbers that do not add up to the card's totals, or repeat, are flagged
+  ---
+  duration_ms: 1.277576
+  type: 'test'
+  ...
+# Subtest: P2b a picture goes to Cloudflare's AI once, counted; limits and failures are explained
+ok 71 - P2b a picture goes to Cloudflare's AI once, counted; limits and failures are explained
+  ---
+  duration_ms: 11.610948
+  type: 'test'
+  ...
+# Subtest: P3 all photos together stop at the day's total
+ok 72 - P3 all photos together stop at the day's total
+  ---
+  duration_ms: 0.299321
+  type: 'test'
+  ...
+# Subtest: Y1 a signed-in scorer's verified card replaces the database copy and hides duplicates
+ok 73 - Y1 a signed-in scorer's verified card replaces the database copy and hides duplicates
+  ---
+  duration_ms: 4.928891
+  type: 'test'
+  ...
+# Subtest: Y2 only the scorer's own stored readings count; no account, no verification
+ok 74 - Y2 only the scorer's own stored readings count; no account, no verification
+  ---
+  duration_ms: 2.26122
+  type: 'test'
+  ...
+# Subtest: Y3 a reading is stored with its scorer when the picture is read
+ok 75 - Y3 a reading is stored with its scorer when the picture is read
+  ---
+  duration_ms: 0.624211
+  type: 'test'
+  ...
+# Subtest: A1 what each picture really costs is added up, and pictures left are reported
+ok 76 - A1 what each picture really costs is added up, and pictures left are reported
+  ---
+  duration_ms: 3.080135
+  type: 'test'
+  ...
+# Subtest: A2 Cloudflare saying the allowance is used up stops further pictures for the day
+ok 77 - A2 Cloudflare saying the allowance is used up stops further pictures for the day
+  ---
+  duration_ms: 0.573164
+  type: 'test'
+  ...
+# Subtest: A3 without a reported cost, the tokens are priced instead
+ok 78 - A3 without a reported cost, the tokens are priced instead
+  ---
+  duration_ms: 0.68788
+  type: 'test'
+  ...
+1..78
+# tests 78
+# suites 0
+# pass 78
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 463.437047
