@@ -405,6 +405,21 @@ export async function hideEditable(cardId, hidden = true) {
   return callWorker("/hide-editable", { method: "POST", body: { cardId, hidden } });
 }
 
+/* Deletes a posted card's rounds from The Scorecard, in one commit by the
+   worker (rounds, windows, indexes, directory). The card can then be re-posted. */
+export async function deleteRounds(cardId) {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  return callWorker("/delete-rounds", { method: "POST", body: { cardId } });
+}
+
+/* Takes a posted card off this phone only. Nothing in The Scorecard changes. */
+export function removeFromPhone(id) {
+  const c = local.finishedCards().find((x) => x.id === id);
+  if (!c) return;
+  if (c.state !== "posted") throw new Error("Only a posted card can be removed this way; an unposted card uses Delete this card.");
+  local.dropFinished(id);
+}
+
 /* One posted card, as the worker kept it, with each golfer's frozen handicap. */
 export async function cardForCorrection(cardId) {
   if (!user || user.anonymous) throw new Error("SIGN_IN");

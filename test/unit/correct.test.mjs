@@ -227,3 +227,44 @@ test("C11 a member who is not the scorer nor an admin cannot re-post somebody el
   assert.equal(r.status, "refused");
   assert.match(r.reason, /Only the scorer/);
 });
+
+/* 0.6.7 (Willy, 20 Oct 2026): delete a posted card's rounds from The Scorecard. */
+test("D1 deleting a card's rounds: rounds gone, windows rebuilt from the remaining rounds, one commit; the card becomes editable", async () => {
+  const { fs, rounds } = await posted();
+  /* Ana also has an older round elsewhere in the group, outside the old window. */
+  fs.docs.set("associations/G1/rounds/older", { data: { id: "older", golferId: "A", date: "2025-05-01", differential: 7.5 }, updateTime: "2026-01-01T00:00:00.000Z" });
+  const commits = fs.commits.length;
+  const r = await fix.deleteRounds(fs, who(SCORER), "c1", { now: postedAt(fs) + 3600_000 });
+  assert.equal(r.status, "deleted");
+  assert.deepEqual(r.deleted, ["Ana Cruz", "Ben Reyes"]);
+  assert.equal(fs.commits.length, commits + 1, "one commit");
+  assert.equal(fs.data(`associations/G1/rounds/${rounds.A}`), null);
+  assert.equal(fs.data(`associations/G1/rounds/${rounds.B}`), null);
+  const a = fs.data("golfers/A");
+  assert.ok(!a.recentWindow.some((e) => e.roundId === rounds.A));
+  assert.deepEqual(a.recentWindow.map((e) => e.roundId), ["older"], "rebuilt from the rounds really there");
+  assert.equal(a.roundCount, 1);
+  assert.equal(a.handicapIndex, model.displayIndex(a.recentWindow));
+  assert.equal(fs.data("associations/G1/directory/A").handicapIndex, model.effectiveIndex(a).index);
+  assert.equal(fs.data("markerSubmissions/c1").roundsDeleted.by, SCORER);
+  const m = await fix.myCards(fs, who(SCORER), { now: postedAt(fs) + 3600_000 });
+  assert.equal(m.editable.length, 1, "can be re-posted");
+  await assert.rejects(fix.deleteRounds(fs, who(SCORER), "c1", { now: postedAt(fs) + 3600_000 }), /already deleted/);
+});
+
+test("D2 delete rights: the scorer for 24 hours, an owner or admin at any time, another member never", async () => {
+  const { fs } = await posted();
+  const late = postedAt(fs) + 25 * 3600_000;
+  await assert.rejects(fix.deleteRounds(fs, who(SCORER), "c1", { now: late }), /24 hours/);
+  await assert.rejects(fix.deleteRounds(fs, who(OTHER), "c1", { now: postedAt(fs) }), /Only the scorer/);
+  assert.equal((await fix.deleteRounds(fs, who(ADMIN), "c1", { now: late })).status, "deleted");
+});
+
+test("D3 a round or golfer changed at the same moment: nothing is deleted", async () => {
+  const { fs, rounds } = await posted();
+  fs.failNext = Object.assign(new Error("FAILED_PRECONDITION"), { conflict: true });
+  await assert.rejects(fix.deleteRounds(fs, who(SCORER), "c1", { now: postedAt(fs) }), /a moment ago/);
+  assert.ok(fs.data(`associations/G1/rounds/${rounds.A}`));
+  assert.ok(fs.data(`associations/G1/rounds/${rounds.B}`));
+  assert.equal(fs.data("markerSubmissions/c1").roundsDeleted, undefined);
+});

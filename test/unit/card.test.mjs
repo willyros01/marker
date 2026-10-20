@@ -181,3 +181,15 @@ test("U16 a re-posted card replaces the old copy on the phone, only once it is p
   store.dropReplaced();
   assert.deepEqual(local.finishedCards().map((c) => c.id), ["new"]);
 });
+
+test("U17 a posted card can be removed from the phone only; an unposted one cannot this way", async () => {
+  const local = await import("../../storage.js");
+  const store = await import("../../store.js");
+  const mem = new Map();
+  local.useBackend({ getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) });
+  local.keepFinished({ id: "p", state: "posted" });
+  local.keepFinished({ id: "w", state: "posting", sent: true });
+  assert.throws(() => store.removeFromPhone("w"), /Only a posted card/);
+  store.removeFromPhone("p");
+  assert.deepEqual(local.finishedCards().map((c) => c.id), ["w"]);
+});

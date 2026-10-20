@@ -22,7 +22,7 @@
  */
 import * as model from "../../model.js";
 import * as card from "../../card.js";
-import { setWrite, updateWrite } from "./firestore.js";
+import { setWrite, updateWrite, deleteWrite } from "./firestore.js";
 import { Refusal, STATUS, checkCard, checkTee, teeFor } from "./post.js";
 
 export const CORRECT_HOURS = 24;
@@ -290,4 +290,66 @@ export async function correct(fs, who, { cardId, scores } = {}, { now = Date.now
     throw e;
   }
   return { status: "corrected", changed };
+}
+
+/* Delete the rounds of a posted card from The Scorecard (Willy, 20 Oct 2026).
+ * Same rights as correcting: the scorer for 24 hours after posting, an owner or
+ * admin of every group on the card at any time.
+ *
+ * ONE commit, everything or nothing:
+ *   - each of the card's rounds still there is deleted, only if unchanged since
+ *     it was read;
+ *   - each of those golfers' 20-round window is rebuilt from their remaining
+ *     rounds in every group they play in (the next older round moves in), with
+ *     the index and the round count;
+ *   - their directory entry in every group that has one;
+ *   - the submission records who deleted the rounds and when. It stays
+ *     "posted", so the card becomes editable: it can be re-posted. */
+export async function deleteRounds(fs, who, cardId, { now = Date.now() } = {}) {
+  if (!who || who.anonymous) refuse("Sign in to delete a card's rounds.");
+  const sub = await fs.get(`markerSubmissions/${String(cardId || "").slice(0, 80)}`);
+  if (!sub || sub.data.status !== STATUS.POSTED || !sub.data.card) refuse("This card is not posted in The Scorecard.");
+  const r = await rights(fs, who, sub, now);
+  if (!r.as) refuse(sub.data.scorer === who.uid ? `The scorer can delete a card's rounds for ${CORRECT_HOURS} hours after posting it. After that, an owner or admin of the group can.` : "Only the scorer, or an owner or admin of the group, can delete this card's rounds.");
+  const c = sub.data.card;
+  const docs = await roundsOf(fs, sub);
+  const there = c.players.map((p, i) => ({ p, doc: docs[i] })).filter((x) => x.doc);
+  if (!there.length) refuse("This card's rounds were already deleted in The Scorecard.");
+
+  const gone = new Set(there.map((x) => x.doc.id));
+  const writes = there.map((x) => deleteWrite(fs, x.doc.path, { updateTime: x.doc.updateTime }));
+  for (const { p } of there) {
+    const g = await fs.get(`golfers/${p.golferId}`);
+    if (!g) continue;   /* the golfer is gone: only the round is deleted */
+    const win = Array.isArray(g.data.recentWindow) ? g.data.recentWindow : [];
+    const groups = new Set([...(Array.isArray(g.data.groups) ? g.data.groups : []), ...win.map((e) => e.assocId), p.assocId]
+      .filter((a) => typeof a === "string" && a));
+    const fresh = [];
+    let count = 0;
+    for (const a of groups) {
+      const rows = await fs.query(`associations/${a}`, "rounds", [["golferId", "EQUAL", g.id]], 1000);
+      for (const row of rows) {
+        if (gone.has(row.id)) continue;
+        count++;
+        const d = Number(row.data.differential);
+        if (typeof row.data.date === "string" && Number.isFinite(d)) fresh.push({ roundId: row.id, date: row.data.date, differential: d, assocId: a });
+      }
+    }
+    const window = model.mergeWindow([], fresh);
+    writes.push(updateWrite(fs, g.path, { recentWindow: window, handicapIndex: model.displayIndex(window), roundCount: count }, { updateTime: g.updateTime }));
+    const index = model.effectiveIndex({ ...g.data, recentWindow: window }).index;
+    for (const a of new Set([...(Array.isArray(g.data.groups) ? g.data.groups : []), p.assocId])) {
+      if (typeof a !== "string" || !a) continue;
+      const entry = await fs.get(`associations/${a}/directory/${g.id}`);
+      if (!entry) continue;
+      writes.push(setWrite(fs, entry.path, { golferId: g.id, displayName: g.data.name || "", handicapIndex: index, updatedAt: now }, { updateTime: entry.updateTime }));
+    }
+  }
+  writes.push(updateWrite(fs, sub.path, { roundsDeleted: { by: who.uid, as: r.as, golfers: there.map((x) => x.p.name || "") } }, { updateTime: sub.updateTime, now: ["roundsDeletedAt"] }));
+  try { await fs.commit(writes); }
+  catch (e) {
+    if (e.conflict) refuse("Somebody changed one of these rounds or golfers a moment ago. Open the card again and try again.");
+    throw e;
+  }
+  return { status: "deleted", deleted: there.map((x) => x.p.name || "") };
 }

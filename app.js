@@ -665,7 +665,8 @@ function screenCorrectFinish(c) {
       ${summaries(c)}</main>
     <footer class="foot"><button class="btn primary" data-act="save-correction" ${S.busy ? "disabled" : ""}>${S.busy === "correct" ? "Saving…" : "Save the correction"}</button>
       <button class="btn" data-act="fix-score">✎ Fix a score</button>
-      <button class="btn" data-act="cancel-correction" style="color:var(--over)">Cancel the correction</button></footer>`;
+      <button class="btn" data-act="cancel-correction">Cancel the correction</button>
+      <button class="btn" data-act="delete-rounds" data-v="${esc(c.correcting.cardId)}" style="color:var(--over)" ${S.busy ? "disabled" : ""}>🗑 Delete these rounds from The Scorecard</button></footer>`;
 }
 
 function screenStatus(c) {
@@ -729,8 +730,10 @@ function screenView(c) {
           return x
             ? `<button class="btn" data-act="repost-card" data-v="${esc(c.id)}">✎ Edit and re-post</button>
                <button class="btn" data-act="hide-editable" data-v="${esc(c.id)}" data-h="${x.hidden ? "0" : "1"}" ${S.busy ? "disabled" : ""}>${x.hidden ? "Unhide (show it under Deleted in The Scorecard)" : "Hide (take it off the Deleted list)"}</button>`
-            : `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>`;
+            : `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>
+               <button class="btn" data-act="delete-rounds" data-v="${esc(c.id)}" style="color:var(--over)" ${S.busy ? "disabled" : ""}>🗑 Delete its rounds from The Scorecard</button>`;
         })() : ""}
+      ${c.state === "posted" ? `<button class="btn" data-act="remove-from-phone" data-v="${esc(c.id)}">Remove from this phone</button>` : ""}
       ${card.canDelete(c) ? `<button class="btn" data-act="delete-card" style="color:var(--over)">Delete this card</button>` : ""}
       <button class="btn" data-act="history">← Back</button></footer>`;
 }
@@ -1255,6 +1258,31 @@ const actions = {
       S.mine = { ...S.mine, editable: S.mine.editable.map((k) => (k.cardId === el.dataset.v ? { ...k, hidden: hide } : k)) };
       S.busy = ""; S.flash = hide ? "The card is hidden. Find it under Hidden cards." : "The card is back under Deleted in The Scorecard."; render();
     } catch (e) { S.busy = ""; S.error = correctionWhy(e); render(); }
+  },
+  async "delete-rounds"(el) {
+    if (S.busy) return;
+    const id = el.dataset.v;
+    if (!window.confirm("Delete this card's rounds from The Scorecard? Each golfer's handicap index is worked out again without them. The card stays here and can be re-posted.")) return;
+    S.busy = "delete"; render();
+    try {
+      const r = await db.deleteRounds(id);
+      S.busy = "";
+      const cur = local.currentCard();
+      if (cur && cur.correcting && cur.correcting.cardId === id) local.clearCurrent();
+      S.view = null;
+      go("history");
+      S.flash = `Deleted from The Scorecard: ${r.deleted.join(", ")}. Their handicap indexes are up to date. The card can be re-posted under Deleted in The Scorecard.`;
+      render();
+      refreshMine(true);
+    } catch (e) { S.busy = ""; S.error = correctionWhy(e); render(); }
+  },
+  "remove-from-phone"(el) {
+    if (!window.confirm("Remove this card from this phone? Its rounds stay in The Scorecard.")) return;
+    try { db.removeFromPhone(el.dataset.v); } catch (e) { fail(e); return; }
+    S.view = null;
+    go("history");
+    S.flash = "The card is removed from this phone. Its rounds are still in The Scorecard.";
+    render();
   },
   "toggle-hidden"() { S.showHidden = !S.showHidden; render(); },
   "cancel-repost"() {

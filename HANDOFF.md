@@ -1,6 +1,6 @@
 # The Marker — handoff (20 Oct 2026, 3:30 am Toronto)
 
-Current version: **0.6.6**. Live on the web (GitHub Pages), Android (signed APK
+Current version: **0.6.7**. Live on the web (GitHub Pages), Android (signed APK
 published on the Cuberoot website by the build itself) and iPhone (TestFlight).
 Tests: 72 unit tests (`npm test`) and 22 emulator tests (`npm run test:rules`, run by CI).
 
@@ -76,6 +76,23 @@ returns. Nothing is posted until Post is tapped.
 - The tee used is the one the card was posted with (postedTee), never the phone's copy.
 - The Scorecard side (a lock on Marker scores that never expires, etc.) waits for the freeze;
   it is Fix 1 in the after-the-freeze document.
+
+## Delete a posted card's rounds (0.6.7, Willy 20 Oct 2026) — correct.js deleteRounds
+
+- Where: an opened posted card ("🗑 Delete its rounds from The Scorecard"), and the correction
+  screen ("🗑 Delete these rounds from The Scorecard"). Asks to confirm.
+- Who: same as correcting — the scorer for 24 hours after posting, an owner/admin of every group
+  on the card at any time.
+- ONE commit (POST /delete-rounds): each of the card's rounds still there is deleted (only if
+  unchanged since read); each golfer's 20-round window is rebuilt from their remaining rounds in
+  every group they play in (the next older round moves in), with handicapIndex and roundCount;
+  their directory entries; the submission records roundsDeleted {by, as, golfers} and
+  roundsDeletedAt. It stays "posted", so the card becomes editable and can be re-posted.
+- Refused, nothing written: no rights; rounds already deleted; anything changed at the same
+  moment.
+- "Remove from this phone" (posted cards only): takes the card off the phone; nothing in The
+  Scorecard changes. Unposted cards keep "Delete this card".
+- Tests: correct.test.mjs D1–D3, card.test.mjs U17.
 
 ---------------------------------------------------------------------------------------------------
 ## RE-POSTING RULES (0.6.1 to 0.6.4, Willy 18 Oct 2026)

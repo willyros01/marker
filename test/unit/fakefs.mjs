@@ -37,6 +37,14 @@ export function fakeFs(seed = {}) {
       const next = new Map(docs);
       const now = stamp();
       for (const w of writes) {
+        if (w.delete) {
+          const path = w.delete.slice(root.length + 1);
+          const cur = next.get(path);
+          const pre = w.currentDocument || {};
+          if (pre.updateTime && (!cur || cur.updateTime !== pre.updateTime)) throw new FirestoreError(400, "FAILED_PRECONDITION " + path);
+          next.delete(path);
+          continue;
+        }
         const path = w.update.name.slice(root.length + 1);
         const cur = next.get(path);
         const pre = w.currentDocument || {};

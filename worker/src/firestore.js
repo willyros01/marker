@@ -100,6 +100,12 @@ const f = ([field, op, value]) => ({ field: { fieldPath: field }, op, value: toV
  *          now: [field names set to the server's time]. */
 export function setWrite(fs, path, data, opts = {}) { return write(fs, path, data, opts, false); }
 export function updateWrite(fs, path, data, opts = {}) { return write(fs, path, data, opts, true); }
+/* delete: the document goes, only if unchanged since it was read (updateTime). */
+export function deleteWrite(fs, path, { updateTime = null } = {}) {
+  const w = { delete: fs.name(path) };
+  if (updateTime) w.currentDocument = { updateTime };
+  return w;
+}
 
 function write(fs, path, data, { exists = null, updateTime = null, now = [] }, masked) {
   const w = { update: { name: fs.name(path), fields: toFields(data) } };
