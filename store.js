@@ -398,10 +398,11 @@ export async function myCards() {
   return { correctable: r.correctable || [], editable: r.editable || [] };
 }
 
-/* Takes a card with deleted rounds off the list. Nothing in The Scorecard changes. */
-export async function hideEditable(cardId) {
+/* Takes a card with deleted rounds off the list (hidden: true) or puts it back
+   (hidden: false). Nothing in The Scorecard changes. */
+export async function hideEditable(cardId, hidden = true) {
   if (!user || user.anonymous) throw new Error("SIGN_IN");
-  return callWorker("/hide-editable", { method: "POST", body: { cardId } });
+  return callWorker("/hide-editable", { method: "POST", body: { cardId, hidden } });
 }
 
 /* One posted card, as the worker kept it, with each golfer's frozen handicap. */

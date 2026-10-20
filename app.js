@@ -696,12 +696,18 @@ function screenStatus(c) {
 function screenHistory() {
   const cards = local.finishedCards();
   const signedIn = !!(user() && !user().anonymous);
-  const editable = signedIn && S.mine ? S.mine.editable.filter((x) => !x.hidden) : [];
-  const gone = editable.length ? `<h3 class="sec">Deleted in The Scorecard</h3><div class="list">${editable.map((x) => `
-      <div class="item amb"><span class="txt"><span class="name">${esc(x.course)} · ${esc(niceDate(x.date))}</span>
-        <span class="meta">${x.gone.length === x.players.length ? "Rounds deleted." : `Rounds deleted: ${esc(x.gone.join(", "))}.`}</span>
+  const all = signedIn && S.mine ? S.mine.editable : [];
+  const shown = all.filter((x) => !x.hidden);
+  const hidden = all.filter((x) => x.hidden);
+  const row = (x) => `
+      <div class="item ${x.hidden ? "" : "amb"}"><span class="txt"><span class="name">${esc(x.course)} · ${esc(niceDate(x.date))}</span>
+        <span class="meta">${x.gone.length === x.players.length ? "Rounds deleted." : `Rounds deleted: ${esc(x.gone.join(", "))}.`}${x.as === "scorer" && x.until ? ` You can re-post it until ${esc(new Date(x.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }))}.` : ""}</span>
         <span class="row2"><button class="btn primary" data-act="repost-card" data-v="${esc(x.cardId)}" ${S.busy ? "disabled" : ""}>Re-post</button>
-        <button class="btn" data-act="hide-editable" data-v="${esc(x.cardId)}" ${S.busy ? "disabled" : ""}>Hide</button></span></span></div>`).join("")}</div>` : "";
+        <button class="btn" data-act="hide-editable" data-v="${esc(x.cardId)}" data-h="${x.hidden ? "0" : "1"}" ${S.busy ? "disabled" : ""}>${x.hidden ? "Unhide" : "Hide"}</button></span></span></div>`;
+  const gone = all.length ? `<h3 class="sec">Deleted in The Scorecard</h3>
+      ${shown.length ? `<div class="list">${shown.map(row).join("")}</div>` : ""}
+      ${hidden.length ? `<button class="btn" data-act="toggle-hidden">${S.showHidden ? "Close the hidden cards" : `Hidden cards (${hidden.length})`}</button>` : ""}
+      ${hidden.length && S.showHidden ? `<div class="list">${hidden.map(row).join("")}</div>` : ""}` : "";
   const list = cards.length ? `<div class="list">${cards.map((c) => `
       <button class="item" data-act="view" data-v="${esc(c.id)}"><span class="txt"><span class="name">${esc(c.course.name)} · ${esc(niceDate(c.date))}</span>
         <span class="meta">${esc(c.players.map((p) => p.name).join(", "))} · ${c.state === "posted" ? "posted" : c.state === "posting" ? (c.sent ? "being checked" : "waiting to send") : "not posted"}</span></span></button>`).join("")}</div>`
@@ -718,9 +724,13 @@ function screenView(c) {
       ${c.state === "failed" && c.postError ? `<div class="banner warn">${esc(c.postError)}</div>` : ""}</main>
     <footer class="foot"><button class="btn primary" data-act="share-view">Share the card</button>
       ${c.state === "posted" && user() && !user().anonymous
-        ? (S.mine && S.mine.editable.some((x) => x.cardId === c.id)
-          ? `<button class="btn" data-act="repost-card" data-v="${esc(c.id)}">✎ Edit and re-post</button>`
-          : `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>`) : ""}
+        ? (() => {
+          const x = S.mine && S.mine.editable.find((k) => k.cardId === c.id);
+          return x
+            ? `<button class="btn" data-act="repost-card" data-v="${esc(c.id)}">✎ Edit and re-post</button>
+               <button class="btn" data-act="hide-editable" data-v="${esc(c.id)}" data-h="${x.hidden ? "0" : "1"}" ${S.busy ? "disabled" : ""}>${x.hidden ? "Unhide (show it under Deleted in The Scorecard)" : "Hide (take it off the Deleted list)"}</button>`
+            : `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>`;
+        })() : ""}
       ${card.canDelete(c) ? `<button class="btn" data-act="delete-card" style="color:var(--over)">Delete this card</button>` : ""}
       <button class="btn" data-act="history">← Back</button></footer>`;
 }
@@ -1237,14 +1247,16 @@ const actions = {
   },
   async "hide-editable"(el) {
     if (S.busy) return;
-    if (!window.confirm("Hide this card? It is only taken off this list. Nothing changes in The Scorecard.")) return;
+    const hide = el.dataset.h !== "0";
+    if (hide && !window.confirm("Hide this card? It is only taken off the Deleted in The Scorecard list; you can unhide it under Hidden cards. Nothing changes in The Scorecard.")) return;
     S.busy = "hide"; render();
     try {
-      await db.hideEditable(el.dataset.v);
-      S.mine = { ...S.mine, editable: S.mine.editable.map((k) => (k.cardId === el.dataset.v ? { ...k, hidden: true } : k)) };
-      S.busy = ""; S.flash = "The card is hidden."; render();
+      await db.hideEditable(el.dataset.v, hide);
+      S.mine = { ...S.mine, editable: S.mine.editable.map((k) => (k.cardId === el.dataset.v ? { ...k, hidden: hide } : k)) };
+      S.busy = ""; S.flash = hide ? "The card is hidden. Find it under Hidden cards." : "The card is back under Deleted in The Scorecard."; render();
     } catch (e) { S.busy = ""; S.error = correctionWhy(e); render(); }
   },
+  "toggle-hidden"() { S.showHidden = !S.showHidden; render(); },
   "cancel-repost"() {
     if (!window.confirm("Cancel the re-post? Nothing is posted.")) return;
     local.clearCurrent(); go("history");

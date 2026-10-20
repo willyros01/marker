@@ -130,9 +130,11 @@ test("C6 the card for correction carries each golfer's frozen handicap", async (
 /* 0.6.1 (Willy, 18 Oct 2026): a card whose rounds were deleted in The
    Scorecard is not correctable; it is "editable": re-post it as a new card
    (only the golfers whose rounds are gone) or hide it. */
-const repostSub = (fs, id, players, repostOf = "c1", scorer = SCORER) => {
+/* Handed in `after` ms after the old card was posted (1 hour by default). */
+const repostSub = (fs, id, players, repostOf = "c1", scorer = SCORER, after = 3600_000) => {
   const old = fs.data("markerSubmissions/c1").card;
-  fs.docs.set(`markerSubmissions/${id}`, { data: { scorer, status: "sent", createdAt: "t", app: "0.6.1", card: { ...old, id, repostOf, players } }, updateTime: "2026-10-18T01:00:00.000Z" });
+  const createdAt = new Date(postedAt(fs) + after).toISOString();
+  fs.docs.set(`markerSubmissions/${id}`, { data: { scorer, status: "sent", createdAt, app: "0.6.1", card: { ...old, id, repostOf, players } }, updateTime: "2026-10-18T01:00:00.000Z" });
 };
 
 test("C7 deleted rounds: not correctable, editable with only the golfers whose rounds are gone, full names", async () => {
@@ -145,7 +147,9 @@ test("C7 deleted rounds: not correctable, editable with only the golfers whose r
   assert.deepEqual(m.editable[0].card.players.map((p) => p.golferId), ["B"]);
   assert.equal(m.editable[0].card.players[0].index, 18);
   assert.equal((await fix.myCards(fs, who(OTHER))).editable.length, 0, "another member never sees it");
-  assert.equal((await fix.myCards(fs, who(SCORER), { now: postedAt(fs) + 30 * 86400_000 })).editable.length, 1, "the scorer, with no time limit");
+  /* Willy, 20 Oct 2026: the scorer for 24 hours, an owner or admin at any time. */
+  assert.equal((await fix.myCards(fs, who(SCORER), { now: postedAt(fs) + 25 * 3600_000 })).editable.length, 0, "the scorer, not after 24 hours");
+  assert.equal((await fix.myCards(fs, who(ADMIN), { now: postedAt(fs) + 30 * 86400_000 })).editable.length, 1, "an admin, at any time");
   await assert.rejects(fix.cardForCorrection(fs, who(SCORER), "c1", { now: postedAt(fs) }), /Ben Reyes's round/);
 });
 
@@ -163,6 +167,20 @@ test("C8 re-post: posted as a new card, the old card marked in the same commit, 
   assert.equal(fs.data("golfers/B").roundCount, 2, "the old posting plus the re-post (this fake store does not undo counts on delete)");
   const m = await fix.myCards(fs, who(SCORER), { now: postedAt(fs) });
   assert.equal(m.editable.length, 0);
+});
+
+test("C12 the scorer may re-post for 24 hours after posting; an owner or admin at any time", async () => {
+  const { fs, rounds } = await posted();
+  fs.docs.delete(`associations/G1/rounds/${rounds.B}`);
+  const old = fs.data("markerSubmissions/c1").card;
+  repostSub(fs, "c7", [old.players[1]], "c1", SCORER, 25 * 3600_000);
+  const late = await processSubmission(fs, "c7", { today: TODAY });
+  assert.equal(late.status, "refused");
+  assert.match(late.reason, /24 hours/);
+  assert.equal(fs.data("markerSubmissions/c1").repostedAs, undefined, "nothing written");
+  repostSub(fs, "c8", [old.players[1]], "c1", ADMIN, 30 * 86400_000);
+  assert.equal((await processSubmission(fs, "c8", { today: TODAY })).status, "posted");
+  assert.equal(fs.data("markerSubmissions/c1").repostedAs, "c8");
 });
 
 test("C9 re-post refused when a golfer's old round is still there (never counted twice), or already re-posted", async () => {
@@ -186,14 +204,18 @@ test("C10 hide: only the scorer or an admin; nothing in The Scorecard changes", 
   const { fs, rounds } = await posted();
   fs.docs.delete(`associations/G1/rounds/${rounds.A}`);
   fs.docs.delete(`associations/G1/rounds/${rounds.B}`);
+  const soon = { now: postedAt(fs) + 3600_000 };
   assert.equal((await fix.myCards(fs, who(ADMIN))).editable.length, 1, "an admin sees it too");
-  await assert.rejects(fix.hideEditable(fs, who(OTHER), "c1"), /Only the scorer/);
+  await assert.rejects(fix.hideEditable(fs, who(OTHER), "c1", soon), /Only the scorer/);
+  await assert.rejects(fix.hideEditable(fs, who(SCORER), "c1", { now: postedAt(fs) + 25 * 3600_000 }), /24 hours/);
   const golferB = JSON.stringify(fs.data("golfers/B"));
   await fix.hideEditable(fs, who(ADMIN), "c1");
-  const after = (await fix.myCards(fs, who(SCORER))).editable;
+  const after = (await fix.myCards(fs, who(SCORER), soon)).editable;
   assert.equal(after.filter((x) => !x.hidden).length, 0, "off the list");
   assert.equal(after.length, 1, "still offered when the card is opened");
   assert.equal(JSON.stringify(fs.data("golfers/B")), golferB);
+  await fix.hideEditable(fs, who(SCORER), "c1", { ...soon, hidden: false });
+  assert.equal((await fix.myCards(fs, who(SCORER), soon)).editable.filter((x) => !x.hidden).length, 1, "unhidden: back on the list");
 });
 
 test("C11 a member who is not the scorer nor an admin cannot re-post somebody else's card", async () => {

@@ -1,6 +1,6 @@
-# The Marker — handoff (20 Oct 2026, 1:10 am Toronto)
+# The Marker — handoff (20 Oct 2026, 3:30 am Toronto)
 
-Current version: **0.6.5** (main 63c61a6). Live on the web (GitHub Pages), Android (signed APK
+Current version: **0.6.6**. Live on the web (GitHub Pages), Android (signed APK
 published on the Cuberoot website by the build itself) and iPhone (TestFlight).
 Tests: 72 unit tests (`npm test`) and 22 emulator tests (`npm run test:rules`, run by CI).
 
@@ -87,8 +87,10 @@ new rounds."
 1. Which cards: posted cards (markerSubmissions status "posted") with at least one round gone,
    not already re-posted (repostedAs not set). Cards with every round still there are only
    correctable, never editable.
-2. Who: the card's scorer, at any time (no 24-hour limit — nothing existing is overwritten), or
-   an owner/admin of every group on the card. Other members never see it.
+2. Who (Willy, 20 Oct 2026, 0.6.6 — same rights as correcting): the card's scorer for 24 hours
+   after the card was first posted; an owner/admin of every group on the card at any time. Other
+   members never see it. At posting, the 24 hours are judged at the moment the re-posted card was
+   handed in (its createdAt), so a card sent with no signal is not refused for arriving late.
 3. Only the golfers whose rounds are gone go on the new card. Golfers whose rounds still exist
    stay out, so nobody is ever counted twice.
 4. The new card starts filled in: same course, tee, date, game, holes and the old scores. The
@@ -106,9 +108,11 @@ new rounds."
    today (indexAtEntry is today's, not the old date's). Gross, differential and handicap index are
    unaffected; only the net shown for that old day differs. Willy accepted this (normal use is
    today's round).
-7. Hide (POST /hide-editable): only the scorer or an owner/admin; asks to confirm; sets
-   `repostHidden: {by}` and repostHiddenAt on the old submission and nothing else — no Scorecard
-   round, golfer or index changes. A hidden card leaves the orange list and the count, but
+7. Hide / Unhide (POST /hide-editable {cardId, hidden}): same rights as re-posting (scorer for
+   24 hours, owner/admin any time); Hide asks to confirm; sets `repostHidden: {by}` (Unhide:
+   null) and repostHiddenAt on the old submission and nothing else — no Scorecard round, golfer
+   or index changes. Hidden cards are listed under "Hidden cards (N)" in Deleted in The
+   Scorecard, each with Re-post and Unhide; an opened card also shows Hide or Unhide (0.6.6). A hidden card leaves the orange list and the count, but
    opening it from "On this phone" still offers ✎ Edit and re-post (0.6.3; Willy had hidden all
    three cards and then could not re-post Lakeview).
 8. On the phone: a posted card whose rounds were deleted shows "✎ Edit and re-post" instead of
@@ -118,7 +122,7 @@ new rounds."
    the new card is actually posted.
 9. Messages always give full names.
 
-Tests: test/unit/correct.test.mjs C7–C11 (editable list, re-post in one commit, never twice,
+Tests: test/unit/correct.test.mjs C7–C12 (editable list, re-post in one commit, never twice,
 hide, rights), card.test.mjs U16 (old copy replaced only once posted).
 
 ---------------------------------------------------------------------------------------------------

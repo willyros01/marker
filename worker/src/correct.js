@@ -74,7 +74,7 @@ async function load(fs, sub) {
   for (const p of c.players) {
     const rid = rounds[p.golferId];
     const r = rid ? await fs.get(`associations/${p.assocId}/rounds/${rid}`) : null;
-    if (!r) refuse(`${full(p.name)}'s round from this card was deleted in The Scorecard, so the card can no longer be corrected. Open Your cards and tap Re-post to fix the scores and post it again.`);
+    if (!r) refuse(`${full(p.name)}'s round from this card was deleted in The Scorecard, so the card can no longer be corrected. It can be re-posted from Your cards: by the scorer for 24 hours after posting, by an owner or admin of the group at any time.`);
     /* The handicap frozen on the round when it was posted, never today's. */
     const index = r.data.indexAtEntry == null ? null : Number(r.data.indexAtEntry);
     players.push({ name: p.name || "", golferId: p.golferId, assocId: p.assocId, guest: false, index, ch: card.courseHandicapFor(index, roundTee(tee, r)), scores: Object.fromEntries(order.map((n) => [n, p.scores[n]])) });
@@ -122,11 +122,11 @@ async function roundsOf(fs, sub) {
   return out;
 }
 
-/* May this caller re-post the card: its scorer, or an owner or admin of every
-   group on it. No time limit: the rounds are gone, nothing is overwritten. */
-async function mayRepost(fs, who, sub, cache = new Map()) {
-  if (sub.data.scorer === who.uid) return true;
-  return (await rights(fs, who, sub, 0, cache)).as === "admin";
+/* May this caller re-post (or hide) the card: the same rights as correcting
+   it (Willy, 20 Oct 2026) — its scorer for 24 hours after it was posted, an
+   owner or admin of every group on it at any time. */
+async function mayRepost(fs, who, sub, now, cache = new Map()) {
+  return !!(await rights(fs, who, sub, now, cache)).as;
 }
 
 /* A card whose rounds were (some or all) deleted in The Scorecard can be
@@ -146,7 +146,7 @@ export async function myCards(fs, who, { now = Date.now(), limit = 40 } = {}) {
   for (const s of posted) {
     if (!s.data.card) continue;
     const r = await rights(fs, who, s, now, cache);
-    const canRepost = repostable(s) && (r.as === "admin" || s.data.scorer === who.uid);
+    const canRepost = repostable(s) && !!r.as;
     if (!r.as && !canRepost) continue;
     const docs = await roundsOf(fs, s);
     const gone = docs.map((d, i) => (d ? null : i)).filter((i) => i !== null);
@@ -172,19 +172,20 @@ export async function correctable(fs, who, opts = {}) {
   return (await myCards(fs, who, opts)).correctable;
 }
 
-/* Hide a card with deleted rounds from the list. Nothing in The Scorecard changes. */
-export async function hideEditable(fs, who, cardId) {
+/* Hide a card with deleted rounds from the list, or show it again (hidden:
+   false). Nothing in The Scorecard changes. */
+export async function hideEditable(fs, who, cardId, { hidden = true, now = Date.now() } = {}) {
   if (!who || who.anonymous) refuse("Sign in to see your cards.");
   const sub = await fs.get(`markerSubmissions/${String(cardId || "").slice(0, 80)}`);
   if (!sub || sub.data.status !== STATUS.POSTED) refuse("This card is not posted in The Scorecard.");
-  if (!(await mayRepost(fs, who, sub))) refuse("Only the scorer, or an owner or admin of the group, can hide this card.");
+  if (!(await mayRepost(fs, who, sub, now))) refuse(sub.data.scorer === who.uid ? `The scorer can hide or show this card for ${CORRECT_HOURS} hours after it was posted. After that, an owner or admin of the group can.` : "Only the scorer, or an owner or admin of the group, can hide or show this card.");
   try {
-    await fs.commit([updateWrite(fs, sub.path, { repostHidden: { by: who.uid } }, { updateTime: sub.updateTime, now: ["repostHiddenAt"] })]);
+    await fs.commit([updateWrite(fs, sub.path, { repostHidden: hidden ? { by: who.uid } : null }, { updateTime: sub.updateTime, now: ["repostHiddenAt"] })]);
   } catch (e) {
     if (e.conflict) refuse("This card changed a moment ago. Open Your cards again.");
     throw e;
   }
-  return { status: "hidden" };
+  return { status: hidden ? "hidden" : "shown" };
 }
 
 /* Called while posting a re-posted card (post.js): the old card, checked.
@@ -195,7 +196,14 @@ export async function repostWrite(fs, sub, oldId) {
   const old = await fs.get(`markerSubmissions/${String(oldId || "").slice(0, 80)}`);
   if (!old || old.data.status !== STATUS.POSTED || !old.data.card) refuse("The card this one re-posts is not in The Scorecard.");
   if (old.data.repostedAs && old.data.repostedAs !== sub.id) refuse("That card has already been re-posted.");
-  if (!(await mayRepost(fs, { uid: sub.data.scorer }, old))) refuse("Only the scorer, or an owner or admin of the group, can re-post this card.");
+  /* Judged at the time the new card was handed in (its drop-off), so a card
+     re-posted with no signal is not refused for arriving late. */
+  const at = Number.isFinite(ms(sub.data.createdAt)) ? ms(sub.data.createdAt) : Date.now();
+  if (!(await mayRepost(fs, { uid: sub.data.scorer }, old, at))) {
+    refuse(old.data.scorer === sub.data.scorer
+      ? `The scorer can re-post a card for ${CORRECT_HOURS} hours after it was first posted. After that, an owner or admin of the group can re-post it.`
+      : "Only the scorer, or an owner or admin of the group, can re-post this card.");
+  }
   const docs = await roundsOf(fs, old);
   const before = new Map((old.data.card.players || []).map((p, i) => [p.golferId, docs[i]]));
   for (const p of sub.data.card.players || []) {
