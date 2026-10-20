@@ -12,6 +12,7 @@
  *   POST /correction-card {cardId} -> { card, handicaps, ... }  one card, to correct
  *   POST /correct {cardId, scores} -> { status, changed }  saves a correction in one commit
  *   POST /delete-rounds {cardId} -> { status, deleted }  deletes a card's rounds from The Scorecard in one commit
+ *   POST /discard-editable {cardId} -> { status }  deletes a card with deleted rounds from the lists for good
  *   POST /my-cards           -> { correctable, editable }  for the Your cards screen
  *   POST /hide-editable {cardId, hidden} -> { status }  hides (or shows again) a card with deleted rounds
  *   every 5 minutes          -> posts a card still waiting (one per run)
@@ -94,10 +95,11 @@ export default {
         const body = await req.json().catch(() => ({}));
         return reply(await processSubmission(fs, body.cardId, { onlyScorer: who.uid }), 200, h);
       }
-      if (["/correctable", "/correction-card", "/correct", "/my-cards", "/hide-editable", "/delete-rounds"].includes(url.pathname) && req.method === "POST") {
+      if (["/correctable", "/correction-card", "/correct", "/my-cards", "/hide-editable", "/delete-rounds", "/discard-editable"].includes(url.pathname) && req.method === "POST") {
         if (who.anonymous) return reply({ error: "SIGN_IN" }, 403, h);
         const body = await req.json().catch(() => ({}));
         try {
+          if (url.pathname === "/discard-editable") return reply(await fix.discardEditable(fs, who, body.cardId), 200, h);
           if (url.pathname === "/delete-rounds") return reply(await fix.deleteRounds(fs, who, body.cardId), 200, h);
           if (url.pathname === "/my-cards") return reply(await fix.myCards(fs, who), 200, h);
           if (url.pathname === "/hide-editable") return reply(await fix.hideEditable(fs, who, body.cardId, { hidden: body.hidden !== false }), 200, h);

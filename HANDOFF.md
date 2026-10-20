@@ -1,6 +1,6 @@
 # The Marker — handoff (20 Oct 2026, 3:30 am Toronto)
 
-Current version: **0.6.7**. Live on the web (GitHub Pages), Android (signed APK
+Current version: **0.6.8**. Live on the web (GitHub Pages), Android (signed APK
 published on the Cuberoot website by the build itself) and iPhone (TestFlight).
 Tests: 72 unit tests (`npm test`) and 22 emulator tests (`npm run test:rules`, run by CI).
 
@@ -138,6 +138,12 @@ new rounds."
    and when Your cards opens) — only the corrected card remains (0.6.4). The old copy stays until
    the new card is actually posted.
 9. Messages always give full names.
+10. Delete this card (0.6.8, Willy 20 Oct 2026; POST /discard-editable): on each card under
+    Deleted in The Scorecard (and Hidden cards) and on the opened card. Same rights as
+    re-posting; only when at least one of its rounds is already gone. Asks to confirm ("cannot be
+    undone"). Marks the submission discarded {by} + discardedAt: it leaves everybody's lists for
+    good, a re-post of it is refused, and the phone's copy is removed. Nothing in The Scorecard
+    changes. Such a card no longer offers "Remove from this phone" (Delete covers it). Test D4.
 
 Tests: test/unit/correct.test.mjs C7–C12 (editable list, re-post in one commit, never twice,
 hide, rights), card.test.mjs U16 (old copy replaced only once posted).

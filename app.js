@@ -704,7 +704,8 @@ function screenHistory() {
       <div class="item ${x.hidden ? "" : "amb"}"><span class="txt"><span class="name">${esc(x.course)} · ${esc(niceDate(x.date))}</span>
         <span class="meta">${x.gone.length === x.players.length ? "Rounds deleted." : `Rounds deleted: ${esc(x.gone.join(", "))}.`}${x.as === "scorer" && x.until ? ` You can re-post it until ${esc(new Date(x.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }))}.` : ""}</span>
         <span class="row2"><button class="btn primary" data-act="repost-card" data-v="${esc(x.cardId)}" ${S.busy ? "disabled" : ""}>Re-post</button>
-        <button class="btn" data-act="hide-editable" data-v="${esc(x.cardId)}" data-h="${x.hidden ? "0" : "1"}" ${S.busy ? "disabled" : ""}>${x.hidden ? "Unhide" : "Hide"}</button></span></span></div>`;
+        <button class="btn" data-act="hide-editable" data-v="${esc(x.cardId)}" data-h="${x.hidden ? "0" : "1"}" ${S.busy ? "disabled" : ""}>${x.hidden ? "Unhide" : "Hide"}</button></span>
+        <button class="btn" data-act="discard-editable" data-v="${esc(x.cardId)}" style="color:var(--over);margin-top:8px;min-height:50px" ${S.busy ? "disabled" : ""}>Delete this card</button></span></div>`;
   const gone = all.length ? `<h3 class="sec">Deleted in The Scorecard</h3>
       ${shown.length ? `<div class="list">${shown.map(row).join("")}</div>` : ""}
       ${hidden.length ? `<button class="btn" data-act="toggle-hidden">${S.showHidden ? "Close the hidden cards" : `Hidden cards (${hidden.length})`}</button>` : ""}
@@ -729,11 +730,12 @@ function screenView(c) {
           const x = S.mine && S.mine.editable.find((k) => k.cardId === c.id);
           return x
             ? `<button class="btn" data-act="repost-card" data-v="${esc(c.id)}">✎ Edit and re-post</button>
-               <button class="btn" data-act="hide-editable" data-v="${esc(c.id)}" data-h="${x.hidden ? "0" : "1"}" ${S.busy ? "disabled" : ""}>${x.hidden ? "Unhide (show it under Deleted in The Scorecard)" : "Hide (take it off the Deleted list)"}</button>`
+               <button class="btn" data-act="hide-editable" data-v="${esc(c.id)}" data-h="${x.hidden ? "0" : "1"}" ${S.busy ? "disabled" : ""}>${x.hidden ? "Unhide (show it under Deleted in The Scorecard)" : "Hide (take it off the Deleted list)"}</button>
+               <button class="btn" data-act="discard-editable" data-v="${esc(c.id)}" style="color:var(--over)" ${S.busy ? "disabled" : ""}>Delete this card</button>`
             : `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>
                <button class="btn" data-act="delete-rounds" data-v="${esc(c.id)}" style="color:var(--over)" ${S.busy ? "disabled" : ""}>🗑 Delete its rounds from The Scorecard</button>`;
         })() : ""}
-      ${c.state === "posted" ? `<button class="btn" data-act="remove-from-phone" data-v="${esc(c.id)}">Remove from this phone</button>` : ""}
+      ${c.state === "posted" && !(S.mine && S.mine.editable.some((k) => k.cardId === c.id)) ? `<button class="btn" data-act="remove-from-phone" data-v="${esc(c.id)}">Remove from this phone</button>` : ""}
       ${card.canDelete(c) ? `<button class="btn" data-act="delete-card" style="color:var(--over)">Delete this card</button>` : ""}
       <button class="btn" data-act="history">← Back</button></footer>`;
 }
@@ -1283,6 +1285,18 @@ const actions = {
     go("history");
     S.flash = "The card is removed from this phone. Its rounds are still in The Scorecard.";
     render();
+  },
+  async "discard-editable"(el) {
+    if (S.busy) return;
+    const id = el.dataset.v;
+    if (!window.confirm("Delete this card for good? Its rounds are already deleted in The Scorecard. It leaves your lists and this phone, and can no longer be re-posted. This cannot be undone.")) return;
+    S.busy = "discard"; render();
+    try {
+      await db.discardEditable(id);
+      S.mine = { ...S.mine, editable: S.mine.editable.filter((k) => k.cardId !== id) };
+      S.busy = ""; S.view = null; go("history");
+      S.flash = "The card is deleted."; render();
+    } catch (e) { S.busy = ""; S.error = correctionWhy(e); render(); }
   },
   "toggle-hidden"() { S.showHidden = !S.showHidden; render(); },
   "cancel-repost"() {

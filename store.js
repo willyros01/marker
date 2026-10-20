@@ -412,6 +412,15 @@ export async function deleteRounds(cardId) {
   return callWorker("/delete-rounds", { method: "POST", body: { cardId } });
 }
 
+/* Deletes a card whose rounds were deleted in The Scorecard, for good: off the
+   lists (never re-posted) and off this phone. Nothing in The Scorecard changes. */
+export async function discardEditable(cardId) {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  const r = await callWorker("/discard-editable", { method: "POST", body: { cardId } });
+  try { local.dropFinished(cardId); } catch {}
+  return r;
+}
+
 /* Takes a posted card off this phone only. Nothing in The Scorecard changes. */
 export function removeFromPhone(id) {
   const c = local.finishedCards().find((x) => x.id === id);

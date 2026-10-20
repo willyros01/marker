@@ -131,7 +131,7 @@ async function mayRepost(fs, who, sub, now, cache = new Map()) {
 
 /* A card whose rounds were (some or all) deleted in The Scorecard can be
    re-posted: only the golfers whose rounds are gone go on the new card. */
-const repostable = (sub) => !sub.data.repostedAs;
+const repostable = (sub) => !sub.data.repostedAs && !sub.data.discarded;
 
 /* Everything the Your cards screen needs from The Scorecard, newest first:
    - correctable: posted cards this caller may correct, every round still there;
@@ -188,6 +188,25 @@ export async function hideEditable(fs, who, cardId, { hidden = true, now = Date.
   return { status: hidden ? "hidden" : "shown" };
 }
 
+/* Delete a card with deleted rounds for good (Willy, 20 Oct 2026): it leaves
+   the lists and can never be re-posted. Nothing in The Scorecard changes; the
+   submission keeps who did it and when, as a record. */
+export async function discardEditable(fs, who, cardId, { now = Date.now() } = {}) {
+  if (!who || who.anonymous) refuse("Sign in to delete this card.");
+  const sub = await fs.get(`markerSubmissions/${String(cardId || "").slice(0, 80)}`);
+  if (!sub || sub.data.status !== STATUS.POSTED) refuse("This card is not posted in The Scorecard.");
+  if (sub.data.discarded) return { status: "deleted" };
+  if (!(await mayRepost(fs, who, sub, now))) refuse(sub.data.scorer === who.uid ? `The scorer can delete this card for ${CORRECT_HOURS} hours after it was posted. After that, an owner or admin of the group can.` : "Only the scorer, or an owner or admin of the group, can delete this card.");
+  if (!(await roundsOf(fs, sub)).some((d) => !d)) refuse("This card's rounds are still in The Scorecard. Delete its rounds first.");
+  try {
+    await fs.commit([updateWrite(fs, sub.path, { discarded: { by: who.uid } }, { updateTime: sub.updateTime, now: ["discardedAt"] })]);
+  } catch (e) {
+    if (e.conflict) refuse("This card changed a moment ago. Open Your cards again.");
+    throw e;
+  }
+  return { status: "deleted" };
+}
+
 /* Called while posting a re-posted card (post.js): the old card, checked.
    Every golfer on the new card who was on the old one must have lost that
    round, so nobody is ever counted twice. Returns the write marking the old
@@ -196,6 +215,7 @@ export async function repostWrite(fs, sub, oldId) {
   const old = await fs.get(`markerSubmissions/${String(oldId || "").slice(0, 80)}`);
   if (!old || old.data.status !== STATUS.POSTED || !old.data.card) refuse("The card this one re-posts is not in The Scorecard.");
   if (old.data.repostedAs && old.data.repostedAs !== sub.id) refuse("That card has already been re-posted.");
+  if (old.data.discarded) refuse("That card was deleted, so it can no longer be re-posted.");
   /* Judged at the time the new card was handed in (its drop-off), so a card
      re-posted with no signal is not refused for arriving late. */
   const at = Number.isFinite(ms(sub.data.createdAt)) ? ms(sub.data.createdAt) : Date.now();

@@ -268,3 +268,22 @@ test("D3 a round or golfer changed at the same moment: nothing is deleted", asyn
   assert.ok(fs.data(`associations/G1/rounds/${rounds.B}`));
   assert.equal(fs.data("markerSubmissions/c1").roundsDeleted, undefined);
 });
+
+test("D4 a card with deleted rounds can be deleted for good: off the lists, never re-posted, nothing else changes", async () => {
+  const { fs, rounds } = await posted();
+  const soon = { now: postedAt(fs) + 3600_000 };
+  await assert.rejects(fix.discardEditable(fs, who(SCORER), "c1", soon), /still in The Scorecard/);
+  fs.docs.delete(`associations/G1/rounds/${rounds.A}`);
+  fs.docs.delete(`associations/G1/rounds/${rounds.B}`);
+  await assert.rejects(fix.discardEditable(fs, who(OTHER), "c1", soon), /Only the scorer/);
+  await assert.rejects(fix.discardEditable(fs, who(SCORER), "c1", { now: postedAt(fs) + 25 * 3600_000 }), /24 hours/);
+  const golferA = JSON.stringify(fs.data("golfers/A"));
+  assert.equal((await fix.discardEditable(fs, who(SCORER), "c1", soon)).status, "deleted");
+  assert.equal((await fix.myCards(fs, who(ADMIN))).editable.length, 0, "on nobody's list");
+  assert.equal(JSON.stringify(fs.data("golfers/A")), golferA);
+  const old = fs.data("markerSubmissions/c1").card;
+  repostSub(fs, "c9", [old.players[1]]);
+  const r = await processSubmission(fs, "c9", { today: TODAY });
+  assert.equal(r.status, "refused");
+  assert.match(r.reason, /was deleted/);
+});
