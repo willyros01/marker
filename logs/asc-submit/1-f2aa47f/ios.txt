@@ -1,0 +1,15 @@
+[stdin]:30
+  const b = await get(`builds?filter[app]=${app.id}&filter[version]=27&filter[preReleaseVersion.version]=2.30.0&limit=5`);
+        ^
+
+SyntaxError: Identifier 'b' has already been declared
+    at makeContextifyScript (node:internal/vm:185:14)
+    at compileScript (node:internal/process/execution:383:10)
+    at evalTypeScript (node:internal/process/execution:266:24)
+    at node:internal/main/eval_stdin:53:5
+    at Socket.<anonymous> (node:internal/process/execution:201:5)
+    at Socket.emit (node:events:531:35)
+    at endReadableNT (node:internal/streams/readable:1698:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21)
+
+Node.js v22.23.4
