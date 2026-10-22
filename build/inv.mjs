@@ -1,5 +1,5 @@
-/* inv.mjs — READ-ONLY (Willy, 22 Oct 2026, 5:50 pm): which golfers are the
- * Apple review accounts. Writes nothing. Never prints an email: only a label. */
+/* inv.mjs — READ-ONLY (Willy, 22 Oct 2026, 6:01 pm): are the five removed public
+ * golfers still stored. Writes nothing. Never prints an email: only a label. */
 import { client } from "../worker/src/firestore.js";
 const fs = client({ project: process.env.PROJECT, token: async () => process.env.TOKEN });
 const label = (e) => { e = String(e || "").toLowerCase().trim();
