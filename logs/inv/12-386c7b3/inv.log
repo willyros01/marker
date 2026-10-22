@@ -1,0 +1,20 @@
+
+GROUP "Public group" (PUBLIC)
+  member: willyros01@gmail.com role=owner golfer="-" email=no email
+  roster: Test Admin1, Demo Public1, Demo User3, Public Test02, Pubic Test10, John Appleseed
+
+GROUP "Apple Test Group" (mv41i2)
+  member: Apple Test03 role=member golfer="Apple Test03" email=no email
+  member: Apple Test02 role=member golfer="Apple Test02" email=no email
+  member: Apple Tester role=admin golfer="Apple Tester" email=no email
+  member: willyros01@gmail.com role=owner golfer="-" email=no email
+  roster: willyros01@gmail.com, Apple Tester, Apple Test02, Apple Test03
+
+GOLFERS
+  Demo Public1: linkedUid=none archived=false groups=Public group
+  Demo User3: linkedUid=none archived=false groups=Public group
+  Public Test02: linkedUid=none archived=false groups=Public group
+  Pubic Test10: linkedUid=none archived=false groups=Public group
+  John Appleseed: linkedUid=none archived=false groups=Public group
+
+APPLICATIONS
