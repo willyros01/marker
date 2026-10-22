@@ -1,0 +1,14 @@
+read: 139 rounds, 29 roster entries, 22 members, 10 games
+DELETE Ruben Brina (mststo) archived=true
+DELETE Daphne Brina (msuz9g) archived=true
+DELETE Test Admin1 (mv6os1) archived=false + golferNames
+DELETE Test Public1 (mv6oss) archived=true
+DELETE Test Public2 (mv6otb) archived=true
+DELETE Demo Public1 (mv6prq) archived=false + golferNames
+DELETE Demo User3 (mv6rir) archived=false + golferNames
+DELETE Test V25 (mvjsuh) archived=true
+DELETE Public Test02 (mvjtjb) archived=false + golferNames
+DELETE Pubic Test10 (mvjvp3) archived=false + golferNames
+DELETE John Appleseed (mvjvs3) archived=false + golferNames
+found 11 of 11 names; 11 to delete, 0 kept; 17 deletes in one commit
+DRY RUN: nothing changed
