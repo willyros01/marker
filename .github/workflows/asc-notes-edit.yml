@@ -1,0 +1,87 @@
+name: Scorecard review notes - point to the attached recording
+
+# Willy, 22 Oct 2026, 2:06 pm: in the App Review notes of 2.30.0, change
+# "see our reply in App Review" to point to the attached screen recording (the
+# reply belongs to the withdrawn submission). Changes that one sentence only.
+# The notes hold reviewer sign-ins, so they are never printed.
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/asc-notes-edit.yml]
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Change one sentence in the review notes
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          node > ios.txt 2>&1 <<'JS' || true
+          const crypto = require("crypto"); const e = process.env;
+          const say = (s) => console.log(s);
+          say("ASC_KEY_ID: " + (e.ASC_KEY_ID ? `${e.ASC_KEY_ID.trim().length} characters` + (e.ASC_KEY_ID.trim() === "48475DA2L4" ? " (matches 48475DA2L4)" : " (DOES NOT match 48475DA2L4)") : "MISSING"));
+          say("APPLE_TEAM_ID: " + (e.APPLE_TEAM_ID ? (e.APPLE_TEAM_ID.trim() === "VXMLKHF72B" ? "matches VXMLKHF72B" : "DOES NOT match VXMLKHF72B") : "MISSING"));
+          say("ASC_ISSUER_ID: " + (e.ASC_ISSUER_ID ? (/^[0-9a-f-]{36}$/.test(e.ASC_ISSUER_ID.trim()) ? "looks right (36 characters)" : "WRONG SHAPE") : "MISSING"));
+          const pem = (e.ASC_KEY_P8 || "").trim();
+          say("ASC_KEY_P8: " + (!pem ? "MISSING" : pem.startsWith("-----BEGIN PRIVATE KEY-----") && pem.endsWith("-----END PRIVATE KEY-----") ? "has its BEGIN and END lines" : "BEGIN/END lines missing"));
+          (async () => {
+            let key;
+            try { key = crypto.createPrivateKey(pem); say("key opens: yes"); } catch (x) { say("key opens: NO"); return; }
+            const b = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+            const now = Math.floor(Date.now() / 1000);
+            const head = b({ alg: "ES256", kid: e.ASC_KEY_ID.trim(), typ: "JWT" });
+            const body = b({ iss: e.ASC_ISSUER_ID.trim(), iat: now, exp: now + 600, aud: "appstoreconnect-v1" });
+            const sig = crypto.sign("sha256", Buffer.from(head + "." + body), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+            const jwt = `${head}.${body}.${sig}`;
+            const get = async (p) => { const r = await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { headers: { Authorization: "Bearer " + jwt } }); return { status: r.status, json: await r.json().catch(() => ({})) }; };
+            const apps = await get("apps?filter[bundleId]=io.github.willyros01.scorecard&limit=5");
+            say("sign-in to App Store Connect: " + (apps.status === 200 ? "yes" : "NO (" + apps.status + ")"));
+            const app = (apps.json.data || [])[0];
+            if (!app) { say("The Scorecard app: NOT FOUND"); return; }
+            say(`app: ${app.attributes.name} (id ${app.id})`);
+            const call = async (method, p, body) => { const r = await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { method, headers: { Authorization: "Bearer " + jwt, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined }); return { status: r.status, json: await r.json().catch(() => ({})) }; };
+            const errs = (r) => JSON.stringify((r.json.errors || []).map((e) => e.detail || e.title)).slice(0, 500);
+            const v = await get(`apps/${app.id}/appStoreVersions?limit=6`);
+            const ver = (v.json.data || []).find((d) => d.attributes.versionString === "2.30.0" && d.attributes.platform === "IOS");
+            if (!ver) { say("2.30.0 not found; nothing done."); return; }
+            say(`2.30.0 is ${ver.attributes.appStoreState}`);
+            const rd = await get(`appStoreVersions/${ver.id}/appStoreReviewDetail`);
+            const d = rd.json.data;
+            if (!d) { say("no review details; nothing done."); return; }
+            const old = String(d.attributes.notes || "");
+            const from = "Screen recording and answers: see our reply in App Review.";
+            const to = "Screen recording: please see the attached video (App Review Information, Attachment).";
+            if (!old.includes(from)) { say(old.includes(to) ? "already changed; nothing done." : "the sentence was not found; nothing done."); return; }
+            const notes = old.replace(from, to);
+            const r = await call("PATCH", `appStoreReviewDetails/${d.id}`, { data: { type: "appStoreReviewDetails", id: d.id, attributes: { notes } } });
+            say("notes changed: " + (r.status === 200 ? "yes" : `REFUSED ${r.status} ${errs(r)}`));
+            const check = await get(`appStoreVersions/${ver.id}/appStoreReviewDetail`);
+            const now = String((check.json.data || { attributes: {} }).attributes.notes || "");
+            say("check: new sentence present " + now.includes(to) + ", old sentence gone " + !now.includes(from) + ", length " + old.length + " -> " + now.length);
+          })().catch((x) => say("error: " + x.message));
+          JS
+          cat ios.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/asc-notes-edit/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp ios.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "asc notes edit ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
