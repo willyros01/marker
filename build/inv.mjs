@@ -4,7 +4,7 @@
  * account, no member pointing at them, in no game. One commit, all or nothing,
  * each golfer guarded by its updateTime. MODE=dry prints the plan only. */
 import { client, deleteWrite } from "../worker/src/firestore.js";
-const MODE = "go";
+const MODE = "dry";
 const P = process.env.PROJECT, T = process.env.TOKEN;
 const fs = client({ project: P, token: async () => T });
 const root = `projects/${P}/databases/(default)/documents`;
