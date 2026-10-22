@@ -16,6 +16,8 @@
  *   POST /my-cards           -> { correctable, editable }  for the Your cards screen
  *   POST /hide-editable {cardId, hidden} -> { status }  hides (or shows again) a card with deleted rounds
  *   every 5 minutes          -> posts a card still waiting (one per run)
+ *   GET  /cleanup-status     -> { ok, lastRun, hoursAgo, ... }  no sign-in; 503 when the
+ *                               daily clean-up has not run for 48 hours (cron-job.org watchdog)
  *   once a day (07:00 UTC)   -> deletes golfers unused for 7 days (cleanup.js)
  *
  * Secrets: SA_KEY (marker-worker service-account key, JSON), GOLF_KEY.
@@ -29,7 +31,7 @@ import { processSubmission, sweep } from "./post.js";
 import * as search from "./search.js";
 import * as fix from "./correct.js";
 import { Refusal } from "./post.js";
-import { cleanGolfers } from "./cleanup.js";
+import { cleanGolfers, cleanupStatus } from "./cleanup.js";
 
 /* Must match the daily line in wrangler.toml. 07:00 UTC = 3 am Toronto (summer), 2 am (winter). */
 const DAILY = "0 7 * * *";
@@ -65,6 +67,10 @@ export default {
     const url = new URL(req.url);
     try {
       if (url.pathname === "/health") return reply({ ok: true, version: env.VERSION || "" }, 200, h);
+      if (url.pathname === "/cleanup-status" && req.method === "GET") {
+        const st = await cleanupStatus(fsFor(env));
+        return reply(st, st.ok ? 200 : 503, h);   /* 503 makes the watchdog send its email */
+      }
 
       let who;
       try { who = await caller(req, env); }

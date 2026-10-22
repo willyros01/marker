@@ -85,3 +85,21 @@ export async function cleanGolfers(fs, { now = Date.now(), max = 10, log = () =>
   await fs.commit([setWrite(fs, STATE, record)]);
   return record;
 }
+
+/* For an outside watchdog (cron-job.org, Willy 22 Oct 2026): healthy when the
+ * last run is under 48 hours old. Read-only; shows no names. */
+export const STALE_HOURS = 48;
+export async function cleanupStatus(fs, { now = Date.now() } = {}) {
+  const st = await fs.get(STATE);
+  const last = st && st.data && Date.parse(st.data.lastRun);
+  if (!last) return { ok: false, why: "the daily clean-up has not run yet" };
+  const hoursAgo = Math.round((now - last) / 36e5);
+  return {
+    ok: hoursAgo < STALE_HOURS,
+    lastRun: st.data.lastRun,
+    hoursAgo,
+    deletedLastRun: (st.data.deleted || []).length,
+    waiting: Number(st.data.waiting) || 0,
+    ...(hoursAgo < STALE_HOURS ? {} : { why: `the daily clean-up last ran ${hoursAgo} hours ago` }),
+  };
+}

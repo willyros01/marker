@@ -103,3 +103,14 @@ test("CL6 a read that fails stops the run: nothing deleted, no record written", 
   assert.ok(fs.data("golfers/gUnused"));
   assert.equal(fs.data(STATE).lastRun, last);
 });
+
+test("CL7 status: healthy under 48 hours, not before the first run or after 48 hours, no names", async () => {
+  const { cleanupStatus } = await import("../../worker/src/cleanup.js");
+  const fs = world();
+  assert.equal((await cleanupStatus(fs, { now: T0 })).ok, false);
+  await cleanGolfers(fs, { now: T0 });
+  const ok = await cleanupStatus(fs, { now: T0 + 47 * 36e5 });
+  assert.equal(ok.ok, true);
+  assert.ok(!JSON.stringify(ok).includes("Test Person"));
+  assert.equal((await cleanupStatus(fs, { now: T0 + 48 * 36e5 })).ok, false);
+});

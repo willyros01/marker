@@ -181,7 +181,8 @@ two Royal Ontario cards are hidden and can still be re-posted from the phone if 
 - Deletion: the golfer, its golferNames claim, its directory entries and any userBlocks entry, in one commit per golfer, each guarded by updateTime. Changed in between = nothing deleted, looked at again next day. At most 10 per run.
 - Any failed read stops the run before anything is deleted.
 - Each run writes maintenance/golferCleanup: lastRun, checked, deleted, keptBecauseChanged, waiting, pending (golfer id -> first seen unused).
-- After the freeze: the Admin page warns when lastRun is more than 2 days old (needs a rule letting the owner read maintenance/golferCleanup). Tidy in the apps should then stop archiving, since this job deletes.
+- Watchdog: GET /cleanup-status (no sign-in, no names) answers 200 when the last run is under 48 hours old, 503 otherwise; cron-job.org checks it daily and emails Willy on failure.
+- After the freeze (optional now that the watchdog exists): the Admin page warns when lastRun is more than 2 days old (needs a rule letting the owner read maintenance/golferCleanup). Tidy in the apps should then stop archiving, since this job deletes.
 - 22 Oct 2026: the 11 golfers Tidy had listed were deleted once by hand (build/inv.mjs, one commit, 17 deletes).
 
 ## Open
