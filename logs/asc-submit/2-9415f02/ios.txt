@@ -1,0 +1,15 @@
+ASC_KEY_ID: 10 characters (matches 48475DA2L4)
+APPLE_TEAM_ID: matches VXMLKHF72B
+ASC_ISSUER_ID: looks right (36 characters)
+ASC_KEY_P8: has its BEGIN and END lines
+key opens: yes
+sign-in to App Store Connect: yes
+app: The Scorecard: Golf Handicaps (id 6817462903)
+2.30.0 is DEVELOPER_REJECTED
+build 27: VALID, uploaded 2026-10-22T10:11:10-07:00, expired false, encryption false
+attach build 27: done
+submission e1efd1ac ready
+add 2.30.0 to it: done
+submit for review: done
+now: version 2.30.0: WAITING_FOR_REVIEW
+now: attached build 27
