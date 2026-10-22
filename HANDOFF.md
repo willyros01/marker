@@ -172,6 +172,18 @@ All rounds of the three early Marker cards were deleted by Willy in The Scorecar
 16 and 17 Oct 2026, Lakeview 17 Jul 2025). Lakeview was corrected and re-posted on 18 Oct; the
 two Royal Ontario cards are hidden and can still be re-posted from the phone if wanted.
 
+## Daily golfer clean-up (Willy, 22 Oct 2026) — worker/src/cleanup.js
+
+- Rule: a golfer with no rounds, on no group's roster and with no linked account is deleted after staying that way for 7 days.
+- Runs once a day from Cloudflare's scheduler (wrangler.toml crons "0 7 * * *" = 3 am Toronto in summer, 2 am in winter). GitHub's scheduler is not used.
+- Also kept: any golfer named by a round, a member, a game or a Marker card, or whose own record shows rounds.
+- First run notes the golfer and the time; deletion only 7 days later. If the golfer is used again, the 7 days start over.
+- Deletion: the golfer, its golferNames claim, its directory entries and any userBlocks entry, in one commit per golfer, each guarded by updateTime. Changed in between = nothing deleted, looked at again next day. At most 10 per run.
+- Any failed read stops the run before anything is deleted.
+- Each run writes maintenance/golferCleanup: lastRun, checked, deleted, keptBecauseChanged, waiting, pending (golfer id -> first seen unused).
+- After the freeze: the Admin page warns when lastRun is more than 2 days old (needs a rule letting the owner read maintenance/golferCleanup). Tidy in the apps should then stop archiving, since this job deletes.
+- 22 Oct 2026: the 11 golfers Tidy had listed were deleted once by hand (build/inv.mjs, one commit, 17 deletes).
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").

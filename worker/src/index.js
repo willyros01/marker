@@ -16,6 +16,7 @@
  *   POST /my-cards           -> { correctable, editable }  for the Your cards screen
  *   POST /hide-editable {cardId, hidden} -> { status }  hides (or shows again) a card with deleted rounds
  *   every 5 minutes          -> posts a card still waiting (one per run)
+ *   once a day (07:00 UTC)   -> deletes golfers unused for 7 days (cleanup.js)
  *
  * Secrets: SA_KEY (marker-worker service-account key, JSON), GOLF_KEY.
  * Binding: AI (Cloudflare Workers AI, free allowance) for /scan.
@@ -28,6 +29,10 @@ import { processSubmission, sweep } from "./post.js";
 import * as search from "./search.js";
 import * as fix from "./correct.js";
 import { Refusal } from "./post.js";
+import { cleanGolfers } from "./cleanup.js";
+
+/* Must match the daily line in wrangler.toml. 07:00 UTC = 3 am Toronto (summer), 2 am (winter). */
+const DAILY = "0 7 * * *";
 
 const fsFor = (env) => client({ project: env.PROJECT, token: () => accessToken(env.SA_KEY) });
 
@@ -118,7 +123,13 @@ export default {
     }
   },
 
-  async scheduled(_event, env, ctx) {
+  async scheduled(event, env, ctx) {
+    if (event && event.cron === DAILY) {
+      ctx.waitUntil(cleanGolfers(fsFor(env), { log: (m) => console.log(m) })
+        .then((r) => console.log("golfer clean-up", JSON.stringify({ ...r, pending: undefined })))
+        .catch((e) => console.log("golfer clean-up failed, nothing deleted:", e && e.message)));
+      return;
+    }
     ctx.waitUntil(sweep(fsFor(env), { log: (m) => console.log(m) }).then((r) => console.log("sweep", JSON.stringify(r))));
   },
 };

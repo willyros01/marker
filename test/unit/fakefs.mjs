@@ -31,6 +31,12 @@ export function fakeFs(seed = {}) {
       }
       return out.slice(0, limit);
     },
+    async queryGroup(collectionId, limit = 20000) {
+      this.calls++;
+      const out = [];
+      for (const [path, d] of docs) if (collOf(path) === collectionId) out.push(asDoc(path, d));
+      return out.slice(0, limit);
+    },
     async commit(writes) {
       this.calls++;
       if (this.failNext) { const e = this.failNext; this.failNext = null; throw e; }

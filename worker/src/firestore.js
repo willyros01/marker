@@ -84,6 +84,15 @@ export function client({ project, token, base = "https://firestore.googleapis.co
       return rows.filter((r) => r.document).map((r) => asDoc(r.document));
     },
 
+    /* Every collection named `collectionId`, at any depth (a collection-group
+       read), unfiltered. Used by the daily golfer clean-up. */
+    async queryGroup(collectionId, limit = 20000) {
+      const rows = await call("POST", `${base}/${root}:runQuery`, {
+        structuredQuery: { from: [{ collectionId, allDescendants: true }], limit },
+      });
+      return rows.filter((r) => r.document).map((r) => asDoc(r.document));
+    },
+
     /* Every write in one go: all happen or none do. */
     async commit(writes) {
       return call("POST", `${base}/${root}:commit`, { writes });

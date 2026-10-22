@@ -15,7 +15,8 @@ binding = "AI"
 
 [triggers]
 # One waiting card per run: a free-plan run may make 50 requests.
-crons = ["*/5 * * * *"]
+# Daily golfer clean-up, 07:00 UTC (must match DAILY in src/index.js).
+crons = ["*/5 * * * *", "0 7 * * *"]
 
 [observability]
 enabled = true
