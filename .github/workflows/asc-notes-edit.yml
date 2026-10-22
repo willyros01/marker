@@ -68,8 +68,8 @@ jobs:
             const r = await call("PATCH", `appStoreReviewDetails/${d.id}`, { data: { type: "appStoreReviewDetails", id: d.id, attributes: { notes } } });
             say("notes changed: " + (r.status === 200 ? "yes" : `REFUSED ${r.status} ${errs(r)}`));
             const check = await get(`appStoreVersions/${ver.id}/appStoreReviewDetail`);
-            const now = String((check.json.data || { attributes: {} }).attributes.notes || "");
-            say("check: new sentence present " + now.includes(to) + ", old sentence gone " + !now.includes(from) + ", length " + old.length + " -> " + now.length);
+            const after = String((check.json.data || { attributes: {} }).attributes.notes || "");
+            say("check: new sentence present " + after.includes(to) + ", old sentence gone " + !after.includes(from) + ", length " + old.length + " -> " + after.length);
           })().catch((x) => say("error: " + x.message));
           JS
           cat ios.txt
