@@ -1,0 +1,102 @@
+name: Submit Scorecard 2.30.0 build 27 for App Review
+
+# Willy, 22 Oct 2026, 1:54 pm: "put back the request to review on App Store
+# Connect". Attaches build 27 (tested by Willy on TestFlight) to version 2.30.0
+# and submits it for review. Stops without changing anything if 2.30.0 is not
+# Developer Rejected, if build 27 is not processed, or if a submission is
+# already waiting. Runs once, when this file is pushed. Records states only.
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/asc-submit.yml]
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Attach build 27 and submit 2.30.0
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          node > ios.txt 2>&1 <<'JS' || true
+          const crypto = require("crypto"); const e = process.env;
+          const say = (s) => console.log(s);
+          say("ASC_KEY_ID: " + (e.ASC_KEY_ID ? `${e.ASC_KEY_ID.trim().length} characters` + (e.ASC_KEY_ID.trim() === "48475DA2L4" ? " (matches 48475DA2L4)" : " (DOES NOT match 48475DA2L4)") : "MISSING"));
+          say("APPLE_TEAM_ID: " + (e.APPLE_TEAM_ID ? (e.APPLE_TEAM_ID.trim() === "VXMLKHF72B" ? "matches VXMLKHF72B" : "DOES NOT match VXMLKHF72B") : "MISSING"));
+          say("ASC_ISSUER_ID: " + (e.ASC_ISSUER_ID ? (/^[0-9a-f-]{36}$/.test(e.ASC_ISSUER_ID.trim()) ? "looks right (36 characters)" : "WRONG SHAPE") : "MISSING"));
+          const pem = (e.ASC_KEY_P8 || "").trim();
+          say("ASC_KEY_P8: " + (!pem ? "MISSING" : pem.startsWith("-----BEGIN PRIVATE KEY-----") && pem.endsWith("-----END PRIVATE KEY-----") ? "has its BEGIN and END lines" : "BEGIN/END lines missing"));
+          (async () => {
+            let key;
+            try { key = crypto.createPrivateKey(pem); say("key opens: yes"); } catch (x) { say("key opens: NO"); return; }
+            const b = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+            const now = Math.floor(Date.now() / 1000);
+            const head = b({ alg: "ES256", kid: e.ASC_KEY_ID.trim(), typ: "JWT" });
+            const body = b({ iss: e.ASC_ISSUER_ID.trim(), iat: now, exp: now + 600, aud: "appstoreconnect-v1" });
+            const sig = crypto.sign("sha256", Buffer.from(head + "." + body), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+            const jwt = `${head}.${body}.${sig}`;
+            const get = async (p) => { const r = await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { headers: { Authorization: "Bearer " + jwt } }); return { status: r.status, json: await r.json().catch(() => ({})) }; };
+            const apps = await get("apps?filter[bundleId]=io.github.willyros01.scorecard&limit=5");
+            say("sign-in to App Store Connect: " + (apps.status === 200 ? "yes" : "NO (" + apps.status + ")"));
+            const app = (apps.json.data || [])[0];
+            if (!app) { say("The Scorecard app: NOT FOUND"); return; }
+            say(`app: ${app.attributes.name} (id ${app.id})`);
+            const call = async (method, p, body) => { const r = await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { method, headers: { Authorization: "Bearer " + jwt, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined }); return { status: r.status, json: await r.json().catch(() => ({})) }; };
+            const errs = (r) => JSON.stringify((r.json.errors || []).map((e) => e.detail || e.title)).slice(0, 500);
+            const v = await get(`apps/${app.id}/appStoreVersions?limit=6`);
+            const ver = (v.json.data || []).find((d) => d.attributes.versionString === "2.30.0" && d.attributes.platform === "IOS");
+            if (!ver) { say("2.30.0 not found; nothing done."); return; }
+            say(`2.30.0 is ${ver.attributes.appStoreState}`);
+            if (!["DEVELOPER_REJECTED", "PREPARE_FOR_SUBMISSION", "REJECTED"].includes(ver.attributes.appStoreState)) { say("not in a state that can be submitted; nothing done."); return; }
+            const b = await get(`builds?filter[app]=${app.id}&filter[version]=27&filter[preReleaseVersion.version]=2.30.0&limit=5`);
+            const build = (b.json.data || [])[0];
+            if (!build) { say("build 27 not found; nothing done. " + errs(b)); return; }
+            say(`build 27: ${build.attributes.processingState}, uploaded ${build.attributes.uploadedDate}, expired ${build.attributes.expired}, encryption ${build.attributes.usesNonExemptEncryption}`);
+            if (build.attributes.processingState !== "VALID" || build.attributes.expired) { say("build 27 not ready; nothing done."); return; }
+            const open = await get(`reviewSubmissions?filter[app]=${app.id}&filter[state]=READY_FOR_REVIEW,WAITING_FOR_REVIEW,IN_REVIEW,UNRESOLVED_ISSUES,CANCELING&limit=5`);
+            for (const o of open.json.data || []) say(`existing submission ${o.id.slice(0, 8)}: ${o.attributes.state}`);
+            if ((open.json.data || []).some((o) => ["WAITING_FOR_REVIEW", "IN_REVIEW", "CANCELING"].includes(o.attributes.state))) { say("a submission is still waiting or cancelling; nothing done."); return; }
+            const attach = await call("PATCH", `appStoreVersions/${ver.id}/relationships/build`, { data: { type: "builds", id: build.id } });
+            say("attach build 27: " + (attach.status === 204 || attach.status === 200 ? "done" : `REFUSED ${attach.status} ${errs(attach)}`));
+            if (!(attach.status === 204 || attach.status === 200)) return;
+            let sub = (open.json.data || []).find((o) => o.attributes.state === "READY_FOR_REVIEW");
+            if (!sub) {
+              const made = await call("POST", "reviewSubmissions", { data: { type: "reviewSubmissions", attributes: { platform: "IOS" }, relationships: { app: { data: { type: "apps", id: app.id } } } } });
+              if (made.status !== 201) { say(`new submission REFUSED ${made.status} ${errs(made)}`); return; }
+              sub = made.json.data;
+            }
+            say(`submission ${sub.id.slice(0, 8)} ready`);
+            const item = await call("POST", "reviewSubmissionItems", { data: { type: "reviewSubmissionItems", relationships: { reviewSubmission: { data: { type: "reviewSubmissions", id: sub.id } }, appStoreVersion: { data: { type: "appStoreVersions", id: ver.id } } } } });
+            say("add 2.30.0 to it: " + (item.status === 201 ? "done" : `${item.status} ${errs(item)}`));
+            const go = await call("PATCH", `reviewSubmissions/${sub.id}`, { data: { type: "reviewSubmissions", id: sub.id, attributes: { submitted: true } } });
+            say("submit for review: " + (go.status === 200 ? "done" : `REFUSED ${go.status} ${errs(go)}`));
+            await new Promise((ok) => setTimeout(ok, 15000));
+            const after = await get(`apps/${app.id}/appStoreVersions?limit=3&include=build`);
+            for (const d of after.json.data || []) say(`now: version ${d.attributes.versionString}: ${d.attributes.appStoreState}`);
+            for (const inc of after.json.included || []) if (inc.type === "builds") say(`now: attached build ${inc.attributes.version}`);
+          })().catch((x) => say("error: " + x.message));
+          JS
+          cat ios.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/asc-submit/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp ios.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "asc submit ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
