@@ -1,14 +1,23 @@
-/* inv.mjs — READ-ONLY (Willy, 22 Oct 2026, 2:46 pm): why Tidy keeps listing
- * five golfers as "in no group, with no rounds". Writes nothing. */
+/* inv.mjs — READ-ONLY (Willy, 22 Oct 2026, 5:50 pm): which golfers are the
+ * Apple review accounts. Writes nothing. Never prints an email: only a label. */
 import { client } from "../worker/src/firestore.js";
 const fs = client({ project: process.env.PROJECT, token: async () => process.env.TOKEN });
-const all = await fs.query("", "golfers", [], 2000);
-const want = ["Ruben Brina", "Daphne Brina", "Test Public1", "Test Public2", "Test V25"];
-for (const g of all.filter((x) => want.includes(x.data.name))) {
-  const d = g.data;
-  console.log(`${d.name} (${g.id.slice(0, 6)}): archived=${d.archived === true} groups=${JSON.stringify(d.groups || null)} linkedUid=${d.linkedUid ? "set" : "none"} nameKey=${d.nameKey === null ? "null" : d.nameKey ? "set" : "absent"} editedIn=${d.editedIn || ""}`);
-  for (const a of d.groups || []) {
-    const grp = await fs.get(`associations/${a}`);
-    console.log(`    group ${a.slice(0, 6)}: ${grp ? "exists" : "MISSING"}`);
-  }
+const label = (e) => { e = String(e || "").toLowerCase().trim();
+  return e === "willyros01+apple@gmail.com" ? "APPLE ADMIN (demo account)" : e === "willyros01+apple02@gmail.com" ? "APPLE REGULAR USER" : e ? "other email" : "no email"; };
+const golfers = await fs.query("", "golfers", [], 3000);
+const gname = (id) => (golfers.find((g) => g.id === id) || { data: { name: "?" } }).data.name;
+const groups = await fs.query("", "associations", [], 500);
+for (const a of groups.filter((x) => /apple|public/i.test(x.data.name || ""))) {
+  console.log(`\nGROUP "${a.data.name}" (${a.id.slice(0, 6)})`);
+  const mem = await fs.query(`associations/${a.id}`, "members", [], 500);
+  for (const m of mem) console.log(`  member: ${m.data.displayName || "?"} role=${m.data.role} golfer="${m.data.golferId ? gname(m.data.golferId) : "-"}" email=${label(m.data.email)}`);
+  const ros = await fs.query(`associations/${a.id}`, "roster", [], 500);
+  console.log(`  roster: ${ros.map((r) => gname(r.id)).join(", ")}`);
 }
+const names = ["Demo Public1", "Demo User3", "John Appleseed", "Pubic Test10", "Public Test02"];
+console.log("\nGOLFERS");
+for (const g of golfers.filter((x) => names.includes(x.data.name)))
+  console.log(`  ${g.data.name}: linkedUid=${g.data.linkedUid ? "set" : "none"} archived=${g.data.archived === true} groups=${(g.data.groups || []).map((x) => (groups.find((a) => a.id === x) || { data: { name: "?" } }).data.name).join(" | ")}`);
+const apps = await fs.query("", "applications", [], 500);
+console.log("\nAPPLICATIONS");
+for (const p of apps) console.log(`  ${p.data.fullName}: status=${p.data.status} email=${label(p.data.email)}`);
