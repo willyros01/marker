@@ -1,0 +1,2 @@
+server: https://marker.willyros01.workers.dev version: 109123f
+GET /cleanup-status -> 503 {"ok":false,"why":"the daily clean-up has not run yet"}
