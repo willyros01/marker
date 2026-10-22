@@ -1,0 +1,87 @@
+name: Withdraw Scorecard 2.30.0 from App Review
+
+# Willy, 22 Oct 2026, 9:27 am ("Option A"): withdraws The Scorecard 2.30.0
+# (build 24) from App Review, so the fixes can go in as build 25. Cancels ONLY
+# the one submission that is still WAITING_FOR_REVIEW with version 2.30.0;
+# anything else is left alone. Runs once, when this file is pushed.
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/asc-withdraw.yml]
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Withdraw 2.30.0 from review
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          node > ios.txt 2>&1 <<'JS' || true
+          const crypto = require("crypto"); const e = process.env;
+          const say = (s) => console.log(s);
+          say("ASC_KEY_ID: " + (e.ASC_KEY_ID ? `${e.ASC_KEY_ID.trim().length} characters` + (e.ASC_KEY_ID.trim() === "48475DA2L4" ? " (matches 48475DA2L4)" : " (DOES NOT match 48475DA2L4)") : "MISSING"));
+          say("APPLE_TEAM_ID: " + (e.APPLE_TEAM_ID ? (e.APPLE_TEAM_ID.trim() === "VXMLKHF72B" ? "matches VXMLKHF72B" : "DOES NOT match VXMLKHF72B") : "MISSING"));
+          say("ASC_ISSUER_ID: " + (e.ASC_ISSUER_ID ? (/^[0-9a-f-]{36}$/.test(e.ASC_ISSUER_ID.trim()) ? "looks right (36 characters)" : "WRONG SHAPE") : "MISSING"));
+          const pem = (e.ASC_KEY_P8 || "").trim();
+          say("ASC_KEY_P8: " + (!pem ? "MISSING" : pem.startsWith("-----BEGIN PRIVATE KEY-----") && pem.endsWith("-----END PRIVATE KEY-----") ? "has its BEGIN and END lines" : "BEGIN/END lines missing"));
+          (async () => {
+            let key;
+            try { key = crypto.createPrivateKey(pem); say("key opens: yes"); } catch (x) { say("key opens: NO"); return; }
+            const b = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+            const now = Math.floor(Date.now() / 1000);
+            const head = b({ alg: "ES256", kid: e.ASC_KEY_ID.trim(), typ: "JWT" });
+            const body = b({ iss: e.ASC_ISSUER_ID.trim(), iat: now, exp: now + 600, aud: "appstoreconnect-v1" });
+            const sig = crypto.sign("sha256", Buffer.from(head + "." + body), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+            const jwt = `${head}.${body}.${sig}`;
+            const get = async (p) => { const r = await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { headers: { Authorization: "Bearer " + jwt } }); return { status: r.status, json: await r.json().catch(() => ({})) }; };
+            const apps = await get("apps?filter[bundleId]=io.github.willyros01.scorecard&limit=5");
+            say("sign-in to App Store Connect: " + (apps.status === 200 ? "yes" : "NO (" + apps.status + ")"));
+            const app = (apps.json.data || [])[0];
+            if (!app) { say("The Scorecard app: NOT FOUND"); return; }
+            say(`app: ${app.attributes.name} (id ${app.id})`);
+            const v = await get(`apps/${app.id}/appStoreVersions?limit=6`);
+            for (const d of v.json.data || []) say(`version ${d.attributes.versionString} [${d.attributes.platform}]: ${d.attributes.appStoreState} (appVersionState ${d.attributes.appVersionState || "-"}), created ${d.attributes.createdDate}`);
+            const bld = await get(`apps/${app.id}/appStoreVersions?limit=3&include=build`);
+            for (const inc of bld.json.included || []) if (inc.type === "builds") say(`attached build ${inc.attributes.version}, uploaded ${inc.attributes.uploadedDate}, processing ${inc.attributes.processingState}`);
+            const call = async (method, p, body) => { const r = await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { method, headers: { Authorization: "Bearer " + jwt, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined }); return { status: r.status, json: await r.json().catch(() => ({})) }; };
+            const v230 = (v.json.data || []).find((d) => d.attributes.versionString === "2.30.0" && d.attributes.platform === "IOS");
+            if (!v230 || v230.attributes.appStoreState !== "WAITING_FOR_REVIEW") { say("2.30.0 is not Waiting for Review; nothing done."); return; }
+            const rs = await get(`reviewSubmissions?filter[app]=${app.id}&filter[state]=WAITING_FOR_REVIEW&include=items&limit=5`);
+            const subs = rs.json.data || [];
+            if (subs.length !== 1) { say(`expected exactly one submission waiting, found ${subs.length}; nothing done.`); return; }
+            const sub = subs[0];
+            say(`cancelling review submission ${sub.id.slice(0, 8)} (submitted ${sub.attributes.submittedDate})`);
+            const r = await call("PATCH", `reviewSubmissions/${sub.id}`, { data: { type: "reviewSubmissions", id: sub.id, attributes: { canceled: true } } });
+            say("cancel request: " + (r.status === 200 ? "accepted" : `REFUSED (${r.status}) ${JSON.stringify(r.json.errors || []).slice(0, 400)}`));
+            await new Promise((ok) => setTimeout(ok, 15000));
+            const after = await get(`apps/${app.id}/appStoreVersions?limit=3`);
+            for (const d of after.json.data || []) say(`now: version ${d.attributes.versionString}: ${d.attributes.appStoreState}`);
+            const rs2 = await get(`reviewSubmissions/${sub.id}`);
+            say(`now: submission ${sub.id.slice(0, 8)}: ${(rs2.json.data || {}).attributes ? rs2.json.data.attributes.state : "?"}`);
+          })().catch((x) => say("error: " + x.message));
+          JS
+          cat ios.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/asc-withdraw/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp ios.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "asc withdraw ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
