@@ -1,0 +1,84 @@
+name: Scorecard review notes (read-only, encrypted)
+
+# READ-ONLY (Willy, 22 Oct 2026): signs in to App Store Connect and reads the
+# review status of The Scorecard's App Store versions and submissions. Changes
+# nothing. Records only names, versions, states and dates (never the key).
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/asc-notes.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Read the App Review information, encrypted
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          node > ios.txt 2>&1 <<'JS' || true
+          const crypto = require("crypto"); const e = process.env;
+          const say = (s) => console.log(s);
+          say("ASC_KEY_ID: " + (e.ASC_KEY_ID ? `${e.ASC_KEY_ID.trim().length} characters` + (e.ASC_KEY_ID.trim() === "48475DA2L4" ? " (matches 48475DA2L4)" : " (DOES NOT match 48475DA2L4)") : "MISSING"));
+          say("APPLE_TEAM_ID: " + (e.APPLE_TEAM_ID ? (e.APPLE_TEAM_ID.trim() === "VXMLKHF72B" ? "matches VXMLKHF72B" : "DOES NOT match VXMLKHF72B") : "MISSING"));
+          say("ASC_ISSUER_ID: " + (e.ASC_ISSUER_ID ? (/^[0-9a-f-]{36}$/.test(e.ASC_ISSUER_ID.trim()) ? "looks right (36 characters)" : "WRONG SHAPE") : "MISSING"));
+          const pem = (e.ASC_KEY_P8 || "").trim();
+          say("ASC_KEY_P8: " + (!pem ? "MISSING" : pem.startsWith("-----BEGIN PRIVATE KEY-----") && pem.endsWith("-----END PRIVATE KEY-----") ? "has its BEGIN and END lines" : "BEGIN/END lines missing"));
+          (async () => {
+            let key;
+            try { key = crypto.createPrivateKey(pem); say("key opens: yes"); } catch (x) { say("key opens: NO"); return; }
+            const b = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+            const now = Math.floor(Date.now() / 1000);
+            const head = b({ alg: "ES256", kid: e.ASC_KEY_ID.trim(), typ: "JWT" });
+            const body = b({ iss: e.ASC_ISSUER_ID.trim(), iat: now, exp: now + 600, aud: "appstoreconnect-v1" });
+            const sig = crypto.sign("sha256", Buffer.from(head + "." + body), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+            const jwt = `${head}.${body}.${sig}`;
+            const get = async (p) => { const r = await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { headers: { Authorization: "Bearer " + jwt } }); return { status: r.status, json: await r.json().catch(() => ({})) }; };
+            const apps = await get("apps?filter[bundleId]=io.github.willyros01.scorecard&limit=5");
+            say("sign-in to App Store Connect: " + (apps.status === 200 ? "yes" : "NO (" + apps.status + ")"));
+            const app = (apps.json.data || [])[0];
+            if (!app) { say("The Scorecard app: NOT FOUND"); return; }
+            say(`app: ${app.attributes.name} (id ${app.id})`);
+            /* READ-ONLY (Willy, 22 Oct 2026, 1:42 pm): the App Review information of
+               2.30.0 holds reviewer sign-ins, so it is never written in clear text:
+               encrypted with a one-time public key; only the session holding the
+               private key can read it. The repository is public. */
+            const v = await get(`apps/${app.id}/appStoreVersions?limit=6`);
+            const ver = (v.json.data || []).find((d) => d.attributes.versionString === "2.30.0");
+            if (!ver) { say("2.30.0 not found"); return; }
+            const rd = await get(`appStoreVersions/${ver.id}/appStoreReviewDetail`);
+            const loc = await get(`appStoreVersions/${ver.id}/appStoreVersionLocalizations?limit=5`);
+            const payload = JSON.stringify({ review: rd.json.data && rd.json.data.attributes, whatsNew: (loc.json.data || []).map((d) => ({ locale: d.attributes.locale, whatsNew: d.attributes.whatsNew })) });
+            const aes = crypto.randomBytes(32), iv = crypto.randomBytes(12);
+            const c = crypto.createCipheriv("aes-256-gcm", aes, iv);
+            const ct = Buffer.concat([c.update(payload, "utf8"), c.final()]);
+            const ek = crypto.publicEncrypt({ key: "-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAtONiJ60ULWIwA11LquCt\n2KNnUTU1hqL85nVl2M8K9ux+avOoxQyj4lg6V0C2oaftWyin6V9lk6AOldz4tU50\nZYZ12Kdgi7voRMXwVwARCPgEzFJmOElfkaNd+KT8zgK+wnUV/Qkf8PdNAg9ktpGW\n6X5268qVZC2s2yMsjf46SvaT3e31Zkyb7cNv4ncJAjJNaRK1KwLE/BXQ/9LmSNTD\nwRHF6EBdN/5zN/MW6aUBcT9KHHlKNYPZssV/Xj6T2OyMTpnnGV56aX1Ss9XWVSPk\nwS+/SamXgPPTYsdNA86XVrbKXwU/s4y+2I69riUfmWQ+F6ZjbBus9OJXikQe8XH4\nezoeZADuxJKgoLpTFkpdlR2AdV4iL9bu/i2iUE9t9xaxOEeQwUUVYq6nn4Cet7ID\nYrvdd1aYSjf7MeiPcWQOD1p/AadccHKz/fIXra4avbgeBrJ9WJBlnWNFpc2MgRho\n9vWt6lwWiJboK18XbbStwcNf+WI21MzenI+jftn1leZnAgMBAAE=\n-----END PUBLIC KEY-----", padding: crypto.constants.RSA_PKCS1_OAEP_PADDING, oaepHash: "sha256" }, aes);
+            say("ENC " + JSON.stringify({ ek: ek.toString("base64"), iv: iv.toString("base64"), tag: c.getAuthTag().toString("base64"), ct: ct.toString("base64") }));
+            say("review detail read: " + (rd.status === 200 ? "yes" : "NO " + rd.status));
+          })().catch((x) => say("error: " + x.message));
+          JS
+          cat ios.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/asc-notes/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp ios.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "asc notes ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
