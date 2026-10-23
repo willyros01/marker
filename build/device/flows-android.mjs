@@ -21,13 +21,10 @@ async function flow(id, what, fn) {
 }
 async function fresh() { d.reinstall(PKG, APK); await d.sleep(2000); }
 async function acceptTerms() {
-  await d.waitText(/Terms of Use/); snap("terms");
-  for (let i = 0; i < 3; i++) {
-    await d.tick(/I have read and agree/); await d.tapText(/^Accept$/);
-    await d.sleep(2500);
-    if (!/TERMS OF USE|Please read these terms/.test(d.screenText())) return;
-  }
-  throw new Error("the Terms of Use did not go away after Accept");
+  await d.waitApp(/Terms of Use/); snap("terms");
+  await d.check("[data-terms-tick]"); await d.press("#termsAccept");
+  await d.sleep(1500);
+  if (/Please read these terms/.test(await d.appText())) throw new Error("the Terms of Use did not go away after Accept");
 }
 const inFront = () => { const f = d.front(); if (!f.startsWith(PKG)) throw new Error(`the app is not in front: ${f}`); };
 
@@ -38,13 +35,12 @@ await flow("F1", "Invitation for Ivy on a fresh phone: Terms, create account, 'Y
   const link = await invitation("gI", "Ivy Invitee");
   d.view(link); await d.sleep(6000); inFront();
   await acceptTerms();
-  await d.waitText(/You.re invited|Create your account/); snap("invited-create-account");
-  await d.typeField(0, "ivy@example.com"); await d.typeField(1, "ivy-pass-1");
-  if (d.nodes().filter((n) => /EditText/.test(n.cls)).length > 2) await d.typeField(2, "ivy-pass-1");
-  d.hideKeyboard(); await d.tapText(/^Create account$/);
-  await d.waitText(/Joining as|Ivy Invitee/, 45000); snap("joining-as-ivy");
-  await d.tapText(/Yes, that.s me/);
-  await d.waitText(/Saturday Group|Enter|My rounds/, 45000); snap("in-the-group");
+  await d.waitApp(/You.re invited|Create your account/); snap("invited-create-account");
+  await d.fill('[name="email"]', "ivy@example.com"); await d.fill('[name="password"]', "ivy-pass-1"); await d.fill('[name="password-again"]', "ivy-pass-1");
+  await d.press('[data-act="create-account"]');
+  await d.waitApp(/Joining as[\s\S]*Ivy Invitee/, 45000); snap("joining-as-ivy");
+  await d.press('[data-act="accept-named"]');
+  await d.waitApp(/Saturday Group/, 45000); await d.sleep(2000); snap("in-the-group");
   const acct = await accountByEmail("ivy@example.com");
   if (!acct) throw new Error("no account was created");
   const m = await getDoc(`associations/G1/members/${acct.localId}`);
@@ -55,21 +51,21 @@ await flow("F1", "Invitation for Ivy on a fresh phone: Terms, create account, 'Y
 await flow("F2", "Application on a fresh phone (Auto): apply in the app, open the approval link, Create your password, lands in the public group", async () => {
   await fresh(); d.launch(PKG); await d.sleep(5000);
   await acceptTerms();
-  await d.tapText(/Become a member or request a group/); await d.tapText(/^Become a member(?! or)/);
-  await d.waitText(/full name/i); snap("apply-form");
-  await d.typeField(0, "Pat Applicant"); await d.typeField(1, "pat.applicant@example.com"); d.hideKeyboard();
-  await d.tick(/I have read and agree to the/);
-  await d.tapText(/^Send my application$/);
-  try { await d.waitText(/Check your email/, 30000); }
+  await d.press('[data-act="show-choose"]'); await d.press('[data-act="show-apply"]');
+  await d.waitApp(/Full name/i); snap("apply-form");
+  await d.fill('[name="apply-name"]', "Pat Applicant"); await d.fill('[name="apply-email"]', "pat.applicant@example.com");
+  await d.check('[name="ap-agree"]');
+  await d.press('[data-act="submit-application"]');
+  try { await d.waitApp(/Check your email/, 30000); }
   catch (e) { snap("after-send"); throw new Error(`after Send my application: ${e.message}`); }
   snap("check-your-email");
   const link = await approvalLink("pat.applicant@example.com");
   if (!link) throw new Error("no sign-in email was sent");
   d.view(link); await d.sleep(6000); inFront();
-  await d.waitText(/Create your password/, 30000); snap("create-your-password");
-  await d.typeField(1, "pat-pass-1"); await d.typeField(2, "pat-pass-1"); d.hideKeyboard();
-  await d.tapText(/^Save my password$/);
-  await d.waitText(/public group|Enter|My rounds|Welcome/i, 45000); snap("in-the-public-group");
+  await d.waitApp(/Create your password/, 30000); snap("create-your-password");
+  await d.fill('[name="password"]', "pat-pass-1"); await d.fill('[name="password-again"]', "pat-pass-1");
+  await d.press('[data-act="finish-apply"]');
+  await d.waitApp(/public group|Welcome/i, 45000); await d.sleep(2000); snap("in-the-public-group");
   const acct = await accountByEmail("pat.applicant@example.com");
   if (!acct) throw new Error("no account was created");
   if (!(await getDoc(`associations/PUBLIC/members/${acct.localId}`))) throw new Error("not a member of the public group");
@@ -79,11 +75,11 @@ await flow("F2", "Application on a fresh phone (Auto): apply in the app, open th
 await flow("F3", "Someone else (Rex) is signed in; an invitation for Jay arrives: the app asks whether it is for him", async () => {
   await fresh(); d.launch(PKG); await d.sleep(5000);
   await acceptTerms();
-  await d.waitText(/Sign in/); await d.typeField(0, R1.email); await d.typeField(1, R1.password); d.hideKeyboard();
-  await d.tapText(/^Sign in$/);
-  await d.waitText(/Saturday Group|Enter|My rounds/, 45000); snap("rex-signed-in");
+  await d.waitApp(/Sign in/); await d.fill('[name="email"]', R1.email); await d.fill('[name="password"]', R1.password);
+  await d.press('[data-act="sign-in"]');
+  await d.waitApp(/Saturday Group/, 45000); snap("rex-signed-in");
   d.view(await invitation("gJ", "Jay Unjoined")); await d.sleep(6000); inFront();
-  await d.waitText(/Is this invitation for you|for a new person/, 30000); snap("is-this-for-you");
+  await d.waitApp(/Is this invitation for you|for a new person/, 30000); snap("is-this-for-you");
 });
 
 report(`\nRESULT: ${pass} passed, ${fail} failed`);

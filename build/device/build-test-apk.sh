@@ -26,7 +26,7 @@ st.write_text(t.replace(old, 'true /* device test copy: emulators only */', 1))
 print('test copy: emulators only')
 PY
 python3 - <<'PY2'
-import json; c=json.load(open('capacitor.config.json')); c.setdefault('android',{})['allowMixedContent']=True
+import json; c=json.load(open('capacitor.config.json')); c.setdefault('android',{})['allowMixedContent']=True; c['android']['webContentsDebuggingEnabled']=True
 json.dump(c,open('capacitor.config.json','w'),indent=2); print('test copy: mixed content allowed (emulators are plain http)')
 PY2
 npx cap add android > /tmp/cap.log 2>&1 && npx cap sync android >> /tmp/cap.log 2>&1 || { tail -40 /tmp/cap.log; exit 1; }

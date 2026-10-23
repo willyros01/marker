@@ -86,3 +86,55 @@ export function reinstall(pkg, apk) {
 export { sleep };
 export const logcat = () => sh(["logcat", "-d", "-v", "brief", "AndroidRuntime:E", "Capacitor:*", "Capacitor/Console:*", "chromium:W", "ActivityTaskManager:I", "*:S"]);
 export const clearLog = () => sh(["logcat", "-c"]);
+
+/* ---- Inside the app's web view (test copy only: web debugging switched on).
+   Reads the screen as text and fills fields / presses buttons by their names,
+   the same handlers a tap runs. The OS-level parts (which app opens a link)
+   still go through Android itself. ---- */
+let cdp = null, cdpPid = null, seq = 0;
+async function connect(pkg = "io.github.willyros01.scorecard") {
+  const pid = sh(["shell", "pidof", pkg]).trim();
+  if (!pid) throw new Error("the app is not running");
+  if (cdp && cdpPid === pid && cdp.readyState === 1) return cdp;
+  try { cdp && cdp.close(); } catch {}
+  try { sh(["forward", "--remove", "tcp:9222"]); } catch {}
+  sh(["forward", "tcp:9222", `localabstract:webview_devtools_remote_${pid}`]);
+  let pages = [];
+  for (let i = 0; i < 20 && !pages.length; i++) {
+    try { pages = (await (await fetch("http://127.0.0.1:9222/json")).json()).filter((p) => p.type === "page" && p.webSocketDebuggerUrl); } catch {}
+    if (!pages.length) await sleep(1000);
+  }
+  if (!pages.length) throw new Error("could not reach the app's web view");
+  cdp = new WebSocket(pages[0].webSocketDebuggerUrl); cdpPid = pid;
+  await new Promise((ok, bad) => { cdp.onopen = ok; cdp.onerror = () => bad(new Error("web view connection failed")); });
+  return cdp;
+}
+export async function js(expression) {
+  const ws = await connect();
+  const id = ++seq;
+  const reply = new Promise((ok) => { const h = (ev) => { const m = JSON.parse(ev.data); if (m.id === id) { ws.removeEventListener("message", h); ok(m); } }; ws.addEventListener("message", h); });
+  ws.send(JSON.stringify({ id, method: "Runtime.evaluate", params: { expression, awaitPromise: true, returnByValue: true } }));
+  const m = await reply;
+  if (m.result && m.result.exceptionDetails) throw new Error(`in the app: ${m.result.exceptionDetails.text}`);
+  return m.result && m.result.result ? m.result.result.value : undefined;
+}
+export const appText = () => js("document.body.innerText");
+export async function waitApp(re, ms = 30000) {
+  const end = Date.now() + ms; let t = "";
+  while (Date.now() < end) { try { t = await appText(); if (re.test(t)) return t; } catch (e) { t = String(e.message); } await sleep(1000); }
+  throw new Error(`waited for ${re}; the app shows: ${String(t).replace(/\s+/g, " ").slice(0, 400)}`);
+}
+export async function fill(selector, value) {
+  const ok = await js(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false;
+    el.focus(); el.value = ${JSON.stringify(value)}; el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`);
+  if (!ok) throw new Error(`no field ${selector}; the app shows: ${(await appText()).replace(/\s+/g, " ").slice(0, 300)}`);
+}
+export async function press(selector) {
+  const ok = await js(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; el.scrollIntoView({ block: "center" }); el.click(); return true; })()`);
+  if (!ok) throw new Error(`no button ${selector}; the app shows: ${(await appText()).replace(/\s+/g, " ").slice(0, 300)}`);
+  await sleep(1200);
+}
+export async function check(selector) {
+  const ok = await js(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false; if (!el.checked) el.click(); return el.checked; })()`);
+  if (!ok) throw new Error(`could not tick ${selector}`);
+}

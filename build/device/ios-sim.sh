@@ -36,10 +36,13 @@ log "Simulator: $(xcrun simctl list devices | grep "$UDID" | sed 's/^ *//')"
 echo "--- build for the simulator"
 xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
   -destination "id=$UDID" -derivedDataPath /tmp/dd \
-  CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=YES CODE_SIGNING_ALLOWED=YES \
+  DEVELOPMENT_TEAM=VXMLKHF72B CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- PROVISIONING_PROFILE_SPECIFIER= \
+  CODE_SIGNING_REQUIRED=YES CODE_SIGNING_ALLOWED=YES \
   build > /tmp/xcb.log 2>&1 || { tail -60 /tmp/xcb.log; log "RESULT: simulator build failed"; exit 1; }
 APP="$(find /tmp/dd/Build/Products -maxdepth 2 -name 'App.app' | head -1)"
 log "Built: $APP"
+XCENT="$(find /tmp/dd/Build/Intermediates.noindex -name '*.app-Simulated.xcent' | head -1)"
+log "Simulator entitlements built in: $( [ -n "$XCENT" ] && plutil -convert json -o - "$XCENT" 2>/dev/null || echo none)"
 # The simulator honours app links only if the app carries its entitlements.
 # The website's app-link file names the app as VXMLKHF72B.io.github.willyros01.scorecard,
 # so the simulator copy carries that identity too (no Apple signing needed).
