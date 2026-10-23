@@ -1,0 +1,21 @@
+The Scorecard v2 at 1178314, version APP_VERSION = "2.30.0"
+Simulator: iPhone 17 (24E049C8-1AEC-4A9D-95C6-C11145A59D62) (Shutdown) 
+Built: /tmp/dd/Build/Products/Debug-iphonesimulator/App.app
+Entitlements in the test app:
+  applinks:www.cuberoot-systems.com
+
+S0 Fresh install, open the app from the home screen
+    swc: (no app-link record found)
+  screenshot: s0-launch.png
+S1 Invitation link (as sent today), app installed
+    swc: (no app-link record found)
+  screenshot: s1-invitation.png
+S2 Approval email link (as Firebase sends it today), app installed
+    swc: (no app-link record found)
+  screenshot: s2-approval-email.png
+S3 Approval email link pointing straight at the join page (the planned fix), app installed
+    swc: (no app-link record found)
+  screenshot: s3-approval-fixed.png
+S4 Invitation link with the app NOT installed
+  screenshot: s4-not-installed.png
+RESULT: finished

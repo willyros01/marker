@@ -1,0 +1,100 @@
+The Scorecard v2 at 1178314, version APP_VERSION = "2.30.0"
+--- web files into www/
+--- Xcode project
+Xcode project: privacy manifest added as a resource; entitlements set.
+--- pick a simulator
+com.apple.CoreSimulator.SimRuntime.iOS-26-2 iPhone 17
+Simulator: iPhone 17 (24E049C8-1AEC-4A9D-95C6-C11145A59D62) (Shutdown) 
+--- build for the simulator
+Built: /tmp/dd/Build/Products/Debug-iphonesimulator/App.app
+/tmp/dd/Build/Products/Debug-iphonesimulator/App.app: replacing existing signature
+Entitlements in the test app:
+  applinks:www.cuberoot-systems.com
+Monitoring boot status for iPhone 17 (24E049C8-1AEC-4A9D-95C6-C11145A59D62).
+[2026-10-23 21:21:41 +0000] Status=2, isTerminal=NO, Elapsed=01:07.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.-0LaunchServicesMigrator (00LaunchServicesMigrator.migrator, user-agnostic)
+		Migration Elapsed:00:46 seconds
+
+[2026-10-23 21:21:42 +0000] Status=2, isTerminal=NO, Elapsed=01:08.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.-0LaunchServicesMigrator (00LaunchServicesMigrator.migrator, user-agnostic)
+		Migration Elapsed:00:47 seconds
+
+[2026-10-23 21:21:43 +0000] Status=2, isTerminal=NO, Elapsed=01:09.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.-0LaunchServicesMigrator (00LaunchServicesMigrator.migrator, user-agnostic)
+		Migration Elapsed:00:48 seconds
+
+[2026-10-23 21:21:44 +0000] Status=2, isTerminal=NO, Elapsed=01:10.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.-0LaunchServicesMigrator (00LaunchServicesMigrator.migrator, user-agnostic)
+		Migration Elapsed:00:49 seconds
+
+[2026-10-23 21:21:51 +0000] Status=2, isTerminal=NO, Elapsed=01:17.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.securityd.KeychainMigrator (KeychainMigrator.migrator, user-agnostic)
+		Migration Elapsed:00:50 seconds
+
+[2026-10-23 21:21:54 +0000] Status=2, isTerminal=NO, Elapsed=01:20.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.MobileSafari.migrator (MobileSafari.migrator)
+		Migration Elapsed:00:56 seconds
+
+[2026-10-23 21:21:56 +0000] Status=4, isTerminal=NO, Elapsed=01:23.
+	Waiting on System App
+
+[2026-10-23 21:21:57 +0000] Status=4, isTerminal=NO, Elapsed=01:24.
+	Waiting on System App
+
+[2026-10-23 21:21:59 +0000] Status=4, isTerminal=NO, Elapsed=01:25.
+	Waiting on System App
+
+[2026-10-23 21:22:01 +0000] Status=4, isTerminal=NO, Elapsed=01:27.
+	Waiting on System App
+
+[2026-10-23 21:22:02 +0000] Status=4, isTerminal=NO, Elapsed=01:28.
+	Waiting on System App
+
+[2026-10-23 21:22:03 +0000] Status=4, isTerminal=NO, Elapsed=01:29.
+	Waiting on System App
+
+[2026-10-23 21:22:03 +0000] Status=4, isTerminal=NO, Elapsed=01:29.
+	Waiting on System App
+
+[2026-10-23 21:22:04 +0000] Status=4, isTerminal=NO, Elapsed=01:30.
+	Waiting on System App
+
+[2026-10-23 21:22:04 +0000] Status=4, isTerminal=NO, Elapsed=01:30.
+	Waiting on System App
+
+[2026-10-23 21:22:05 +0000] Status=4, isTerminal=NO, Elapsed=01:31.
+	Waiting on System App
+
+[2026-10-23 21:22:06 +0000] Status=4, isTerminal=NO, Elapsed=01:32.
+	Waiting on System App
+
+[2026-10-23 21:22:11 +0000] Status=4, isTerminal=NO, Elapsed=01:37.
+	Waiting on System App
+
+[2026-10-23 21:22:13 +0000] Status=4294967295, isTerminal=YES, Elapsed=01:40.
+	Finished
+
+
+S0 Fresh install, open the app from the home screen
+An error was encountered processing the command (domain=FBSOpenApplicationServiceErrorDomain, code=1):
+Simulator device failed to launch io.github.willyros01.scorecard.
+The request was denied by service delegate (SBMainWorkspace).
+Underlying error (domain=FBSOpenApplicationServiceErrorDomain, code=1):
+	The request to open "io.github.willyros01.scorecard" failed.
+	The request was denied by service delegate (SBMainWorkspace).
+  screenshot: s0-launch.png
+S1 Invitation link (as sent today), app installed
+  screenshot: s1-invitation.png
+S2 Approval email link (as Firebase sends it today), app installed
+  screenshot: s2-approval-email.png
+S3 Approval email link pointing straight at the join page (the planned fix), app installed
+  screenshot: s3-approval-fixed.png
+S4 Invitation link with the app NOT installed
+  screenshot: s4-not-installed.png
+RESULT: finished
