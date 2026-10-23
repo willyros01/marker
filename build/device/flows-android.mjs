@@ -40,7 +40,9 @@ await flow("F1", "Invitation for Ivy on a fresh phone: Terms, create account, 'Y
   await d.press('[data-act="create-account"]');
   await d.waitApp(/Joining as[\s\S]*Ivy Invitee/, 45000); snap("joining-as-ivy");
   await d.press('[data-act="accept-named"]');
-  await d.waitApp(/Saturday Group/i, 45000); await d.sleep(2000); snap("in-the-group");
+  await d.waitApp(/Saturday Group/i, 45000);
+  for (let i = 0; i < 20 && /Joining the group/.test(await d.appText()); i++) await d.sleep(1000);
+  await d.sleep(1000); snap("in-the-group");
   const acct = await accountByEmail("ivy@example.com");
   if (!acct) throw new Error("no account was created");
   const m = await getDoc(`associations/G1/members/${acct.localId}`);
