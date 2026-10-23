@@ -22,7 +22,12 @@ async function flow(id, what, fn) {
 async function fresh() { d.reinstall(PKG, APK); await d.sleep(2000); }
 async function acceptTerms() {
   await d.waitText(/Terms of Use/); snap("terms");
-  await d.tick(/I have read and agree/); await d.tapText(/^Accept$/);
+  for (let i = 0; i < 3; i++) {
+    await d.tick(/I have read and agree/); await d.tapText(/^Accept$/);
+    await d.sleep(2500);
+    if (!/TERMS OF USE|Please read these terms/.test(d.screenText())) return;
+  }
+  throw new Error("the Terms of Use did not go away after Accept");
 }
 const inFront = () => { const f = d.front(); if (!f.startsWith(PKG)) throw new Error(`the app is not in front: ${f}`); };
 
@@ -53,9 +58,11 @@ await flow("F2", "Application on a fresh phone (Auto): apply in the app, open th
   await d.tapText(/Become a member or request a group/); await d.tapText(/^Become a member(?! or)/);
   await d.waitText(/full name/i); snap("apply-form");
   await d.typeField(0, "Pat Applicant"); await d.typeField(1, "pat.applicant@example.com"); d.hideKeyboard();
-  await d.tick(/I agree|conditions|Code of Conduct/);
+  await d.tick(/I have read and agree to the/);
   await d.tapText(/^Send my application$/);
-  await d.waitText(/Check your email/, 30000); snap("check-your-email");
+  try { await d.waitText(/Check your email/, 30000); }
+  catch (e) { snap("after-send"); throw new Error(`after Send my application: ${e.message}`); }
+  snap("check-your-email");
   const link = await approvalLink("pat.applicant@example.com");
   if (!link) throw new Error("no sign-in email was sent");
   d.view(link); await d.sleep(6000); inFront();

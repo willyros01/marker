@@ -55,7 +55,14 @@ export async function tick(re) {
       const boxes = all.filter((n) => n.checkable && !n.checked);
       const box = boxes.sort((a, b) => Math.abs(a.y - label.y) - Math.abs(b.y - label.y))[0];
       if (box && Math.abs(box.y - label.y) < 200) { tap(box.x, box.y); } else { tap(label.x, label.y); }
-      await sleep(900); return;
+      await sleep(900);
+      /* Confirm it is ticked now; tap the label itself if the box did not take it. */
+      const after = nodes().filter((n) => n.checkable).sort((a, b) => Math.abs(a.y - label.y) - Math.abs(b.y - label.y))[0];
+      if (!after || after.checked) return;
+      tap(label.x, label.y); await sleep(900);
+      const again = nodes().filter((n) => n.checkable).sort((a, b) => Math.abs(a.y - label.y) - Math.abs(b.y - label.y))[0];
+      if (!again || again.checked) return;
+      throw new Error(`the tick box near ${re} would not tick`);
     }
     await scroll();
   }
