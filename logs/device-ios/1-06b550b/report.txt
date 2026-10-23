@@ -1,0 +1,2 @@
+The Scorecard v2 at 1178314, version APP_VERSION = "2.30.0"
+Simulator: iPhone 17 (24E049C8-1AEC-4A9D-95C6-C11145A59D62) (Shutdown) 

@@ -1,0 +1,8 @@
+The Scorecard v2 at 1178314, version APP_VERSION = "2.30.0"
+--- web files into www/
+--- Xcode project
+Xcode project: privacy manifest added as a resource; entitlements set.
+--- pick a simulator
+com.apple.CoreSimulator.SimRuntime.iOS-26-2 iPhone 17
+Simulator: iPhone 17 (24E049C8-1AEC-4A9D-95C6-C11145A59D62) (Shutdown) 
+--- build for the simulator
