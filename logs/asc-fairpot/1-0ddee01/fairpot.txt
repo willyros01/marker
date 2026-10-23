@@ -1,0 +1,30 @@
+APP: Fairpot  bundle io.github.willyros01.fairpot  id 6816560336
+App Store link: https://apps.apple.com/app/id6816560336
+
+[appInfo READY_FOR_SALE] en-CA
+NAME: Fairpot
+SUBTITLE: Split bills in any currency
+
+===== VERSION 1.0.0 (READY_FOR_SALE) =====
+--- en-CA
+PROMOTIONAL TEXT: Split a dinner, a trip or a round of drinks in seconds — in any currency, with totals in yours. No account, no ads, and everything stays on your device.
+KEYWORDS: split,bill,expense,splitter,trip,travel,currency,converter,receipt,share,group,dinner,owe,peso
+DESCRIPTION:
+Fairpot makes splitting shared costs quick and fair.
+
+Add an expense, enter the receipts, choose how many people are sharing, and Fairpot shows exactly what each person owes — in the currency you paid and in your home currency.
+
+• ANY CURRENCY — pesos, dollars, euros, yen and 160+ more. Rates update daily and are locked in when you save, so old expenses never change. Paid with a card at a different rate? Type your own.
+
+• SHARE IN ONE TAP — send a clear summary by Messages, WhatsApp or email, with your payment details (e-Transfer, GCash, PayPal, Wise or any other) and receipt photos if you like.
+
+• RECEIPT PHOTOS — snap the receipt and keep it with the expense.
+
+• SUMMARIES — totals by category, month and year, all in your home currency.
+
+• PRIVATE BY DESIGN — no account, no sign-in, no ads, no tracking. Your data stays on your device in a real database, and you can save a backup to Files or iCloud Drive whenever you want.
+
+• IPHONE AND IPAD — on iPad, Fairpot uses the full width of the screen.
+
+Fairpot is free. A full illustrated User Guide and Quick Start are available from the Help button in the app.
+WHAT'S NEW: null
