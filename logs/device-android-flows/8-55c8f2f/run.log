@@ -1,0 +1,93 @@
+
+F1  Invitation for Ivy on a fresh phone: Terms, create account, 'Yes, that's me — join', lands in Saturday Group
+adb: error: listener 'tcp:9222' not found
+    screenshot 01-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 02-invited-create-account.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 03-joining-as-ivy.png  (in front: com.google.android.apps.nexuslauncher/.NexusLauncherActivity)
+    screenshot 04-F1-failed.png  (in front: com.google.android.apps.nexuslauncher/.NexusLauncherActivity)
+FAIL  F1  —  Command failed: adb shell pidof io.github.willyros01.scorecard
+    last app messages:
+      D/Capacitor( 3165): App resumed
+      D/Capacitor( 3165): Handling local request: https://localhost/
+      I/ActivityTaskManager(  520): Displayed io.github.willyros01.scorecard/.MainActivity for user 0: +6s317ms
+      D/Capacitor( 3165): Handling local request: https://localhost/styles.css
+      D/Capacitor( 3165): Handling local request: https://localhost/version.js
+      D/Capacitor( 3165): Handling local request: https://localhost/app.js
+      E/Capacitor/Console( 3165): File:  - Line 6 - Msg: Error injecting safe area CSS: TypeError: Cannot read properties of null (reading 'style')
+      E/Capacitor/Console( 3165): File:  - Line 6 - Msg: Error injecting safe area CSS: TypeError: Cannot read properties of null (reading 'style')
+      E/Capacitor/Console( 3165): File:  - Line 6 - Msg: Error injecting safe area CSS: TypeError: Cannot read properties of null (reading 'style')
+      D/Capacitor( 3165): Handling local request: https://localhost/store.js
+      D/Capacitor( 3165): Handling local request: https://localhost/model.js
+      D/Capacitor( 3165): Handling local request: https://localhost/courses-api.js
+      D/Capacitor( 3165): Handling local request: https://localhost/platform.js
+      D/Capacitor( 3165): Handling local request: https://localhost/outbox.js
+      I/Capacitor/Console( 3165): File:  - Line 349 - Msg: [object Object]
+      V/Capacitor( 3165): callback: 25197291, pluginId: App, methodName: getLaunchUrl, methodData: {}
+      I/Capacitor/Console( 3165): File:  - Line 333 - Msg: {"url":"https://www.cuberoot-systems.com/scorecard/join/?join=G1.a3936e5c01c7a8ab0cab0615759970b86b4daa3b234a1ffcddd5312f115897aa.gI&v=2"}
+      I/Capacitor/Console( 3165): File:  - Line 349 - Msg: [object Object]
+      V/Capacitor( 3165): callback: 25197292, pluginId: App, methodName: addListener, methodData: {"eventName":"appUrlOpen"}
+      D/Capacitor( 3165): Handling local request: https://localhost/firebase-config.js
+      D/Capacitor( 3165): Handling local request: https://localhost/icon.svg
+      D/Capacitor( 3165): Handling local request: https://localhost/vendor/firebase/firebase-10.12.0.js
+      I/Capacitor/Console( 3165): File:  - Line 333 - Msg: {"url":"https://www.cuberoot-systems.com/scorecard/join/?join=G1.a3936e5c01c7a8ab0cab0615759970b86b4daa3b234a1ffcddd5312f115897aa.gI&v=2"}
+      W/ActivityTaskManager(  520): Force removing ActivityRecord{7ca66d7 u0 io.github.willyros01.scorecard/.MainActivity t8}: app died, no saved state
+      
+
+F2  Application on a fresh phone (Auto): apply in the app, open the approval link, Create your password, lands in the public group
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 05-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 06-apply-form.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 07-check-your-email.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 08-create-your-password.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 09-in-the-public-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Pat is a member of the public group
+PASS  F2
+
+F3  Someone else (Rex) is signed in; an invitation for Jay arrives: the app asks whether it is for him
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 10-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 11-rex-signed-in.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 12-is-this-for-you.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  F3
+
+RESULT: 2 passed, 1 failed
+
+M1  The Marker: Rex signs in, scores 18 holes for himself and Jay, and posts the card
+adb: failed to stat /tmp/marker-test.apk: No such file or directory
+    screenshot 101-M1-failed.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+FAIL  M1  —  Command failed: adb install -r /tmp/marker-test.apk
+adb: failed to stat /tmp/marker-test.apk: No such file or directory
+
+
+M2  The worker posts the card into The Scorecard: two rounds, gross 90 and 108, in one commit
+    worker result: {"posted":0,"refused":0,"left":0}
+    screenshot 102-M2-failed.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+FAIL  M2  —  rounds not found in The Scorecard: []
+
+M3  Rex opens The Scorecard: the Marker round is in his rounds
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 103-M3-failed.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+FAIL  M3  —  waited for /Wack Wack/; the app shows: The Scorecard SATURDAY GROUP REX REGULAR A+ Auto · night All years All courses No rounds here yet Post one from the Enter tab, or widen the filters above. ✎ Enter ≡ My rounds ▤ Summary ⚑ Games
+
+MARKER RESULT: 0 passed, 3 failed
