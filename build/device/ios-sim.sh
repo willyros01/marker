@@ -52,7 +52,7 @@ cat > /tmp/sim.entitlements <<'XML'
 <plist version="1.0"><dict>
   <key>application-identifier</key><string>VXMLKHF72B.io.github.willyros01.scorecard</string>
   <key>com.apple.developer.team-identifier</key><string>VXMLKHF72B</string>
-  <key>com.apple.developer.associated-domains</key><array><string>applinks:www.cuberoot-systems.com</string></array>
+  <key>com.apple.developer.associated-domains</key><array><string>applinks:www.cuberoot-systems.com</string><string>applinks:www.cuberoot-systems.com?mode=developer</string></array>
 </dict></plist>
 XML
 codesign --force --sign - --entitlements /tmp/sim.entitlements --timestamp=none "$APP"
@@ -73,7 +73,7 @@ fresh(){ # reinstall the app, nothing running
   xcrun simctl terminate "$UDID" com.apple.mobilesafari > /dev/null 2>&1 || true
   xcrun simctl uninstall "$UDID" "$BID" > /dev/null 2>&1 || true
   xcrun simctl install "$UDID" "$APP"
-  sleep 15   # let iOS fetch the website's app-link file for the new install
+  sleep 40   # let iOS fetch the website's app-link file for the new install
   ( xcrun simctl spawn "$UDID" swcutil show 2>&1 || xcrun simctl spawn "$UDID" /usr/bin/swcutil show 2>&1 ) | grep -i -B3 -A8 "cuberoot" | head -24 | sed 's/^/    swc: /' >> "$OUT/report.txt" || echo "    swc: (no app-link record found)" >> "$OUT/report.txt"
 }
 
@@ -96,4 +96,7 @@ xcrun simctl terminate "$UDID" com.apple.mobilesafari > /dev/null 2>&1 || true
 xcrun simctl uninstall "$UDID" "$BID" > /dev/null 2>&1 || true
 xcrun simctl openurl "$UDID" "${JOIN}?join=TESTGROUP.faketoken&v=2"; shot s4-not-installed
 
+log ""
+log "App-link service messages (swcd), last 10 minutes:"
+xcrun simctl spawn "$UDID" log show --last 10m --style compact --predicate 'process == "swcd"' 2>/dev/null | grep -i -E "cuberoot|error|fail|scorecard" | tail -30 | sed 's/^/  /' | tee -a "$OUT/report.txt" || true
 log "RESULT: finished"

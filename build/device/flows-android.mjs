@@ -40,7 +40,7 @@ await flow("F1", "Invitation for Ivy on a fresh phone: Terms, create account, 'Y
   await d.press('[data-act="create-account"]');
   await d.waitApp(/Joining as[\s\S]*Ivy Invitee/, 45000); snap("joining-as-ivy");
   await d.press('[data-act="accept-named"]');
-  await d.waitApp(/Saturday Group/, 45000); await d.sleep(2000); snap("in-the-group");
+  await d.waitApp(/Saturday Group/i, 45000); await d.sleep(2000); snap("in-the-group");
   const acct = await accountByEmail("ivy@example.com");
   if (!acct) throw new Error("no account was created");
   const m = await getDoc(`associations/G1/members/${acct.localId}`);
@@ -77,7 +77,7 @@ await flow("F3", "Someone else (Rex) is signed in; an invitation for Jay arrives
   await acceptTerms();
   await d.waitApp(/Sign in/); await d.fill('[name="email"]', R1.email); await d.fill('[name="password"]', R1.password);
   await d.press('[data-act="sign-in"]');
-  await d.waitApp(/Saturday Group/, 45000); snap("rex-signed-in");
+  await d.waitApp(/Saturday Group/i, 45000); snap("rex-signed-in");
   d.view(await invitation("gJ", "Jay Unjoined")); await d.sleep(6000); inFront();
   await d.waitApp(/Is this invitation for you|for a new person/, 30000); snap("is-this-for-you");
 });
