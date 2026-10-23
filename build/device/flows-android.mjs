@@ -45,7 +45,7 @@ await flow("F1", "Invitation for Ivy on a fresh phone: Terms, create account, 'Y
 await flow("F2", "Application on a fresh phone (Auto): apply in the app, open the approval link, Create your password, lands in the public group", async () => {
   await fresh(); d.launch(PKG); await d.sleep(5000);
   await acceptTerms();
-  await d.tapText(/Become a member or request a group/); await d.tapText(/^Become a member$/);
+  await d.tapText(/Become a member or request a group/); await d.tapText(/^Become a member(?! or)/);
   await d.waitText(/Full name/); snap("apply-form");
   await d.typeField(0, "Pat Applicant"); await d.typeField(1, "pat.applicant@example.com"); d.hideKeyboard();
   await d.tick(/I agree|conditions|Code of Conduct/);

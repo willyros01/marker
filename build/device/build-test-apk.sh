@@ -25,9 +25,17 @@ assert t.count(old) == 1, 'emulator switch not found'
 st.write_text(t.replace(old, 'true /* device test copy: emulators only */', 1))
 print('test copy: emulators only')
 PY
+python3 - <<'PY2'
+import json; c=json.load(open('capacitor.config.json')); c.setdefault('android',{})['allowMixedContent']=True
+json.dump(c,open('capacitor.config.json','w'),indent=2); print('test copy: mixed content allowed (emulators are plain http)')
+PY2
 npx cap add android > /tmp/cap.log 2>&1 && npx cap sync android >> /tmp/cap.log 2>&1 || { tail -40 /tmp/cap.log; exit 1; }
 bash build/android-native.sh
 java build/AndroidIcons.java android/app/src/main/res > /dev/null
-sed -i 's#<application #<application android:usesCleartextTraffic="true" #' android/app/src/main/AndroidManifest.xml
+python3 - <<'PY3'
+p='android/app/src/main/AndroidManifest.xml'; s=open(p).read()
+assert '<application' in s
+s=s.replace('<application','<application android:usesCleartextTraffic="true"',1); open(p,'w').write(s); print('test copy: plain http to the emulators allowed')
+PY3
 cd android && chmod +x gradlew && ./gradlew --no-daemon -q assembleDebug
 ls -la app/build/outputs/apk/debug/app-debug.apk
