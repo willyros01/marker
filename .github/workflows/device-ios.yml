@@ -6,7 +6,7 @@ name: Device tests - iPhone simulator
 on:
   push:
     branches: [main]
-    paths: [build/device/**, .github/workflows/device-ios.yml]
+    paths: [build/device/ios-sim.sh, .github/workflows/device-ios.yml]
   workflow_dispatch:
 
 permissions:
@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: device-ios
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   iphone:
