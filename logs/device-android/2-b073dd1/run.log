@@ -1,0 +1,22 @@
+APK: f720540494e0efcf…, 4599635 bytes
+Android: 14, WebView: versionName=113.0.5672.136
+
+A0 Fresh install, open the app from the home screen
+  app-link check: Domain verification state:
+  app-link check: www.cuberoot-systems.com: verified
+  in front: io.github.willyros01.scorecard/.MainActivity   screenshot: a0-launch.png
+A1 Invitation link (as sent today), app installed
+  app-link check: Domain verification state:
+  app-link check: www.cuberoot-systems.com: verified
+  in front: com.google.android.apps.nexuslauncher/.NexusLauncherActivity   screenshot: a1-invitation.png
+A2 Approval email link (as Firebase sends it today), app installed
+  app-link check: Domain verification state:
+  app-link check: www.cuberoot-systems.com: verified
+  in front: com.android.chrome/org.chromium.chrome.browser.firstrun.FirstRunActivity   screenshot: a2-approval-email.png
+A3 Approval link pointing straight at the join page (the planned fix), app installed
+  app-link check: Domain verification state:
+  app-link check: www.cuberoot-systems.com: verified
+  in front: io.github.willyros01.scorecard/.MainActivity   screenshot: a3-approval-fixed.png
+A4 Invitation link with the app NOT installed
+  in front: com.android.chrome/org.chromium.chrome.browser.firstrun.FirstRunActivity   screenshot: a4-not-installed.png
+RESULT: finished
