@@ -35,7 +35,7 @@ async function connect() {
   for (let i = 0; i < 30 && !target; i++) await sleep(100);   // newer iOS announces the page as a target
 }
 export function disconnect() { try { ws && ws.close(); } catch {} ws = null; target = null; }
-export async function js(expression) {
+async function js1(expression) {
   await connect();
   const id = ++seq;
   const msg = { id, method: "Runtime.evaluate", params: { expression, returnByValue: true } };
@@ -45,6 +45,11 @@ export async function js(expression) {
   const r = m.result || {};
   if (r.wasThrown) throw new Error(`in the app: ${JSON.stringify(r.result).slice(0, 200)}`);
   return r.result ? r.result.value : undefined;
+}
+/* The page can be replaced under us (sign-in reloads it): reconnect and try again once. */
+export async function js(expression) {
+  try { return await js1(expression); }
+  catch (e) { if (!/did not answer|connection/.test(e.message)) throw e; disconnect(); await sleep(2000); return js1(expression); }
 }
 export const appText = () => js("document.body.innerText");
 export async function waitApp(re, ms = 30000) {
