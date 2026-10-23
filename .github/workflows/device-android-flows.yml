@@ -41,6 +41,7 @@ jobs:
       - name: Build the test copy of The Marker (emulators only)
         run: |
           mkdir -p out
+          sudo apt-get install -y -q librsvg2-bin > /dev/null 2>&1 || true
           bash build/device/build-marker-test-apk.sh > out/marker-build.log 2>&1 || { tail -40 out/marker-build.log; echo '::error title=Marker test copy::build failed'; }
           tail -5 out/marker-build.log
       - name: Start the Firebase emulators
