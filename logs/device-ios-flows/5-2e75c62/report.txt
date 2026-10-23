@@ -1,0 +1,25 @@
+
+I1  iPhone: invitation for Ivy on a fresh phone — Terms, create account, 'Yes, that's me', lands in Saturday Group
+    screenshot 201-terms.png
+    screenshot 202-invited-create-account.png
+    screenshot 203-joining-as-ivy.png
+    screenshot 204-in-the-group.png
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  I1
+
+I2  iPhone: application on a fresh phone (Auto) — apply, approval link, Create your password, lands in the public group
+    screenshot 205-terms.png
+    screenshot 206-apply-form.png
+    screenshot 207-check-your-email.png
+    screenshot 208-create-your-password.png
+    screenshot 209-in-the-public-group.png
+    database: Pia is a member of the public group
+PASS  I2
+
+I3  iPhone: Rex is signed in; an invitation for Jay arrives — the app asks whether it is for him
+    screenshot 210-terms.png
+    screenshot 211-rex-signed-in.png
+    screenshot 212-is-this-for-you.png
+PASS  I3
+
+RESULT: 3 passed, 0 failed

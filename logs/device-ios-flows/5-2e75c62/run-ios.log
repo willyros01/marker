@@ -1,0 +1,70 @@
+iPhone test copy: emulators only, Web Inspector on
+Xcode project: privacy manifest added as a resource; entitlements set.
+Web Inspector socket: /private/tmp/com.apple.launchd.1lN27YonIX/com.apple.webinspectord_sim.socket
+
+I1  iPhone: invitation for Ivy on a fresh phone — Terms, create account, 'Yes, that's me', lands in Saturday Group
+An error was encountered processing the command (domain=NSPOSIXErrorDomain, code=3):
+Simulator device failed to terminate io.github.willyros01.scorecard.
+found nothing to terminate
+Underlying error (domain=NSPOSIXErrorDomain, code=3):
+	The request to terminate "io.github.willyros01.scorecard" failed. found nothing to terminate
+	found nothing to terminate
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/201-terms.png
+    screenshot 201-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/202-invited-create-account.png
+    screenshot 202-invited-create-account.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/203-joining-as-ivy.png
+    screenshot 203-joining-as-ivy.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/204-in-the-group.png
+    screenshot 204-in-the-group.png
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  I1
+
+I2  iPhone: application on a fresh phone (Auto) — apply, approval link, Create your password, lands in the public group
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/205-terms.png
+    screenshot 205-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/206-apply-form.png
+    screenshot 206-apply-form.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/207-check-your-email.png
+    screenshot 207-check-your-email.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/208-create-your-password.png
+    screenshot 208-create-your-password.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/209-in-the-public-group.png
+    screenshot 209-in-the-public-group.png
+    database: Pia is a member of the public group
+PASS  I2
+
+I3  iPhone: Rex is signed in; an invitation for Jay arrives — the app asks whether it is for him
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/210-terms.png
+    screenshot 210-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/211-rex-signed-in.png
+    screenshot 211-rex-signed-in.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 799B9309-BB87-4E75-91D4-589870C06947 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/212-is-this-for-you.png
+    screenshot 212-is-this-for-you.png
+PASS  I3
+
+RESULT: 3 passed, 0 failed
