@@ -7,7 +7,7 @@ name: Device tests - Android flows
 on:
   push:
     branches: [main]
-    paths: [build/device/flows-android.mjs, build/device/flows-marker.mjs, build/device/adb.mjs, build/device/seed.mjs, build/device/build-test-apk.sh, build/device/build-marker-test-apk.sh, .github/workflows/device-android-flows.yml]
+    paths: [build/device/flows-android.mjs, build/device/flows-marker.mjs, build/device/adb.mjs, build/device/build-test-apk.sh, build/device/build-marker-test-apk.sh, .github/workflows/device-android-flows.yml]
   workflow_dispatch:
 
 permissions:

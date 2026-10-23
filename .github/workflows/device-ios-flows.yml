@@ -1,0 +1,68 @@
+name: Device tests - iPhone flows
+
+# Willy, 23 Oct 2026: freeze lifted only for these automated tests. A TEST copy
+# of The Scorecard (v2, read-only) on the iPhone simulator against the Firebase
+# EMULATORS; nothing live is touched and the scorecard repository never changes.
+on:
+  push:
+    branches: [main]
+    paths: [build/device/flows-ios.mjs, build/device/sim.mjs, build/device/ios-flows.sh, build/device/seed.mjs, .github/workflows/device-ios-flows.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only to save the screenshots to the ci-logs branch
+
+concurrency:
+  group: device-ios-flows
+  cancel-in-progress: false
+
+jobs:
+  flows:
+    runs-on: macos-26
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: willyros01/scorecard
+          ref: v2
+          path: sc
+          persist-credentials: false
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Tools (Firebase emulators, Web Inspector bridge)
+        run: |
+          npm install -g firebase-tools@15.31.0 > /dev/null 2>&1
+          brew install ios-webkit-debug-proxy > /dev/null 2>&1 || brew install ios-webkit-debug-proxy
+          which ios_webkit_debug_proxy
+      - name: Start the Firebase emulators
+        run: |
+          cd sc/test/ops && cp ../../firestore.rules firestore.rules.copy
+          nohup firebase emulators:start --only firestore,auth --project demo-scorecard > /tmp/emulators.log 2>&1 &
+          for i in $(seq 1 60); do curl -s 127.0.0.1:8080 > /dev/null && curl -s 127.0.0.1:9099 > /dev/null && break; sleep 2; done
+          curl -s 127.0.0.1:9099 > /dev/null && echo "emulators up"
+      - name: Build the test copy and run the flows
+        run: bash build/device/ios-flows.sh 2>&1 | tee run-ios.log
+      - name: Save the report and screenshots to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/device-ios-flows/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp -R out-ios/. "/tmp/$dir/" 2>/dev/null || true; cp run-ios.log "/tmp/$dir/" 2>/dev/null || true; cp /tmp/iwdp.log "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          for try in 1 2 3; do
+            git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+            mkdir -p "$dir"; cp -R /tmp/$dir/. "$dir/"
+            git add logs && git commit -qm "device-ios-flows ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs && break
+            sleep 5
+          done
