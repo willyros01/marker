@@ -1,0 +1,57 @@
+iPhone test copy: emulators only, Web Inspector on
+Xcode project: privacy manifest added as a resource; entitlements set.
+Web Inspector socket: /private/tmp/com.apple.launchd.0FspsZWNFC/com.apple.webinspectord_sim.socket
+
+I1  iPhone: invitation for Ivy on a fresh phone — Terms, create account, 'Yes, that's me', lands in Saturday Group
+An error was encountered processing the command (domain=NSPOSIXErrorDomain, code=3):
+Simulator device failed to terminate io.github.willyros01.scorecard.
+found nothing to terminate
+Underlying error (domain=NSPOSIXErrorDomain, code=3):
+	The request to terminate "io.github.willyros01.scorecard" failed. found nothing to terminate
+	found nothing to terminate
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: CF32C4B0-F87A-4F3A-8101-DC024651658D (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/201-I1-failed.png
+    screenshot 201-I1-failed.png
+FAIL  I1  —  could not reach the app's web view (Web Inspector)
+
+I2  iPhone: application on a fresh phone (Auto) — apply, approval link, Create your password, lands in the public group
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: CF32C4B0-F87A-4F3A-8101-DC024651658D (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/202-terms.png
+    screenshot 202-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: CF32C4B0-F87A-4F3A-8101-DC024651658D (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/203-apply-form.png
+    screenshot 203-apply-form.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: CF32C4B0-F87A-4F3A-8101-DC024651658D (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/204-check-your-email.png
+    screenshot 204-check-your-email.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: CF32C4B0-F87A-4F3A-8101-DC024651658D (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/205-create-your-password.png
+    screenshot 205-create-your-password.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: CF32C4B0-F87A-4F3A-8101-DC024651658D (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/206-in-the-public-group.png
+    screenshot 206-in-the-public-group.png
+    database: Pia is a member of the public group
+PASS  I2
+
+I3  iPhone: Rex is signed in; an invitation for Jay arrives — the app asks whether it is for him
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: CF32C4B0-F87A-4F3A-8101-DC024651658D (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/207-terms.png
+    screenshot 207-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: CF32C4B0-F87A-4F3A-8101-DC024651658D (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/208-rex-signed-in.png
+    screenshot 208-rex-signed-in.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: CF32C4B0-F87A-4F3A-8101-DC024651658D (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/209-is-this-for-you.png
+    screenshot 209-is-this-for-you.png
+PASS  I3
+
+RESULT: 2 passed, 1 failed

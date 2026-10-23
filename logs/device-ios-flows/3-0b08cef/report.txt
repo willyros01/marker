@@ -1,0 +1,21 @@
+
+I1  iPhone: invitation for Ivy on a fresh phone — Terms, create account, 'Yes, that's me', lands in Saturday Group
+    screenshot 201-I1-failed.png
+FAIL  I1  —  could not reach the app's web view (Web Inspector)
+
+I2  iPhone: application on a fresh phone (Auto) — apply, approval link, Create your password, lands in the public group
+    screenshot 202-terms.png
+    screenshot 203-apply-form.png
+    screenshot 204-check-your-email.png
+    screenshot 205-create-your-password.png
+    screenshot 206-in-the-public-group.png
+    database: Pia is a member of the public group
+PASS  I2
+
+I3  iPhone: Rex is signed in; an invitation for Jay arrives — the app asks whether it is for him
+    screenshot 207-terms.png
+    screenshot 208-rex-signed-in.png
+    screenshot 209-is-this-for-you.png
+PASS  I3
+
+RESULT: 2 passed, 1 failed
