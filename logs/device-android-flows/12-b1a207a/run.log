@@ -1,0 +1,80 @@
+
+F1  Invitation for Ivy on a fresh phone: Terms, create account, 'Yes, that's me — join', lands in Saturday Group
+adb: error: listener 'tcp:9222' not found
+    screenshot 01-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 02-invited-create-account.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 03-joining-as-ivy.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 04-in-the-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  F1
+
+F2  Application on a fresh phone (Auto): apply in the app, open the approval link, Create your password, lands in the public group
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 05-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 06-apply-form.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 07-check-your-email.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 08-create-your-password.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 09-in-the-public-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Pat is a member of the public group
+PASS  F2
+
+F3  Someone else (Rex) is signed in; an invitation for Jay arrives: the app asks whether it is for him
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 10-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 11-rex-signed-in.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 12-is-this-for-you.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  F3
+
+RESULT: 3 passed, 0 failed
+
+M1  The Marker: Rex signs in, scores 18 holes for himself and Jay, and posts the card
+args: [-p, io.github.willyros01.marker, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.marker"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.marker"
+data="android.intent.category.LAUNCHER"
+    screenshot 101-marker-start.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 102-marker-signed-in.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 103-marker-setup.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 104-marker-players.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 105-marker-hole-9.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 106-marker-totals.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 107-marker-posted.png  (in front: io.github.willyros01.marker/.MainActivity)
+PASS  M1
+
+M2  The worker posts the card into The Scorecard: two rounds, gross 90 and 108, in one commit
+    worker: card mvlk… posted
+    worker result: {"posted":1,"refused":0,"left":0}
+    database: Rex gross 90, Jay gross 108, entered via marker
+PASS  M2
+
+M3  Rex opens The Scorecard: the Marker round is in his rounds
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 108-scorecard-my-rounds.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  M3
+
+MARKER RESULT: 3 passed, 0 failed

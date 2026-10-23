@@ -1,0 +1,6 @@
+Marker test copy: emulators only, test project demo-scorecard
+Manifest: camera permission added (camera optional, so tablets without one can install).
+Launcher icons made from icon.svg.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+-rw-r--r-- 1 runner runner 4284997 Oct 23 22:48 /tmp/marker-test.apk
