@@ -1,0 +1,60 @@
+The Scorecard v2 at 1178314, version APP_VERSION = "2.30.0"
+Simulator: iPhone 17 (24E049C8-1AEC-4A9D-95C6-C11145A59D62) (Shutdown) 
+Built: /tmp/dd/Build/Products/Debug-iphonesimulator/App.app
+Simulator entitlements built in: {"application-identifier":"VXMLKHF72B.io.github.willyros01.scorecard","com.apple.developer.associated-domains":["applinks:www.cuberoot-systems.com"]}
+Entitlements in the test app:
+  applinks:www.cuberoot-systems.com
+  applinks:www.cuberoot-systems.com?mode=developer
+Apple's copy of the app-link file (CDN), as seen from this machine:
+  HTTP 200 in 0.540164s
+  {"applinks":{"details":[{"appIDs":["VXMLKHF72B.io.github.willyros01.scorecard"],"components":[{"/":"/scorecard/join/*","comment":"The Scorecard invitation links"}]},{"appIDs":["VXMLKHF72B.io.github.willyros01.fidunio"],"components":[{"/":"/fidunio/join/*","comment":"FIDUNIO invitation links"}]}]}}
+
+
+Waiting for iOS to fetch the app-link file for www.cuberoot-systems.com…
+  
+
+S0 Open the app from the home screen
+  screenshot: s0-launch.png
+S1 Invitation link (as sent today), app installed
+  screenshot: s1-invitation.png
+S2 Approval email link (as Firebase sends it today), app installed
+  screenshot: s2-approval-email.png
+S3 Approval email link pointing straight at the join page (the planned fix), app installed
+  screenshot: s3-approval-fixed.png
+S4 Forgot-password email link (as Firebase sends it today), app installed
+  screenshot: s4-forgot-password.png
+S5 Invitation link with the app NOT installed
+  screenshot: s5-not-installed.png
+
+App-link service messages (swcd), last 10 minutes:
+  2026-10-23 22:26:33.837 E  swcd[5094:694c] [com.apple.network:connection] nw_endpoint_flow_failed_with_error [C4.1.1 IPv4#59cee1a4:443 cancelled socket-flow ((null))] already failing, returning
+  2026-10-23 22:26:33.837 Df swcd[5094:694c] [com.apple.network:connection] [C4 Hostname#b33c7e54:443 waiting parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:child_failed @55.032s
+  2026-10-23 22:26:33.837 Df swcd[5094:694c] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C4] reporting state waiting error server closed session with no notification
+  2026-10-23 22:26:33.839 E  swcd[5094:694c] [com.apple.CFNetwork:Default] Connection 3: treating TLS waiting errors as failures
+  2026-10-23 22:26:33.839 E  swcd[5094:694c] [com.apple.CFNetwork:Default] Connection 3: failed to connect 3:-9816, reason -1
+  2026-10-23 22:26:33.839 E  swcd[5094:694c] [com.apple.CFNetwork:Default] Connection 3: encountered error(3:-9816)
+  2026-10-23 22:26:33.839 Df swcd[5094:694c] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C3] reporting state cancelled error server closed session with no notification
+  2026-10-23 22:26:33.840 Df swcd[5094:694c] [com.apple.CFNetwork:Default] Task <6123B14D-BA0B-46DE-AC64-5C0A2876D32C>.<3> can retry(N) with reason(4) for error [3:-9816]
+  2026-10-23 22:26:33.840 E  swcd[5094:694c] [com.apple.CFNetwork:Default] Task <6123B14D-BA0B-46DE-AC64-5C0A2876D32C>.<3> HTTP load failed, 0/0 bytes (error code: -1200 [3:-9816])
+  2026-10-23 22:26:33.841 E  swcd[5094:694c] [com.apple.CFNetwork:Default] Connection 4: treating TLS waiting errors as failures
+  2026-10-23 22:26:33.841 E  swcd[5094:694c] [com.apple.CFNetwork:Default] Connection 4: failed to connect 3:-9816, reason -1
+  2026-10-23 22:26:33.841 E  swcd[5094:694c] [com.apple.CFNetwork:Default] Connection 4: encountered error(3:-9816)
+  2026-10-23 22:26:33.841 Df swcd[5094:694c] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C4] reporting state cancelled error server closed session with no notification
+  2026-10-23 22:26:33.841 Df swcd[5094:694c] [com.apple.CFNetwork:Default] Task <E5B3D1FE-718D-4ED4-851C-843E3416804B>.<4> can retry(Y) with reason(5) for error [3:-9816]
+  2026-10-23 22:26:34.456 Df swcd[5094:9428] [com.apple.CFNetwork:Summary] Task <6123B14D-BA0B-46DE-AC64-5C0A2876D32C>.<3> summary for task failure {transaction_duration_ms=58016, response_status=-1, connection=3, reused=1, reused_after_ms=0, request_start_ms=0, request_duration_ms=0, response_start_ms=0, response_duration_ms=0, request_bytes=0, request_throughput_kbps=0, response_bytes=0, response_throughput_kbps=0, cache_hit=false}
+  2026-10-23 22:26:34.456 E  swcd[5094:9428] [com.apple.CFNetwork:Default] Task <6123B14D-BA0B-46DE-AC64-5C0A2876D32C>.<3> finished with error [-1200] Error Domain=NSURLErrorDomain Code=-1200 UserInfo={NSURLErrorFailingURLPeerTrustErrorKey=<private>, NSErrorFailingURLKey=<private>, NSErrorFailingURLStringKey=<private>, NSErrorClientCertificateStateKey=0, NSErrorPeerCertificateChainKey=<private>, _NSURLErrorFailingURLSessionTaskErrorKey=<private>, _NSURLErrorRelatedURLSessionTaskErrorKey=<private>, NSLocalizedDescription=<private>, _kCFStreamErrorDomainKey=3, NSUnderlyingError=0x600000c12280 {Error Domain=kCFErrorDomainCFNetwork Code=-1200 UserInfo={_kCFNetworkCFStreamSSLErrorOriginalValue=-9816, kCFStreamPropertySSLPeerCertificates=<private>, _kCFStreamPropertySSLClientCertificateState=0, kCFStreamPropertySSLPeerTrust=<private>, _NSURLErrorNWPathKey=<private>, _kCFStreamErrorDomainKey=3, _kCFStreamErrorCodeKey=-9816}}, _kCFStreamErrorCodeKey=-9816}
+  2026-10-23 22:26:39.194 Df swcd[5094:7c94] [com.apple.CFNetwork:Summary] Task <E5B3D1FE-718D-4ED4-851C-843E3416804B>.<4> summary for task failure {transaction_duration_ms=62756, response_status=404, connection=6, protocol="http/1.1", domain_lookup_duration_ms=2988, connect_duration_ms=1474, secure_connection_duration_ms=774, private_relay=false, request_start_ms=62263, request_duration_ms=0, response_start_ms=62725, response_duration_ms=1, request_bytes=302, request_throughput_kbps=14728, response_bytes=909, response_throughput_kbps=5443, cache_hit=false}
+  2026-10-23 22:26:39.194 Df swcd[5094:7c94] [com.apple.CFNetwork:Default] Task <E5B3D1FE-718D-4ED4-851C-843E3416804B>.<4> finished with error [-999] Error Domain=NSURLErrorDomain Code=-999 UserInfo={NSErrorFailingURLStringKey=<private>, NSErrorFailingURLKey=<private>, _NSURLErrorRelatedURLSessionTaskErrorKey=<private>, _NSURLErrorFailingURLSessionTaskErrorKey=<private>, NSLocalizedDescription=<private>}
+  2026-10-23 22:27:02.081 E  swcd[5094:62f1] [com.apple.swc:1701] Error getting enterprise-managed associated domains data. If this device is not enterprise-managed, this is normal: Error Domain=SWCErrorDomain Code=1701 "Failed to get associated domain data from ManagedConfiguration framework." UserInfo={NSDebugDescription=Failed to get associated domain data from ManagedConfiguration framework., Line=298, Function=-[SWCEnterpriseContext(CPMCInterop) _loadEnterpriseData]}
+  2026-10-23 22:29:22.227 Df swcd[5094:9428] [com.apple.swc:dl] Beginning data task AASA-417A26B9-C8BE-41C9-B97A-2E83C8738CB1 { domain: www.cuberoot-systems.com, bytes: 0, route: cdn }
+  2026-10-23 22:29:22.779 E  swcd[5094:9428] [com.apple.swc:dl] Request for 'https://app-site-association.cdn-apple.com/a/v1/wallet.apple.com' for task AASA-892DEC63-9818-4132-AE3E-640140EA8128 { domain: wallet.apple.com, bytes: 0, route: cdn } denied because the CDN told us to stop with HTTP status 404: SWCERR00401 Bad JSON content -- {"cause":"Connection failed"}
+  2026-10-23 22:29:22.779 Df swcd[5094:9428] [com.apple.CFNetwork:Summary] Task <4BF00F76-62FF-45F0-ACC2-5DC39B0233AA>.<1> summary for task failure {transaction_duration_ms=550, response_status=404, connection=8, protocol="http/1.1", domain_lookup_duration_ms=30, connect_duration_ms=472, secure_connection_duration_ms=467, private_relay=false, request_start_ms=529, request_duration_ms=0, response_start_ms=549, response_duration_ms=0, request_bytes=304, request_throughput_kbps=19922, response_bytes=998, response_throughput_kbps=11776, cache_hit=false}
+  2026-10-23 22:29:22.780 Df swcd[5094:9428] [com.apple.CFNetwork:Default] Task <4BF00F76-62FF-45F0-ACC2-5DC39B0233AA>.<1> finished with error [-999] Error Domain=NSURLErrorDomain Code=-999 UserInfo={NSErrorFailingURLStringKey=<private>, NSErrorFailingURLKey=<private>, _NSURLErrorRelatedURLSessionTaskErrorKey=<private>, _NSURLErrorFailingURLSessionTaskErrorKey=<private>, NSLocalizedDescription=<private>}
+  2026-10-23 22:29:23.023 E  swcd[5094:e2e7] [com.apple.swc:dl] Request for 'https://app-site-association.cdn-apple.com/a/v1/smp-device-qa1.apple.com' for task AASA-1FAEE50F-AE93-4C6E-8D7F-75AF7A4AC027 { domain: smp-device-qa1.apple.com, bytes: 0, route: cdn } denied because the CDN told us to stop with HTTP status 404: SWCERR00305 Network error -- {"cause":"Connection failed"}
+  2026-10-23 22:29:23.024 Df swcd[5094:e2e7] [com.apple.CFNetwork:Summary] Task <D044D26C-9733-4CB8-811E-0305A3653B57>.<2> summary for task failure {transaction_duration_ms=796, response_status=404, connection=9, protocol="http/1.1", domain_lookup_duration_ms=15, connect_duration_ms=152, secure_connection_duration_ms=145, private_relay=false, request_start_ms=711, request_duration_ms=0, response_start_ms=794, response_duration_ms=0, request_bytes=320, request_throughput_kbps=12306, response_bytes=968, response_throughput_kbps=8091, cache_hit=false}
+  2026-10-23 22:29:23.025 Df swcd[5094:e2e7] [com.apple.CFNetwork:Default] Task <D044D26C-9733-4CB8-811E-0305A3653B57>.<2> finished with error [-999] Error Domain=NSURLErrorDomain Code=-999 UserInfo={NSErrorFailingURLStringKey=<private>, NSErrorFailingURLKey=<private>, _NSURLErrorRelatedURLSessionTaskErrorKey=<private>, _NSURLErrorFailingURLSessionTaskErrorKey=<private>, NSLocalizedDescription=<private>}
+  2026-10-23 22:29:23.465 Df swcd[5094:e2e8] [com.apple.CFNetwork:Summary] Task <7B7F18BF-4648-451A-A1B7-4FC6DD21C938>.<3> summary for task failure {transaction_duration_ms=1237, response_status=404, connection=10, protocol="http/1.1", domain_lookup_duration_ms=10, connect_duration_ms=209, secure_connection_duration_ms=167, private_relay=false, request_start_ms=787, request_duration_ms=0, response_start_ms=799, response_duration_ms=437, request_bytes=302, request_throughput_kbps=5617, response_bytes=907, response_throughput_kbps=16, cache_hit=false}
+  2026-10-23 22:29:23.465 Df swcd[5094:e2e8] [com.apple.CFNetwork:Default] Task <7B7F18BF-4648-451A-A1B7-4FC6DD21C938>.<3> finished with error [-999] Error Domain=NSURLErrorDomain Code=-999 UserInfo={NSErrorFailingURLStringKey=<private>, NSErrorFailingURLKey=<private>, _NSURLErrorRelatedURLSessionTaskErrorKey=<private>, _NSURLErrorFailingURLSessionTaskErrorKey=<private>, NSLocalizedDescription=<private>}
+  2026-10-23 22:31:57.275 E  swcd[5094:10e2b] [com.apple.swc:1701] Error getting enterprise-managed associated domains data. If this device is not enterprise-managed, this is normal: Error Domain=SWCErrorDomain Code=1701 "Failed to get associated domain data from ManagedConfiguration framework." UserInfo={NSDebugDescription=Failed to get associated domain data from ManagedConfiguration framework., Line=298, Function=-[SWCEnterpriseContext(CPMCInterop) _loadEnterpriseData]}
+  2026-10-23 22:31:57.417 Df swcd[5094:10e2b] [com.apple.swc:db] Will remove settings for service specifier { s = applinks, a = VXMLKHF72B.io.github.willyros01.scorecard, d = (null) } because there are no more service entries matching it
+RESULT: finished
