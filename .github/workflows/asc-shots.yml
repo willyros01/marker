@@ -1,0 +1,70 @@
+name: Scorecard screenshots (read-only)
+
+# READ-ONLY (Willy, 23 Oct 2026, 12:40 am): lists The Scorecard's App Store
+# screenshots (iPhone and iPad) per version. Changes nothing. Public text only.
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/asc-shots.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  read:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Read Fairpot's listing
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          node > shots.txt 2>&1 <<'JS' || true
+          const crypto = require("crypto"); const e = process.env;
+          const b = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+          const t = Math.floor(Date.now() / 1000);
+          const head = b({ alg: "ES256", kid: e.ASC_KEY_ID.trim(), typ: "JWT" });
+          const body = b({ iss: e.ASC_ISSUER_ID.trim(), iat: t, exp: t + 600, aud: "appstoreconnect-v1" });
+          const sig = crypto.sign("sha256", Buffer.from(head + "." + body), { key: crypto.createPrivateKey(e.ASC_KEY_P8.trim()), dsaEncoding: "ieee-p1363" }).toString("base64url");
+          const jwt = `${head}.${body}.${sig}`;
+          const get = async (p) => (await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { headers: { Authorization: "Bearer " + jwt } })).json();
+          (async () => {
+            const apps = await get("apps?filter[bundleId]=io.github.willyros01.scorecard&limit=5");
+            const app = (apps.data || [])[0];
+            if (!app) { console.log("Scorecard not found"); return; }
+            const vs = await get(`apps/${app.id}/appStoreVersions?limit=6`);
+            for (const v of vs.data || []) {
+              console.log(`\n===== VERSION ${v.attributes.versionString} (${v.attributes.appStoreState}) =====`);
+              const l = await get(`appStoreVersions/${v.id}/appStoreVersionLocalizations`);
+              for (const x of l.data || []) {
+                const sets = await get(`appStoreVersionLocalizations/${x.id}/appScreenshotSets?limit=50`);
+                console.log(`--- ${x.attributes.locale}: ${(sets.data || []).length} screenshot sets`);
+                for (const st of sets.data || []) {
+                  const shots = await get(`appScreenshotSets/${st.id}/appScreenshots?limit=20`);
+                  const list = (shots.data || []).map((a) => `${a.attributes.fileName} [${a.attributes.assetDeliveryState && a.attributes.assetDeliveryState.state}]`);
+                  console.log(`   ${st.attributes.screenshotDisplayType}: ${list.length} -> ${list.join(", ")}`);
+                }
+              }
+            }
+          })().catch((x) => console.log("error: " + x.message));
+          JS
+          cat shots.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/asc-shots/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp shots.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "asc fairpot ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
