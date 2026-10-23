@@ -1,6 +1,6 @@
 /* The same journeys as on Android, on the iPhone simulator, against the
- * Firebase EMULATORS. Links reach the app through a test-only address
- * (scorecardtest://), because the simulator on GitHub's machines does not
+ * Firebase EMULATORS. Links are handed to the app the way iOS does it
+ * (appUrlOpen), because the simulator on GitHub's machines does not
  * finish setting up web app-links; which app opens a real link is proven on
  * Android and by the website/Apple checks in the report. */
 import fs from "node:fs";
@@ -11,7 +11,8 @@ fs.mkdirSync(OUT, { recursive: true });
 const report = (s) => { console.log(s); fs.appendFileSync(`${OUT}/report.txt`, s + "\n"); };
 let step = 200, pass = 0, fail = 0;
 const snap = (name) => { const f = `${String(++step)}-${name}.png`; d.shot(`${OUT}/${f}`); report(`    screenshot ${f}`); };
-const testLink = (url) => `scorecardtest://join/${new URL(url).search}`;
+/* Hands a link to the running app exactly as iOS's link delivery does (appUrlOpen). */
+async function openLink(url) { const ok = await d.js(`globalThis.__testOpenLink(${JSON.stringify(url)})`); if (!ok) throw new Error("the app did not take the link"); await d.sleep(3000); }
 async function flow(id, what, fn) {
   report(`\n${id}  ${what}`);
   try { await fn(); pass++; report(`PASS  ${id}`); }
@@ -28,7 +29,8 @@ await seed();
 
 await flow("I1", "iPhone: invitation for Ivy on a fresh phone — Terms, create account, 'Yes, that's me', lands in Saturday Group", async () => {
   await fresh();
-  d.openurl(testLink(await invitation("gI", "Ivy Invitee"))); await d.sleep(5000);
+  d.launch(BID); await d.sleep(5000);
+  await openLink(await invitation("gI", "Ivy Invitee"));
   await acceptTerms();
   await d.waitApp(/You.re invited|Create your account/); snap("invited-create-account");
   await d.fill('[name="email"]', "ivy@example.com"); await d.fill('[name="password"]', "ivy-pass-1"); await d.fill('[name="password-again"]', "ivy-pass-1");
@@ -54,7 +56,7 @@ await flow("I2", "iPhone: application on a fresh phone (Auto) — apply, approva
   await d.waitApp(/Check your email/, 30000); snap("check-your-email");
   const link = await approvalLink("pia.applicant@example.com");
   if (!link) throw new Error("no sign-in email was sent");
-  d.openurl(testLink(link)); await d.sleep(4000);
+  await openLink(link);
   await d.waitApp(/Create your password/, 30000); snap("create-your-password");
   await d.fill('[name="password"]', "pia-pass-1"); await d.fill('[name="password-again"]', "pia-pass-1");
   await d.press('[data-act="finish-apply"]');
@@ -69,7 +71,7 @@ await flow("I3", "iPhone: Rex is signed in; an invitation for Jay arrives — th
   await acceptTerms();
   await d.waitApp(/Sign in/); await d.fill('[name="email"]', R1.email); await d.fill('[name="password"]', R1.password);
   await d.press('[data-act="sign-in"]'); await d.waitApp(/Saturday Group/i, 45000); snap("rex-signed-in");
-  d.openurl(testLink(await invitation("gJ", "Jay Unjoined"))); await d.sleep(5000);
+  await openLink(await invitation("gJ", "Jay Unjoined"));
   await d.waitApp(/Is this invitation for you|for a new person/, 30000); snap("is-this-for-you");
 });
 

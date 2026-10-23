@@ -17,6 +17,12 @@ import json
 st = Path('www/store.js'); t = st.read_text()
 old = 'new URLSearchParams(location.search).has("emulators")'
 assert t.count(old) == 1; st.write_text(t.replace(old, 'true /* device test copy: emulators only */', 1))
+pl = Path('www/platform.js'); u = pl.read_text()
+old = 'export function onLink(handler) {'
+assert u.count(old) == 1
+# Test copy only: the test hands a link to the app the same way iOS does (appUrlOpen).
+u = u.replace(old, old + '\n  globalThis.__testOpenLink = (url) => { if (takeLink(url)) handler(); return true; };', 1)
+pl.write_text(u)
 c = json.load(open('capacitor.config.json')); c.setdefault('ios', {})['webContentsDebuggingEnabled'] = True
 json.dump(c, open('capacitor.config.json', 'w'), indent=2)
 print('iPhone test copy: emulators only, Web Inspector on')
@@ -28,7 +34,6 @@ ruby -e 'require "xcodeproj"' 2>/dev/null || gem install xcodeproj --user-instal
 ruby build/ios/configure.rb
 PL=ios/App/App/Info.plist
 plutil -replace NSAppTransportSecurity -json '{"NSAllowsLocalNetworking":true}' "$PL"
-plutil -replace CFBundleURLTypes -json '[{"CFBundleURLName":"test-links","CFBundleURLSchemes":["scorecardtest"]}]' "$PL"
 UDID="$(xcrun simctl list devices available -j | node -e '
   const d=JSON.parse(require("fs").readFileSync(0)).devices; let best=null;
   for (const [rt,list] of Object.entries(d)) if (/iOS/.test(rt)) for (const x of list) if (/^iPhone \d+$/.test(x.name)) best=x;
