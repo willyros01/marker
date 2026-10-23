@@ -1,0 +1,56 @@
+The Scorecard v2 at 1178314, version APP_VERSION = "2.30.0"
+Simulator: iPhone 17 (24E049C8-1AEC-4A9D-95C6-C11145A59D62) (Shutdown) 
+Built: /tmp/dd/Build/Products/Debug-iphonesimulator/App.app
+Simulator entitlements built in: {"application-identifier":"VXMLKHF72B.io.github.willyros01.scorecard","com.apple.developer.associated-domains":["applinks:www.cuberoot-systems.com"]}
+Entitlements in the test app:
+  applinks:www.cuberoot-systems.com
+  applinks:www.cuberoot-systems.com?mode=developer
+
+Waiting for iOS to fetch the app-link file for www.cuberoot-systems.com…
+  
+
+S0 Open the app from the home screen
+  screenshot: s0-launch.png
+S1 Invitation link (as sent today), app installed
+  screenshot: s1-invitation.png
+S2 Approval email link (as Firebase sends it today), app installed
+  screenshot: s2-approval-email.png
+S3 Approval email link pointing straight at the join page (the planned fix), app installed
+  screenshot: s3-approval-fixed.png
+S4 Forgot-password email link (as Firebase sends it today), app installed
+  screenshot: s4-forgot-password.png
+S5 Invitation link with the app NOT installed
+  screenshot: s5-not-installed.png
+
+App-link service messages (swcd), last 10 minutes:
+  2026-10-23 22:08:08.465 Df swcd[3882:40bd] [com.apple.CFNetwork:Summary] Task <BB47AD22-433A-4C97-9D3C-D04BE4473163>.<1> summary for task failure {transaction_duration_ms=257, response_status=404, connection=4, protocol="http/1.1", domain_lookup_duration_ms=56, connect_duration_ms=159, secure_connection_duration_ms=53, private_relay=false, request_start_ms=235, request_duration_ms=0, response_start_ms=256, response_duration_ms=0, request_bytes=304, request_throughput_kbps=26155, response_bytes=999, response_throughput_kbps=19348, cache_hit=false}
+  2026-10-23 22:08:08.465 Df swcd[3882:40bd] [com.apple.CFNetwork:Default] Task <BB47AD22-433A-4C97-9D3C-D04BE4473163>.<1> finished with error [-999] Error Domain=NSURLErrorDomain Code=-999 UserInfo={NSErrorFailingURLStringKey=<private>, NSErrorFailingURLKey=<private>, _NSURLErrorRelatedURLSessionTaskErrorKey=<private>, _NSURLErrorFailingURLSessionTaskErrorKey=<private>, NSLocalizedDescription=<private>}
+  2026-10-23 22:08:08.605 Df swcd[3882:40b9] [com.apple.CFNetwork:Summary] Task <D6441901-D3E4-422E-8BC2-9016BC64E195>.<3> summary for task failure {transaction_duration_ms=397, response_status=404, connection=6, protocol="http/1.1", domain_lookup_duration_ms=10, connect_duration_ms=119, secure_connection_duration_ms=65, private_relay=false, request_start_ms=374, request_duration_ms=0, response_start_ms=397, response_duration_ms=0, request_bytes=302, request_throughput_kbps=56140, response_bytes=909, response_throughput_kbps=54661, cache_hit=false}
+  2026-10-23 22:08:08.605 Df swcd[3882:40b9] [com.apple.CFNetwork:Default] Task <D6441901-D3E4-422E-8BC2-9016BC64E195>.<3> finished with error [-999] Error Domain=NSURLErrorDomain Code=-999 UserInfo={NSErrorFailingURLStringKey=<private>, NSErrorFailingURLKey=<private>, _NSURLErrorRelatedURLSessionTaskErrorKey=<private>, _NSURLErrorFailingURLSessionTaskErrorKey=<private>, NSLocalizedDescription=<private>}
+  2026-10-23 22:08:08.622 E  swcd[3882:40bc] [com.apple.swc:dl] Request for 'https://app-site-association.cdn-apple.com/a/v1/smp-device-qa1.apple.com' for task AASA-4749878D-376B-4666-852D-B4E489A54F00 { domain: smp-device-qa1.apple.com, bytes: 0, route: cdn } denied because the CDN told us to stop with HTTP status 404: SWCERR00305 Network error -- {"cause":"Connection failed"}
+  2026-10-23 22:08:08.622 Df swcd[3882:40bc] [com.apple.CFNetwork:Summary] Task <BB07B345-E14A-42EB-819D-2079531F11EE>.<2> summary for task failure {transaction_duration_ms=414, response_status=404, connection=5, protocol="http/1.1", domain_lookup_duration_ms=3, connect_duration_ms=154, secure_connection_duration_ms=91, private_relay=false, request_start_ms=396, request_duration_ms=0, response_start_ms=412, response_duration_ms=0, request_bytes=320, request_throughput_kbps=30118, response_bytes=970, response_throughput_kbps=12783, cache_hit=false}
+  2026-10-23 22:08:08.633 Df swcd[3882:40bc] [com.apple.CFNetwork:Default] Task <BB07B345-E14A-42EB-819D-2079531F11EE>.<2> finished with error [-999] Error Domain=NSURLErrorDomain Code=-999 UserInfo={NSErrorFailingURLStringKey=<private>, NSErrorFailingURLKey=<private>, _NSURLErrorRelatedURLSessionTaskErrorKey=<private>, _NSURLErrorFailingURLSessionTaskErrorKey=<private>, NSLocalizedDescription=<private>}
+  2026-10-23 22:10:40.823 Df swcd[3882:4406] [com.apple.xpc:connection] [0x10140c4a0] Re-initialization successful; calling out to event handler with XPC_ERROR_CONNECTION_INTERRUPTED
+  2026-10-23 22:10:41.526 E  swcd[3882:4f58] [com.apple.swc:1701] Error getting enterprise-managed associated domains data. If this device is not enterprise-managed, this is normal: Error Domain=SWCErrorDomain Code=1701 "Failed to get associated domain data from ManagedConfiguration framework." UserInfo={NSDebugDescription=Failed to get associated domain data from ManagedConfiguration framework., Line=298, Function=-[SWCEnterpriseContext(CPMCInterop) _loadEnterpriseData]}
+  2026-10-23 22:15:09.659 Df swcd[3882:4284] [com.apple.swc:dl] Beginning data task AASA-C5697C9A-F6CE-43C8-B76A-BD222D080C59 { domain: www.cuberoot-systems.com, bytes: 0, route: cdn }
+  2026-10-23 22:15:09.661 Df swcd[3882:4284] [com.apple.swc:dl] Already downloading data for domain www.cuberoot-systems.com, so skipping a second download (non-discretionary)
+  2026-10-23 22:15:22.808 E  swcd[3882:4284] [com.apple.swc:1701] Error getting enterprise-managed associated domains data. If this device is not enterprise-managed, this is normal: Error Domain=SWCErrorDomain Code=1701 "Failed to get associated domain data from ManagedConfiguration framework." UserInfo={NSDebugDescription=Failed to get associated domain data from ManagedConfiguration framework., Line=298, Function=-[SWCEnterpriseContext(CPMCInterop) _loadEnterpriseData]}
+  2026-10-23 22:15:56.972 E  swcd[3882:4284] [com.apple.swc:1701] Error getting enterprise-managed associated domains data. If this device is not enterprise-managed, this is normal: Error Domain=SWCErrorDomain Code=1701 "Failed to get associated domain data from ManagedConfiguration framework." UserInfo={NSDebugDescription=Failed to get associated domain data from ManagedConfiguration framework., Line=298, Function=-[SWCEnterpriseContext(CPMCInterop) _loadEnterpriseData]}
+  2026-10-23 22:16:09.222 Df swcd[3882:e948] [com.apple.swc:dl] Beginning data task AASA-A92A1421-0B1F-45A0-A22E-0F75AA33000F { domain: www.cuberoot-systems.com, bytes: 0, route: cdn }
+  2026-10-23 22:16:59.286 E  swcd[3882:fac0] [com.apple.swc:1701] Error getting enterprise-managed associated domains data. If this device is not enterprise-managed, this is normal: Error Domain=SWCErrorDomain Code=1701 "Failed to get associated domain data from ManagedConfiguration framework." UserInfo={NSDebugDescription=Failed to get associated domain data from ManagedConfiguration framework., Line=298, Function=-[SWCEnterpriseContext(CPMCInterop) _loadEnterpriseData]}
+  2026-10-23 22:17:02.388 Df swcd[3882:f387] [com.apple.network:boringssl] nw_protocol_boringssl_error(2283) [C8.1.1.1:2][0x101411370] Lower protocol stack error post TLS handshake. [54: Connection reset by peer]
+  2026-10-23 22:17:02.389 Df swcd[3882:f387] [com.apple.network:boringssl] nw_protocol_boringssl_error(2301) [C8.1.1.1:2][0x101411370] Propagating error up the stack
+  2026-10-23 22:17:03.115 E  swcd[3882:f387] [com.apple.CFNetwork:Default] Connection 8: missing error, so heuristics synthesized error(1:53)
+  2026-10-23 22:17:03.115 E  swcd[3882:f387] [com.apple.CFNetwork:Default] Connection 8: encountered error(1:53)
+  2026-10-23 22:17:03.116 Df swcd[3882:f387] [com.apple.network:boringssl] nw_protocol_boringssl_error(2283) [C8.1.1.1:2][0x101411370] Lower protocol stack error post TLS handshake. [32: Broken pipe]
+  2026-10-23 22:17:03.116 Df swcd[3882:f387] [com.apple.network:boringssl] nw_protocol_boringssl_error(2301) [C8.1.1.1:2][0x101411370] Propagating error up the stack
+  2026-10-23 22:17:03.116 Df swcd[3882:f387] [com.apple.network:boringssl] nw_protocol_boringssl_error(2283) [C8.1.1.1:2][0x101411370] Lower protocol stack error post TLS handshake. [32: Broken pipe]
+  2026-10-23 22:17:03.116 Df swcd[3882:f387] [com.apple.network:boringssl] nw_protocol_boringssl_error(2301) [C8.1.1.1:2][0x101411370] Propagating error up the stack
+  2026-10-23 22:17:03.116 Df swcd[3882:f387] [com.apple.network:boringssl] nw_protocol_boringssl_error(2283) [C8.1.1.1:2][0x101411370] Lower protocol stack error post TLS handshake. [32: Broken pipe]
+  2026-10-23 22:17:03.116 Df swcd[3882:f387] [com.apple.network:boringssl] nw_protocol_boringssl_error(2301) [C8.1.1.1:2][0x101411370] Propagating error up the stack
+  2026-10-23 22:17:03.117 Df swcd[3882:f387] [com.apple.CFNetwork:Default] Task <A77AB4A0-064B-479C-BC05-17DEBF14F4F3>.<1> can retry(Y) with reason(7) for error [4:-4]
+  2026-10-23 22:17:03.285 E  swcd[3882:fbfc] [com.apple.swc:1701] Error getting enterprise-managed associated domains data. If this device is not enterprise-managed, this is normal: Error Domain=SWCErrorDomain Code=1701 "Failed to get associated domain data from ManagedConfiguration framework." UserInfo={NSDebugDescription=Failed to get associated domain data from ManagedConfiguration framework., Line=298, Function=-[SWCEnterpriseContext(CPMCInterop) _loadEnterpriseData]}
+  2026-10-23 22:17:07.834 E  swcd[3882:fbfc] [com.apple.swc:1701] Error getting enterprise-managed associated domains data. If this device is not enterprise-managed, this is normal: Error Domain=SWCErrorDomain Code=1701 "Failed to get associated domain data from ManagedConfiguration framework." UserInfo={NSDebugDescription=Failed to get associated domain data from ManagedConfiguration framework., Line=298, Function=-[SWCEnterpriseContext(CPMCInterop) _loadEnterpriseData]}
+  2026-10-23 22:17:37.656 E  swcd[3882:11424] [com.apple.swc:1701] Error getting enterprise-managed associated domains data. If this device is not enterprise-managed, this is normal: Error Domain=SWCErrorDomain Code=1701 "Failed to get associated domain data from ManagedConfiguration framework." UserInfo={NSDebugDescription=Failed to get associated domain data from ManagedConfiguration framework., Line=298, Function=-[SWCEnterpriseContext(CPMCInterop) _loadEnterpriseData]}
+  2026-10-23 22:17:38.785 Df swcd[3882:11424] [com.apple.swc:db] Will remove settings for service specifier { s = applinks, a = VXMLKHF72B.io.github.willyros01.scorecard, d = (null) } because there are no more service entries matching it
+RESULT: finished
