@@ -1,0 +1,5 @@
+
+===== VERSION 2.30.0 (WAITING_FOR_REVIEW) =====
+--- en-US: 2 screenshot sets
+   APP_IPHONE_61: 5 -> iphone-1-enter.png [COMPLETE], iphone-2-history.png [COMPLETE], iphone-3-summary.png [COMPLETE], iphone-4-golfers.png [COMPLETE], iphone-5-courses.png [COMPLETE]
+   APP_IPAD_PRO_3GEN_129: 5 -> ipad-1-enter.png [COMPLETE], ipad-2-history.png [COMPLETE], ipad-3-summary.png [COMPLETE], ipad-4-trend.png [COMPLETE], ipad-5-games.png [COMPLETE]
