@@ -40,7 +40,9 @@ xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
   build > /tmp/xcb.log 2>&1 || { tail -60 /tmp/xcb.log; log "RESULT: simulator build failed"; exit 1; }
 APP="$(find /tmp/dd/Build/Products -maxdepth 2 -name 'App.app' | head -1)"
 log "Built: $APP"
-codesign -d --entitlements - "$APP" 2>/dev/null | grep -i -A2 associated | tee -a "$OUT/report.txt" || true
+# The simulator honours app links only if the app carries its entitlements.
+codesign --force --sign - --entitlements ios/App/App/App.entitlements --timestamp=none "$APP"
+log "Entitlements in the test app:"; codesign -d --entitlements :- "$APP" 2>/dev/null | tr -d '\n\t' | grep -o 'applinks:[^<]*' | sed 's/^/  /' | tee -a "$OUT/report.txt" || log "  (none found)"
 
 xcrun simctl boot "$UDID" || true
 xcrun simctl bootstatus "$UDID" -b
@@ -58,6 +60,7 @@ fresh(){ # reinstall the app, nothing running
   xcrun simctl uninstall "$UDID" "$BID" > /dev/null 2>&1 || true
   xcrun simctl install "$UDID" "$APP"
   sleep 15   # let iOS fetch the website's app-link file for the new install
+  xcrun simctl spawn "$UDID" swcutil show 2>/dev/null | grep -i -B2 -A6 cuberoot | head -20 | sed 's/^/    swc: /' >> "$OUT/report.txt" || true
 }
 
 log ""
