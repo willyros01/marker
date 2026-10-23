@@ -41,7 +41,18 @@ xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
 APP="$(find /tmp/dd/Build/Products -maxdepth 2 -name 'App.app' | head -1)"
 log "Built: $APP"
 # The simulator honours app links only if the app carries its entitlements.
-codesign --force --sign - --entitlements ios/App/App/App.entitlements --timestamp=none "$APP"
+# The website's app-link file names the app as VXMLKHF72B.io.github.willyros01.scorecard,
+# so the simulator copy carries that identity too (no Apple signing needed).
+cat > /tmp/sim.entitlements <<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>application-identifier</key><string>VXMLKHF72B.io.github.willyros01.scorecard</string>
+  <key>com.apple.developer.team-identifier</key><string>VXMLKHF72B</string>
+  <key>com.apple.developer.associated-domains</key><array><string>applinks:www.cuberoot-systems.com</string></array>
+</dict></plist>
+XML
+codesign --force --sign - --entitlements /tmp/sim.entitlements --timestamp=none "$APP"
 log "Entitlements in the test app:"; codesign -d --entitlements :- "$APP" 2>/dev/null | tr -d '\n\t' | grep -o 'applinks:[^<]*' | sed 's/^/  /' | tee -a "$OUT/report.txt" || log "  (none found)"
 
 xcrun simctl boot "$UDID" || true
@@ -60,7 +71,7 @@ fresh(){ # reinstall the app, nothing running
   xcrun simctl uninstall "$UDID" "$BID" > /dev/null 2>&1 || true
   xcrun simctl install "$UDID" "$APP"
   sleep 15   # let iOS fetch the website's app-link file for the new install
-  xcrun simctl spawn "$UDID" swcutil show 2>/dev/null | grep -i -B2 -A6 cuberoot | head -20 | sed 's/^/    swc: /' >> "$OUT/report.txt" || true
+  ( xcrun simctl spawn "$UDID" swcutil show 2>&1 || xcrun simctl spawn "$UDID" /usr/bin/swcutil show 2>&1 ) | grep -i -B3 -A8 "cuberoot" | head -24 | sed 's/^/    swc: /' >> "$OUT/report.txt" || echo "    swc: (no app-link record found)" >> "$OUT/report.txt"
 }
 
 log ""
