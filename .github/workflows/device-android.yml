@@ -1,0 +1,53 @@
+name: Device tests - Android emulator
+
+# Willy, 23 Oct 2026: freeze lifted only for these automated tests. Uses the
+# published Scorecard APK; the scorecard repository is never changed.
+on:
+  push:
+    branches: [main]
+    paths: [build/device/android-emu.sh, .github/workflows/device-android.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only to save the screenshots to the ci-logs branch
+
+concurrency:
+  group: device-android
+  cancel-in-progress: true
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Allow the emulator to use hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Start an Android phone and open the links
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: bash build/device/android-emu.sh 2>&1 | tee run.log
+      - name: Save the report and screenshots to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/device-android/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp -R out/. "/tmp/$dir/" 2>/dev/null || true; cp run.log "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          for try in 1 2 3; do
+            git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+            mkdir -p "$dir"; cp -R /tmp/$dir/. "$dir/"
+            git add logs && git commit -qm "device-android ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs && break
+            sleep 5
+          done
