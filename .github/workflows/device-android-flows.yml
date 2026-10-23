@@ -39,7 +39,10 @@ jobs:
       - name: Build the test copy of the app (emulators only)
         run: bash build/device/build-test-apk.sh 2>&1 | tail -20
       - name: Build the test copy of The Marker (emulators only)
-        run: bash build/device/build-marker-test-apk.sh 2>&1 | tail -10
+        run: |
+          mkdir -p out
+          bash build/device/build-marker-test-apk.sh > out/marker-build.log 2>&1 || { tail -40 out/marker-build.log; echo '::error title=Marker test copy::build failed'; }
+          tail -5 out/marker-build.log
       - name: Start the Firebase emulators
         run: |
           npm install -g firebase-tools@15.31.0 > /dev/null 2>&1
@@ -59,6 +62,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           profile: pixel_6
+          ram-size: 4096M
           script: |
             adb reverse tcp:8080 tcp:8080 && adb reverse tcp:9099 tcp:9099
             node build/device/flows-android.mjs out sca/android/app/build/outputs/apk/debug/app-debug.apk 2>&1 | tee run.log
