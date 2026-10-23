@@ -12,7 +12,12 @@ const snap = (name) => { const f = `${String(++step).padStart(2, "0")}-${name}.p
 async function flow(id, what, fn) {
   report(`\n${id}  ${what}`);
   try { await fn(); pass++; report(`PASS  ${id}`); }
-  catch (e) { fail++; try { snap(`${id}-failed`); } catch {} report(`FAIL  ${id}  —  ${String(e.message || e).slice(0, 600)}`); }
+  catch (e) {
+    fail++; try { snap(`${id}-failed`); } catch {}
+    report(`FAIL  ${id}  —  ${String(e.message || e).slice(0, 600)}`);
+    try { report("    last app messages:\n" + d.logcat().split("\n").slice(-25).map((l) => "      " + l).join("\n")); } catch {}
+  }
+  try { d.clearLog(); } catch {}
 }
 async function fresh() { d.reinstall(PKG, APK); await d.sleep(2000); }
 async function acceptTerms() {
@@ -46,7 +51,7 @@ await flow("F2", "Application on a fresh phone (Auto): apply in the app, open th
   await fresh(); d.launch(PKG); await d.sleep(5000);
   await acceptTerms();
   await d.tapText(/Become a member or request a group/); await d.tapText(/^Become a member(?! or)/);
-  await d.waitText(/Full name/); snap("apply-form");
+  await d.waitText(/full name/i); snap("apply-form");
   await d.typeField(0, "Pat Applicant"); await d.typeField(1, "pat.applicant@example.com"); d.hideKeyboard();
   await d.tick(/I agree|conditions|Code of Conduct/);
   await d.tapText(/^Send my application$/);

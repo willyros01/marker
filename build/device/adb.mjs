@@ -77,3 +77,5 @@ export function reinstall(pkg, apk) {
   try { sh(["shell", "pm", "set-app-links-user-selection", "--user", "0", "--package", pkg, "true", "www.cuberoot-systems.com"]); } catch {}
 }
 export { sleep };
+export const logcat = () => sh(["logcat", "-d", "-v", "brief", "AndroidRuntime:E", "Capacitor:*", "Capacitor/Console:*", "chromium:W", "ActivityTaskManager:I", "*:S"]);
+export const clearLog = () => sh(["logcat", "-c"]);
