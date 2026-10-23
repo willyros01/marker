@@ -1,0 +1,15 @@
+The Scorecard v2 at 1178314, version APP_VERSION = "2.30.0"
+Simulator: iPhone 17 (2FB8D9D0-0E7C-4DE0-9836-3F7CBA959484) (Shutdown) 
+Built: /tmp/dd/Build/Products/Debug-iphonesimulator/App.app
+
+S0 Fresh install, open the app from the home screen
+  screenshot: s0-launch.png
+S1 Invitation link (as sent today), app installed
+  screenshot: s1-invitation.png
+S2 Approval email link (as Firebase sends it today), app installed
+  screenshot: s2-approval-email.png
+S3 Approval email link pointing straight at the join page (the planned fix), app installed
+  screenshot: s3-approval-fixed.png
+S4 Invitation link with the app NOT installed
+  screenshot: s4-not-installed.png
+RESULT: finished
