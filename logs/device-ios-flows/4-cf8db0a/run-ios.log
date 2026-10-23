@@ -1,0 +1,65 @@
+iPhone test copy: emulators only, Web Inspector on
+Xcode project: privacy manifest added as a resource; entitlements set.
+Web Inspector socket: /private/tmp/com.apple.launchd.fhyHGlaye7/com.apple.webinspectord_sim.socket
+
+I1  iPhone: invitation for Ivy on a fresh phone — Terms, create account, 'Yes, that's me', lands in Saturday Group
+An error was encountered processing the command (domain=NSPOSIXErrorDomain, code=3):
+Simulator device failed to terminate io.github.willyros01.scorecard.
+found nothing to terminate
+Underlying error (domain=NSPOSIXErrorDomain, code=3):
+	The request to terminate "io.github.willyros01.scorecard" failed. found nothing to terminate
+	found nothing to terminate
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 0FA71AB8-9444-42C1-BA61-4CEB7045F44A (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/201-terms.png
+    screenshot 201-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 0FA71AB8-9444-42C1-BA61-4CEB7045F44A (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/202-invited-create-account.png
+    screenshot 202-invited-create-account.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 0FA71AB8-9444-42C1-BA61-4CEB7045F44A (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/203-I1-failed.png
+    screenshot 203-I1-failed.png
+FAIL  I1  —  the app did not answer
+
+I2  iPhone: application on a fresh phone (Auto) — apply, approval link, Create your password, lands in the public group
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 0FA71AB8-9444-42C1-BA61-4CEB7045F44A (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/204-terms.png
+    screenshot 204-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 0FA71AB8-9444-42C1-BA61-4CEB7045F44A (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/205-apply-form.png
+    screenshot 205-apply-form.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 0FA71AB8-9444-42C1-BA61-4CEB7045F44A (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/206-check-your-email.png
+    screenshot 206-check-your-email.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 0FA71AB8-9444-42C1-BA61-4CEB7045F44A (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/207-create-your-password.png
+    screenshot 207-create-your-password.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 0FA71AB8-9444-42C1-BA61-4CEB7045F44A (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/208-in-the-public-group.png
+    screenshot 208-in-the-public-group.png
+    database: Pia is a member of the public group
+PASS  I2
+
+I3  iPhone: Rex is signed in; an invitation for Jay arrives — the app asks whether it is for him
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 0FA71AB8-9444-42C1-BA61-4CEB7045F44A (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/209-terms.png
+    screenshot 209-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 0FA71AB8-9444-42C1-BA61-4CEB7045F44A (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/210-rex-signed-in.png
+    screenshot 210-rex-signed-in.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 0FA71AB8-9444-42C1-BA61-4CEB7045F44A (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/211-is-this-for-you.png
+    screenshot 211-is-this-for-you.png
+PASS  I3
+
+RESULT: 2 passed, 1 failed
