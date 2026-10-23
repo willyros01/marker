@@ -1,0 +1,91 @@
+The Scorecard v2 at 1178314, version APP_VERSION = "2.30.0"
+--- web files into www/
+--- Xcode project
+Xcode project: privacy manifest added as a resource; entitlements set.
+--- pick a simulator
+com.apple.CoreSimulator.SimRuntime.iOS-26-2 iPhone 17
+Simulator: iPhone 17 (24E049C8-1AEC-4A9D-95C6-C11145A59D62) (Shutdown) 
+--- build for the simulator
+Built: /tmp/dd/Build/Products/Debug-iphonesimulator/App.app
+/tmp/dd/Build/Products/Debug-iphonesimulator/App.app: replacing existing signature
+Entitlements in the test app:
+  applinks:www.cuberoot-systems.com
+Monitoring boot status for iPhone 17 (24E049C8-1AEC-4A9D-95C6-C11145A59D62).
+[2026-10-23 21:04:37 +0000] Status=2, isTerminal=NO, Elapsed=02:14.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.securityd.KeychainMigrator (KeychainMigrator.migrator, user-agnostic)
+		Migration Elapsed:01:36 seconds
+
+[2026-10-23 21:04:40 +0000] Status=2, isTerminal=NO, Elapsed=02:17.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.MobileSafari.migrator (MobileSafari.migrator)
+		Migration Elapsed:01:42 seconds
+
+[2026-10-23 21:04:44 +0000] Status=2, isTerminal=NO, Elapsed=02:21.
+	Waiting on Data Migration
+		Reason:Running plugin com.apple.managedconfiguration.cleanup.migrator (MCCleanup.migrator)
+		Migration Elapsed:01:45 seconds
+
+[2026-10-23 21:04:47 +0000] Status=4, isTerminal=NO, Elapsed=02:23.
+	Waiting on System App
+
+[2026-10-23 21:04:47 +0000] Status=4, isTerminal=NO, Elapsed=02:24.
+	Waiting on System App
+
+[2026-10-23 21:04:49 +0000] Status=4, isTerminal=NO, Elapsed=02:26.
+	Waiting on System App
+
+[2026-10-23 21:04:52 +0000] Status=4, isTerminal=NO, Elapsed=02:29.
+	Waiting on System App
+
+[2026-10-23 21:04:54 +0000] Status=4, isTerminal=NO, Elapsed=02:30.
+	Waiting on System App
+
+[2026-10-23 21:04:55 +0000] Status=4, isTerminal=NO, Elapsed=02:31.
+	Waiting on System App
+
+[2026-10-23 21:04:57 +0000] Status=4, isTerminal=NO, Elapsed=02:34.
+	Waiting on System App
+
+[2026-10-23 21:04:58 +0000] Status=4, isTerminal=NO, Elapsed=02:35.
+	Waiting on System App
+
+[2026-10-23 21:04:58 +0000] Status=4, isTerminal=NO, Elapsed=02:35.
+	Waiting on System App
+
+[2026-10-23 21:04:59 +0000] Status=4, isTerminal=NO, Elapsed=02:36.
+	Waiting on System App
+
+[2026-10-23 21:05:03 +0000] Status=4, isTerminal=NO, Elapsed=02:39.
+	Waiting on System App
+
+[2026-10-23 21:05:09 +0000] Status=4, isTerminal=NO, Elapsed=02:46.
+	Waiting on System App
+
+[2026-10-23 21:05:21 +0000] Status=4294967295, isTerminal=YES, Elapsed=02:58.
+	Finished
+
+
+S0 Fresh install, open the app from the home screen
+An error was encountered processing the command (domain=FBSOpenApplicationServiceErrorDomain, code=1):
+Simulator device failed to launch io.github.willyros01.scorecard.
+The request was denied by service delegate (SBMainWorkspace).
+Underlying error (domain=FBSOpenApplicationServiceErrorDomain, code=1):
+	The request to open "io.github.willyros01.scorecard" failed.
+	The request was denied by service delegate (SBMainWorkspace).
+  screenshot: s0-launch.png
+S1 Invitation link (as sent today), app installed
+  screenshot: s1-invitation.png
+S2 Approval email link (as Firebase sends it today), app installed
+  screenshot: s2-approval-email.png
+S3 Approval email link pointing straight at the join page (the planned fix), app installed
+An error was encountered processing the command (domain=NSPOSIXErrorDomain, code=60):
+Simulator device failed to open https://www.cuberoot-systems.com/scorecard/join/?apply=1&approved=1&e=device.test%40example.com&mode=signIn&oobCode=FAKECODE&apiKey=AIzaSyA5qWtnz3QHco5YSAlHb7TXmCNg1kUdVhA.
+Operation timed out
+Underlying error (domain=NSPOSIXErrorDomain, code=60):
+	The operation couldn’t be completed. Operation timed out
+	Operation timed out
+  screenshot: s3-approval-fixed.png
+S4 Invitation link with the app NOT installed
+  screenshot: s4-not-installed.png
+RESULT: finished
