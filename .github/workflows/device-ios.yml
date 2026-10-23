@@ -1,0 +1,53 @@
+name: Device tests - iPhone simulator
+
+# Willy, 23 Oct 2026: freeze lifted only for these automated tests. They live
+# in the marker repository and READ The Scorecard's v2 branch; the scorecard
+# repository is never changed. Nothing is signed for or sent to Apple.
+on:
+  push:
+    branches: [main]
+    paths: [build/device/**, .github/workflows/device-ios.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only to save the screenshots to the ci-logs branch
+
+concurrency:
+  group: device-ios
+  cancel-in-progress: true
+
+jobs:
+  iphone:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: willyros01/scorecard
+          ref: v2
+          path: sc
+          persist-credentials: false
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Build for the simulator and open the links
+        run: bash build/device/ios-sim.sh 2>&1 | tee run.log
+      - name: Save the report and screenshots to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/device-ios/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp -R out/. "/tmp/$dir/" 2>/dev/null || true; cp run.log "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          for try in 1 2 3; do
+            git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+            mkdir -p "$dir"; cp -R /tmp/$dir/. "$dir/"
+            git add logs && git commit -qm "device-ios ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs && break
+            sleep 5
+          done
