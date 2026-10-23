@@ -83,6 +83,9 @@ fresh(){ # reinstall the app, nothing running
 xcrun simctl terminate "$UDID" com.apple.mobilesafari > /dev/null 2>&1 || true
 xcrun simctl uninstall "$UDID" "$BID" > /dev/null 2>&1 || true
 xcrun simctl install "$UDID" "$APP"
+log "Apple's copy of the app-link file (CDN), as seen from this machine:"
+curl -sS -m 25 -o /tmp/aasa.json -w "  HTTP %{http_code} in %{time_total}s\n" "https://app-site-association.cdn-apple.com/a/v1/www.cuberoot-systems.com" 2>&1 | tee -a "$OUT/report.txt"
+head -c 300 /tmp/aasa.json 2>/dev/null | sed 's/^/  /' | tee -a "$OUT/report.txt"; echo | tee -a "$OUT/report.txt"
 log ""
 log "Waiting for iOS to fetch the app-link file for www.cuberoot-systems.com…"
 for i in $(seq 1 36); do
