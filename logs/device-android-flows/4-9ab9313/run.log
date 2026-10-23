@@ -1,0 +1,90 @@
+
+F1  Invitation for Ivy on a fresh phone: Terms, create account, 'Yes, that's me — join', lands in Saturday Group
+    screenshot 01-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 02-invited-create-account.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+ERROR: null root node returned by UiTestAutomationBridge.
+    screenshot 03-joining-as-ivy.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 04-in-the-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  F1
+
+F2  Application on a fresh phone (Auto): apply in the app, open the approval link, Create your password, lands in the public group
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 05-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 06-apply-form.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 07-F2-failed.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+FAIL  F2  —  waited for /Check your email/; the screen says: The Scorecard | The Scorecard | GETTING STARTED | Text size | Appearance | Signed out | Become a member | Give your full name and your email. No password yet. You get an email with a link to finish joining. | FULL NAME | Pat Applicant | EMAIL | pat.applicant@example.com | Other members of the public group see your full name and your handicap index, and nothing else. Your rounds stay private. | Wha
+    last app messages:
+      E/AndroidRuntime( 7053): 	at android.accessibilityservice.AccessibilityService$IAccessibilityServiceClientWrapper.lambda$onAccessibilityEvent$2(AccessibilityService.java:2925)
+      E/AndroidRuntime( 7053): 	at android.accessibilityservice.AccessibilityService$IAccessibilityServiceClientWrapper.$r8$lambda$09cnCCQeC7txVafv5NeCrjYkmcY(Unknown Source:0)
+      E/AndroidRuntime( 7053): 	at android.accessibilityservice.AccessibilityService$IAccessibilityServiceClientWrapper$$ExternalSyntheticLambda8.run(Unknown Source:6)
+      E/AndroidRuntime( 7053): 	at android.os.Handler.handleCallback(Handler.java:958)
+      E/AndroidRuntime( 7053): 	at android.os.Handler.dispatchMessage(Handler.java:99)
+      E/AndroidRuntime( 7053): 	at android.os.Looper.loopOnce(Looper.java:205)
+      E/AndroidRuntime( 7053): 	at android.os.Looper.loop(Looper.java:294)
+      E/AndroidRuntime( 7053): 	at android.os.HandlerThread.run(HandlerThread.java:67)
+      E/AndroidRuntime( 7053): Error reporting crash
+      E/AndroidRuntime( 7053): java.lang.RuntimeException: Bad file descriptor
+      E/AndroidRuntime( 7053): 	at android.os.BinderProxy.transactNative(Native Method)
+      E/AndroidRuntime( 7053): 	at android.os.BinderProxy.transact(BinderProxy.java:584)
+      E/AndroidRuntime( 7053): 	at android.os.IServiceManager$Stub$Proxy.checkService(IServiceManager.java:443)
+      E/AndroidRuntime( 7053): 	at android.os.ServiceManagerProxy.getService(ServiceManagerNative.java:63)
+      E/AndroidRuntime( 7053): 	at android.os.ServiceManager.rawGetService(ServiceManager.java:378)
+      E/AndroidRuntime( 7053): 	at android.os.ServiceManager.getService(ServiceManager.java:147)
+      E/AndroidRuntime( 7053): 	at android.app.ActivityManager$3.create(ActivityManager.java:5214)
+      E/AndroidRuntime( 7053): 	at android.app.ActivityManager$3.create(ActivityManager.java:5211)
+      E/AndroidRuntime( 7053): 	at android.util.Singleton.get(Singleton.java:43)
+      E/AndroidRuntime( 7053): 	at android.app.ActivityManager.getService(ActivityManager.java:5202)
+      E/AndroidRuntime( 7053): 	at com.android.internal.os.RuntimeInit$KillApplicationHandler.uncaughtException(RuntimeInit.java:160)
+      E/AndroidRuntime( 7053): 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1071)
+      E/AndroidRuntime( 7053): 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1066)
+      E/AndroidRuntime( 7053): 	at java.lang.Thread.dispatchUncaughtException(Thread.java:2306)
+      
+
+F3  Someone else (Rex) is signed in; an invitation for Jay arrives: the app asks whether it is for him
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 08-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 09-F3-failed.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+FAIL  F3  —  waited for /Sign in/; the screen says: The Scorecard | The Scorecard | TERMS OF USE | Text size | Appearance | Signed out | Terms of Use | Please read these terms. You must accept them to use The Scorecard. | 1. Who provides The Scorecard | The Scorecard is provided by Wilfredo Rosales, an individual developer (“we”, “us”). These terms are an agreement between you and us. | 2. A free app | The Scorecard is free. There are no fees, subs
+    last app messages:
+      W/Capacitor( 7967): Unable to read file at path public/plugins
+      D/Capacitor( 7967): Loading app at https://localhost
+      D/Capacitor( 7967): App started
+      D/Capacitor( 7967): App resumed
+      D/Capacitor( 7967): Handling local request: https://localhost/
+      I/ActivityTaskManager(  521): Displayed io.github.willyros01.scorecard/.MainActivity for user 0: +1s223ms
+      D/Capacitor( 7967): Handling local request: https://localhost/styles.css
+      D/Capacitor( 7967): Handling local request: https://localhost/version.js
+      D/Capacitor( 7967): Handling local request: https://localhost/app.js
+      E/Capacitor/Console( 7967): File:  - Line 6 - Msg: Error injecting safe area CSS: TypeError: Cannot read properties of null (reading 'style')
+      D/Capacitor( 7967): Handling local request: https://localhost/store.js
+      D/Capacitor( 7967): Handling local request: https://localhost/model.js
+      D/Capacitor( 7967): Handling local request: https://localhost/courses-api.js
+      D/Capacitor( 7967): Handling local request: https://localhost/platform.js
+      D/Capacitor( 7967): Handling local request: https://localhost/outbox.js
+      I/Capacitor/Console( 7967): File:  - Line 349 - Msg: [object Object]
+      V/Capacitor( 7967): callback: 9233773, pluginId: App, methodName: getLaunchUrl, methodData: {}
+      I/Capacitor/Console( 7967): File:  - Line 333 - Msg: undefined
+      I/Capacitor/Console( 7967): File:  - Line 349 - Msg: [object Object]
+      V/Capacitor( 7967): callback: 9233774, pluginId: App, methodName: addListener, methodData: {"eventName":"appUrlOpen"}
+      D/Capacitor( 7967): Handling local request: https://localhost/firebase-config.js
+      D/Capacitor( 7967): Handling local request: https://localhost/icon.svg
+      D/Capacitor( 7967): Handling local request: https://localhost/vendor/firebase/firebase-10.12.0.js
+      I/ActivityTaskManager(  521): Activity reported stop, but no longer stopping: ActivityRecord{420ab34 u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7} STOPPED
+      
+
+RESULT: 1 passed, 2 failed
