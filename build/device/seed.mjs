@@ -58,6 +58,9 @@ export async function seed() {
     await put(`associations/G1/roster/${id}`, { golferId: id });
     await put(`associations/G1/directory/${id}`, { golferId: id, displayName: name, handicapIndex: null });
   }
+  const pars = [4, 4, 3, 5, 4, 4, 3, 4, 5, 4, 3, 5, 4, 4, 4, 3, 4, 5];
+  await put("markerCourses/77", { providerId: "77", name: "Wack Wack — East", where: "Manila",
+    tees: [{ name: "White (M)", rating: 68.8, slope: 133, par: 72, holes: pars.map((p, i) => ({ par: p, yards: 350, si: i + 1 })) }] });
   return { W, R1 };
 }
 /* A one-time named invitation, written exactly as the owner's app writes it. */

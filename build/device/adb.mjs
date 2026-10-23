@@ -91,8 +91,9 @@ export const clearLog = () => sh(["logcat", "-c"]);
    Reads the screen as text and fills fields / presses buttons by their names,
    the same handlers a tap runs. The OS-level parts (which app opens a link)
    still go through Android itself. ---- */
-let cdp = null, cdpPid = null, seq = 0;
-async function connect(pkg = "io.github.willyros01.scorecard") {
+let cdp = null, cdpPid = null, seq = 0, current = "io.github.willyros01.scorecard";
+export function use(pkg) { current = pkg; }
+async function connect(pkg = current) {
   const pid = sh(["shell", "pidof", pkg]).trim();
   if (!pid) throw new Error("the app is not running");
   if (cdp && cdpPid === pid && cdp.readyState === 1) return cdp;
