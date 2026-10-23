@@ -1,0 +1,19 @@
+
+I1  iPhone: invitation for Ivy on a fresh phone — Terms, create account, 'Yes, that's me', lands in Saturday Group
+    screenshot 201-I1-failed.png
+FAIL  I1  —  waited for /Terms of Use/; the app shows: could not reach the app's web view (Web Inspector)
+
+I2  iPhone: application on a fresh phone (Auto) — apply, approval link, Create your password, lands in the public group
+    screenshot 202-terms.png
+    screenshot 203-apply-form.png
+    screenshot 204-check-your-email.png
+    screenshot 205-I2-failed.png
+FAIL  I2  —  waited for /Create your password/; the app shows: The Scorecard GETTING STARTED A+ Auto · night Signed out Check your email Thank you. A link to finish joining has gone to pia.applicant@example.com. Open that email on this phone or computer and tap the link. It confirms your email; then you create your password and you are in the public group, once the last checks pass. Otherwise your application waits for a person to look at it. The email comes 
+
+I3  iPhone: Rex is signed in; an invitation for Jay arrives — the app asks whether it is for him
+    screenshot 206-terms.png
+    screenshot 207-rex-signed-in.png
+    screenshot 208-I3-failed.png
+FAIL  I3  —  waited for /Is this invitation for you|for a new person/; the app shows: The Scorecard SATURDAY GROUP REX REGULAR A+ Auto · night Almost ready Whoever runs your group still needs to add the roster and a course. ✎ Enter ≡ My rounds ▤ Summary ⚑ Games
+
+RESULT: 0 passed, 3 failed
