@@ -77,24 +77,42 @@ fresh(){ # reinstall the app, nothing running
   ( xcrun simctl spawn "$UDID" swcutil show 2>&1 || xcrun simctl spawn "$UDID" /usr/bin/swcutil show 2>&1 ) | grep -i -B3 -A8 "cuberoot" | head -24 | sed 's/^/    swc: /' >> "$OUT/report.txt" || echo "    swc: (no app-link record found)" >> "$OUT/report.txt"
 }
 
+# Install ONCE and give iOS time to fetch the website's app-link file through
+# Apple's CDN (a re-install restarts that download). Between scenarios the app
+# is only closed.
+xcrun simctl terminate "$UDID" com.apple.mobilesafari > /dev/null 2>&1 || true
+xcrun simctl uninstall "$UDID" "$BID" > /dev/null 2>&1 || true
+xcrun simctl install "$UDID" "$APP"
 log ""
-log "S0 Fresh install, open the app from the home screen"
-fresh; xcrun simctl launch "$UDID" "$BID" > /dev/null; shot s0-launch
+log "Waiting for iOS to fetch the app-link file for www.cuberoot-systems.com…"
+for i in $(seq 1 36); do
+  L="$(xcrun simctl spawn "$UDID" log show --last 5m --style compact --predicate 'process == "swcd"' 2>/dev/null | grep -i "cuberoot" | grep -v -i "already downloading\|Beginning data task" | tail -3)"
+  if echo "$L" | grep -q -i -E "completed|success|bytes: [1-9]|parsed|updated"; then log "  fetched after $((i*5)) s"; break; fi
+  sleep 5
+done
+echo "$L" | sed 's/^/  /' | tee -a "$OUT/report.txt"
+close(){ xcrun simctl terminate "$UDID" "$BID" > /dev/null 2>&1 || true; xcrun simctl terminate "$UDID" com.apple.mobilesafari > /dev/null 2>&1 || true; sleep 2; }
+
+log ""
+log "S0 Open the app from the home screen"
+close; xcrun simctl launch "$UDID" "$BID" > /dev/null; shot s0-launch
 
 log "S1 Invitation link (as sent today), app installed"
-fresh; xcrun simctl openurl "$UDID" "${JOIN}?join=TESTGROUP.faketoken&v=2"; shot s1-invitation
+close; xcrun simctl openurl "$UDID" "${JOIN}?join=TESTGROUP.faketoken&v=2"; shot s1-invitation
 
 log "S2 Approval email link (as Firebase sends it today), app installed"
 CONT="${JOIN}?apply=1&approved=1&e=$(enc device.test@example.com)"
-fresh; xcrun simctl openurl "$UDID" "https://scorecard-f41b8.firebaseapp.com/__/auth/action?mode=signIn&oobCode=FAKECODE&apiKey=${APIKEY}&continueUrl=$(enc "$CONT")&lang=en"; shot s2-approval-email
+close; xcrun simctl openurl "$UDID" "https://scorecard-f41b8.firebaseapp.com/__/auth/action?mode=signIn&oobCode=FAKECODE&apiKey=${APIKEY}&continueUrl=$(enc "$CONT")&lang=en"; shot s2-approval-email
 
 log "S3 Approval email link pointing straight at the join page (the planned fix), app installed"
-fresh; xcrun simctl openurl "$UDID" "${CONT}&mode=signIn&oobCode=FAKECODE&apiKey=${APIKEY}"; shot s3-approval-fixed
+close; xcrun simctl openurl "$UDID" "${CONT}&mode=signIn&oobCode=FAKECODE&apiKey=${APIKEY}"; shot s3-approval-fixed
 
-log "S4 Invitation link with the app NOT installed"
-xcrun simctl terminate "$UDID" com.apple.mobilesafari > /dev/null 2>&1 || true
-xcrun simctl uninstall "$UDID" "$BID" > /dev/null 2>&1 || true
-xcrun simctl openurl "$UDID" "${JOIN}?join=TESTGROUP.faketoken&v=2"; shot s4-not-installed
+log "S4 Forgot-password email link (as Firebase sends it today), app installed"
+close; xcrun simctl openurl "$UDID" "https://scorecard-f41b8.firebaseapp.com/__/auth/action?mode=resetPassword&oobCode=FAKECODE&apiKey=${APIKEY}&lang=en"; shot s4-forgot-password
+
+log "S5 Invitation link with the app NOT installed"
+close; xcrun simctl uninstall "$UDID" "$BID" > /dev/null 2>&1 || true
+xcrun simctl openurl "$UDID" "${JOIN}?join=TESTGROUP.faketoken&v=2"; shot s5-not-installed
 
 log ""
 log "App-link service messages (swcd), last 10 minutes:"
