@@ -1,0 +1,68 @@
+
+F1  Invitation for Ivy on a fresh phone: Terms, create account, 'Yes, that's me — join', lands in Saturday Group
+adb: error: listener 'tcp:9222' not found
+    screenshot 01-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 02-invited-create-account.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 03-joining-as-ivy.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 04-in-the-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  F1
+
+F2  Application on a fresh phone (Auto): apply in the app, open the approval link, Create your password, lands in the public group
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 05-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 06-apply-form.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 07-check-your-email.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 08-create-your-password.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 09-in-the-public-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Pat is a member of the public group
+PASS  F2
+
+F3  Someone else (Rex) is signed in; an invitation for Jay arrives: the app asks whether it is for him
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 10-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 11-rex-signed-in.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 12-is-this-for-you.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  F3
+
+RESULT: 3 passed, 0 failed
+
+M1  The Marker: Rex signs in, scores 18 holes for himself and Jay, and posts the card
+adb: failed to stat /tmp/marker-test.apk: No such file or directory
+    screenshot 101-M1-failed.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+FAIL  M1  —  Command failed: adb install -r /tmp/marker-test.apk
+adb: failed to stat /tmp/marker-test.apk: No such file or directory
+
+
+M2  The worker posts the card into The Scorecard: two rounds, gross 90 and 108, in one commit
+    worker result: {"posted":0,"refused":0,"left":0}
+    screenshot 102-M2-failed.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+FAIL  M2  —  rounds not found in The Scorecard: []
+
+M3  Rex opens The Scorecard: the Marker round is in his rounds
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 103-M3-failed.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+FAIL  M3  —  waited for /Wack Wack/; the app shows: The Scorecard SATURDAY GROUP REX REGULAR A+ Auto · night All years All courses No rounds here yet Post one from the Enter tab, or widen the filters above. ✎ Enter ≡ My rounds ▤ Summary ⚑ Games
+
+MARKER RESULT: 0 passed, 3 failed

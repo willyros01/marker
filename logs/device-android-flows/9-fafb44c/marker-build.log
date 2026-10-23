@@ -1,0 +1,3 @@
+Marker test copy: emulators only, test project demo-scorecard
+Manifest: camera permission added (camera optional, so tablets without one can install).
+build/android-native.sh: line 25: rsvg-convert: command not found
