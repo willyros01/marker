@@ -1,0 +1,67 @@
+
+F1  Invitation for Ivy on a fresh phone: Terms, create account, 'Yes, that's me — join', lands in Saturday Group
+adb: error: listener 'tcp:9222' not found
+    screenshot 01-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 02-invited-create-account.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 03-joining-as-ivy.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 04-in-the-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  F1
+
+F2  Application on a fresh phone (Auto): apply in the app, open the approval link, Create your password, lands in the public group
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 05-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 06-apply-form.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 07-check-your-email.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 08-create-your-password.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 09-in-the-public-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Pat is a member of the public group
+PASS  F2
+
+F3  Someone else (Rex) is signed in; an invitation for Jay arrives: the app asks whether it is for him
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 10-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 11-F3-failed.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+FAIL  F3  —  waited for /Saturday Group/; the app shows: The Scorecard SATURDAY GROUP REX REGULAR A+ Auto · night Almost ready Whoever runs your group still needs to add the roster and a course. ✎ Enter ≡ My rounds ▤ Summary ⚑ Games
+    last app messages:
+      D/Capacitor( 6031): Loading app at https://localhost
+      D/Capacitor( 6031): App started
+      D/Capacitor( 6031): App resumed
+      D/Capacitor( 6031): Handling local request: https://localhost/
+      I/ActivityTaskManager(  519): Displayed io.github.willyros01.scorecard/.MainActivity for user 0: +1s690ms
+      D/Capacitor( 6031): Handling local request: https://localhost/styles.css
+      D/Capacitor( 6031): Handling local request: https://localhost/version.js
+      D/Capacitor( 6031): Handling local request: https://localhost/app.js
+      E/Capacitor/Console( 6031): File:  - Line 6 - Msg: Error injecting safe area CSS: TypeError: Cannot read properties of null (reading 'style')
+      E/Capacitor/Console( 6031): File:  - Line 6 - Msg: Error injecting safe area CSS: TypeError: Cannot read properties of null (reading 'style')
+      E/Capacitor/Console( 6031): File:  - Line 6 - Msg: Error injecting safe area CSS: TypeError: Cannot read properties of null (reading 'style')
+      D/Capacitor( 6031): Handling local request: https://localhost/store.js
+      D/Capacitor( 6031): Handling local request: https://localhost/model.js
+      D/Capacitor( 6031): Handling local request: https://localhost/courses-api.js
+      D/Capacitor( 6031): Handling local request: https://localhost/platform.js
+      D/Capacitor( 6031): Handling local request: https://localhost/outbox.js
+      I/Capacitor/Console( 6031): File:  - Line 349 - Msg: [object Object]
+      V/Capacitor( 6031): callback: 30593890, pluginId: App, methodName: getLaunchUrl, methodData: {}
+      D/Capacitor( 6031): Handling local request: https://localhost/firebase-config.js
+      I/Capacitor/Console( 6031): File:  - Line 333 - Msg: undefined
+      I/Capacitor/Console( 6031): File:  - Line 349 - Msg: [object Object]
+      V/Capacitor( 6031): callback: 30593891, pluginId: App, methodName: addListener, methodData: {"eventName":"appUrlOpen"}
+      D/Capacitor( 6031): Handling local request: https://localhost/icon.svg
+      D/Capacitor( 6031): Handling local request: https://localhost/vendor/firebase/firebase-10.12.0.js
+      
+
+RESULT: 2 passed, 1 failed
