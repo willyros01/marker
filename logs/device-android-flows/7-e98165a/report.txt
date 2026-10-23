@@ -1,0 +1,25 @@
+
+F1  Invitation for Ivy on a fresh phone: Terms, create account, 'Yes, that's me — join', lands in Saturday Group
+    screenshot 01-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 02-invited-create-account.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 03-joining-as-ivy.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 04-in-the-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  F1
+
+F2  Application on a fresh phone (Auto): apply in the app, open the approval link, Create your password, lands in the public group
+    screenshot 05-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 06-apply-form.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 07-check-your-email.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 08-create-your-password.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 09-in-the-public-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Pat is a member of the public group
+PASS  F2
+
+F3  Someone else (Rex) is signed in; an invitation for Jay arrives: the app asks whether it is for him
+    screenshot 10-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 11-rex-signed-in.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 12-is-this-for-you.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  F3
+
+RESULT: 3 passed, 0 failed
