@@ -19,7 +19,7 @@ async function connect() {
   try { ws && ws.close(); } catch {}
   ws = null; target = null;
   let page = null;
-  for (let i = 0; i < 30 && !page; i++) {
+  for (let i = 0; i < 90 && !page; i++) {
     try { page = (await (await fetch("http://127.0.0.1:9222/json")).json()).find((p) => /^capacitor:\/\/localhost/.test(p.url || "")); } catch {}
     if (!page) await sleep(1000);
   }
