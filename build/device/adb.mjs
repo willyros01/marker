@@ -33,7 +33,7 @@ const tap = (x, y) => sh(["shell", "input", "tap", String(x), String(y)]);
 export async function tapText(re, ms = 20000) {
   const end = Date.now() + ms; let scrolls = 0;
   while (Date.now() < end) {
-    const n = nodes().filter((n) => (re.test(n.text) || re.test(n.desc)) && n.y > 80 && n.y < 2300).pop();
+    const n = nodes().filter((n) => (re.test(n.text) || re.test(n.desc)) && n.y > 60 && n.y < screenSize().h - 60).pop();
     if (n) { tap(n.x, n.y); await sleep(1500); return; }
     if (scrolls++ < 8) await scroll(); else await sleep(1000);
   }
@@ -48,13 +48,25 @@ export async function typeField(index, text) {
   await sleep(500);
 }
 export async function tick(re) {
-  const n = nodes().filter((n) => n.checkable && !n.checked);
-  const label = nodes().find((x) => re.test(x.text));
-  const box = label ? n.sort((a, b) => Math.abs(a.y - label.y) - Math.abs(b.y - label.y))[0] : n[0];
-  if (!box) throw new Error(`no tick box near ${re}`);
-  tap(box.x, box.y); await sleep(800);
+  for (let i = 0; i < 12; i++) {
+    const all = nodes(); const { h } = screenSize();
+    const label = all.find((x) => re.test(x.text) && x.y > 60 && x.y < h - 60);
+    if (label) {
+      const boxes = all.filter((n) => n.checkable && !n.checked);
+      const box = boxes.sort((a, b) => Math.abs(a.y - label.y) - Math.abs(b.y - label.y))[0];
+      if (box && Math.abs(box.y - label.y) < 200) { tap(box.x, box.y); } else { tap(label.x, label.y); }
+      await sleep(900); return;
+    }
+    await scroll();
+  }
+  throw new Error(`no tick box near ${re}; the screen says: ${screenText().slice(0, 300)}`);
 }
-export async function scroll() { sh(["shell", "input", "swipe", "540", "1700", "540", "500", "300"]); await sleep(800); }
+let size = null;
+export function screenSize() {
+  if (!size) { const m = sh(["shell", "wm", "size"]).match(/(\d+)x(\d+)\s*$/m); size = m ? { w: +m[1], h: +m[2] } : { w: 1080, h: 2400 }; }
+  return size;
+}
+export async function scroll() { const { w, h } = screenSize(); sh(["shell", "input", "swipe", String(w >> 1), String(Math.round(h * 0.75)), String(w >> 1), String(Math.round(h * 0.3)), "300"]); await sleep(900); }
 export function hideKeyboard() { try { sh(["shell", "input", "keyevent", "111"]); } catch {} }
 export function shot(file) { fs.writeFileSync(file, sh(["exec-out", "screencap", "-p"], { binary: true })); }
 export function view(url) { sh(["shell", "am", "start", "-W", "-a", "android.intent.action.VIEW", "-c", "android.intent.category.BROWSABLE", "-d", `'${url}'`]); }
