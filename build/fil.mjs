@@ -3,7 +3,7 @@
  * holeSi to rounds already posted by The Marker. Nothing else is changed. */
 import { client } from "../worker/src/firestore.js";
 import { fillHoles } from "../worker/src/fillholes.js";
-const MODE = "go";
+const MODE = "dry";
 const fs = client({ project: process.env.PROJECT, token: async () => process.env.TOKEN });
 console.log("mode:", MODE);
 const r = await fillHoles(fs, { go: MODE === "go", log: (s) => console.log(s) });
