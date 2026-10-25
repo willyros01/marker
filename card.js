@@ -195,7 +195,7 @@ export function roundFor(card, p, { uid, courseId, teeId, roundId = model.newId(
     enteredBy: uid,
     handicapIndexAtEntry: pl.index,
   });
-  return {
+  const out = {
     ...r,
     cardId: card.id,
     holes: card.order.slice().sort((a, b) => a - b).map((n) => {
@@ -203,4 +203,24 @@ export function roundFor(card, p, { uid, courseId, teeId, roundId = model.newId(
       return s === PICKED_UP ? "X" : s;
     }),
   };
+  /* Each hole's par and stroke index as played (Willy, 25 Oct 2026), so The
+     Scorecard can show the card read-only in History even after the course
+     is corrected later. Only when the tee has all 18 holes. */
+  const frozen = frozenHoles(card.tee);
+  if (frozen) { out.holePar = frozen.holePar; out.holeSi = frozen.holeSi; }
+  return out;
+}
+
+/* Hole 1 to 18: par, and stroke index (null when the tee has none). Null
+   when the tee does not have 18 holes with a believable par each. */
+export function frozenHoles(tee) {
+  const holes = tee && Array.isArray(tee.holes) ? tee.holes : [];
+  if (holes.length !== 18) return null;
+  const holePar = holes.map((h) => Number(h && h.par));
+  if (holePar.some((n) => !(Number.isInteger(n) && n >= 3 && n <= 6))) return null;
+  const holeSi = holes.map((h) => {
+    const n = Number(h && h.si);
+    return Number.isInteger(n) && n >= 1 && n <= 18 ? n : null;
+  });
+  return { holePar, holeSi };
 }

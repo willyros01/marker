@@ -185,6 +185,17 @@ two Royal Ontario cards are hidden and can still be re-posted from the phone if 
 - After the freeze (optional now that the watchdog exists): the Admin page warns when lastRun is more than 2 days old (needs a rule letting the owner read maintenance/golferCleanup). Tidy in the apps should then stop archiving, since this job deletes.
 - 22 Oct 2026: the 11 golfers Tidy had listed were deleted once by hand (build/inv.mjs, one commit, 17 deletes).
 
+## Hole pars on every Marker round (Willy, 25 Oct 2026) — item 22
+
+- Each round the worker posts (and each correction) now also keeps holePar and holeSi: 18 numbers each,
+  hole 1 to 18, from the tee frozen when the card was posted (postedTee). holeSi is null for a hole
+  without a stroke index. Left out when the tee does not have 18 holes (never a made-up par 4).
+- Purpose: The Scorecard can show a Marker round read-only, hole by hole, from History (screen built
+  after the freeze), with the pars as played even if the course is corrected later.
+- Rounds posted before 25 Oct: filled in once by build/fil.mjs (worker/src/fillholes.js). Only the two
+  fields are added, one commit per round, guarded by updateTime; never from today's course list.
+- Tests: test/unit/holes.test.mjs (H1-H6).
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").

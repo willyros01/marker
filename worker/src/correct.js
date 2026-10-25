@@ -280,6 +280,7 @@ export async function correct(fs, who, { cardId, scores } = {}, { now = Date.now
     };
     writes.push(updateWrite(fs, doc.path, {
       gross: after.gross, adjusted: after.adjusted, differential: after.differential, holes: after.holes,
+      ...(after.holePar ? { holePar: after.holePar, holeSi: after.holeSi } : {}),
       corrections: [...(Array.isArray(doc.data.corrections) ? doc.data.corrections : []), record],
     }, { updateTime: doc.updateTime }));
 
