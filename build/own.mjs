@@ -4,7 +4,7 @@
  * golfer name and the groups they own); MODE=go writes it for the single
  * group creator, refusing if there is not exactly one. Nothing else changes. */
 import { client, setWrite } from "../worker/src/firestore.js";
-const MODE = "dry";
+const MODE = "go";
 const fs = client({ project: process.env.PROJECT, token: async () => process.env.TOKEN });
 console.log("mode:", MODE);
 const creators = await fs.query("", "groupCreators", [], 50);
