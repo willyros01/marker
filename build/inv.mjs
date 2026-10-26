@@ -1,4 +1,4 @@
-/* inv.mjs — READ-ONLY (Willy, 26 Oct 2026, 8:46 am): the two golfer records
+/* inv.mjs — READ-ONLY (Willy, 26 Oct 2026, 8:50 am): the two golfer records
  * linked to Willy's account. Shows each record and everything that points at
  * it. Writes nothing. */
 import { client } from "../worker/src/firestore.js";
@@ -12,7 +12,7 @@ const [rounds, rosters, dirs, members, names, games, subs] = await Promise.all([
 const short = (o) => JSON.stringify(o, (k, v) => (k === "recentWindow" ? `[${(v || []).length} entries]` : v));
 for (const g of mine) {
   const id = g.id;
-  console.log("\n=== golfer", id, "created", g.data.createdAt || "?", "updated", g.updateTime);
+  console.log("\n=== golfer", id, "updated", g.updateTime);
   console.log("record:", short(g.data));
   const rs = rounds.filter((r) => r.data.golferId === id);
   console.log("rounds:", rs.length, rs.slice(0, 40).map((r) => `${r.path.split("/")[1]} ${r.data.date} ${r.data.courseName || (r.data.course && r.data.course.name) || ""} gross ${r.data.gross}${r.data.enteredVia ? " (" + r.data.enteredVia + ")" : ""}`).join(" | "));
@@ -27,5 +27,5 @@ for (const g of mine) {
 const groups = await fs.query("", "associations", [], 50);
 for (const a of groups) {
   const m = await fs.get(`associations/${a.id}/members/${uid}`);
-  console.log(`\nmy membership in ${a.data.name}: ${m ? short(m.data) : "none"}`);
+  console.log(`\nmy membership in ${a.data.name} (${a.id}): ${m ? short(m.data) : "none"}`);
 }
