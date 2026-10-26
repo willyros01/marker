@@ -1,13 +1,13 @@
 {
   "workflow": "Marker Android APK",
   "branch": "main",
-  "run_id": 40246025222,
-  "run_number": 18,
-  "source_sha": "69597d37d7df6136edca557db712cb4836803614",
+  "run_id": 40323839508,
+  "run_number": 19,
+  "source_sha": "29ec5482db6022f029f2a565f0a022704fcea781",
   "version": "0.6.8",
   "outcome": "success",
-  "artifact_id": 12618423322,
+  "artifact_id": 12650267093,
   "apk_name": "marker.v0.6.8.apk",
-  "run_url": "https://github.com/willyros01/marker/actions/runs/40246025222",
-  "reported_at": "2026-10-25T23:45:22.710Z"
+  "run_url": "https://github.com/willyros01/marker/actions/runs/40323839508",
+  "reported_at": "2026-10-26T12:38:13.355Z"
 }
