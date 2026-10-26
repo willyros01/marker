@@ -45,8 +45,22 @@ async function manages(fs, uid, assocId, cache) {
   return ok;
 }
 
-/* How this caller may correct the submission: "scorer", "admin" or null,
-   with the time the scorer's window closes. */
+/* The app owner's override (Willy, 23 Oct 2026, "like SAP_ALL"): a signed-in
+   account listed in appOwners/{uid} may act as owner in every group, including
+   groups created by someone else. The record can only be written outside the
+   apps (no rule allows it); every use is recorded with as: "appOwner". */
+export async function isAppOwner(fs, uid, cache = new Map()) {
+  if (!uid) return false;
+  const key = `appOwner:${uid}`;
+  if (cache.has(key)) return cache.get(key);
+  const d = await fs.get(`appOwners/${uid}`);
+  const ok = !!(d && d.data && d.data.active === true);
+  cache.set(key, ok);
+  return ok;
+}
+
+/* How this caller may correct the submission: "scorer", "admin", "appOwner"
+   or null, with the time the scorer's window closes. */
 async function rights(fs, who, sub, now, cache = new Map()) {
   const d = sub.data;
   const posted = ms(d.postedAt);
@@ -55,6 +69,7 @@ async function rights(fs, who, sub, now, cache = new Map()) {
   let admin = groups.length > 0;
   for (const a of groups) if (!(await manages(fs, who.uid, a, cache))) { admin = false; break; }
   if (admin) return { as: "admin", until };
+  if (!who.anonymous && groups.length > 0 && (await isAppOwner(fs, who.uid, cache))) return { as: "appOwner", until };
   if (d.scorer === who.uid && Number.isFinite(until) && now < until) return { as: "scorer", until };
   return { as: null, until };
 }

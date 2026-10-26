@@ -196,6 +196,19 @@ two Royal Ontario cards are hidden and can still be re-posted from the phone if 
   fields are added, one commit per round, guarded by updateTime; never from today's course list.
 - Tests: test/unit/holes.test.mjs (H1-H6).
 
+## App owner override (Willy, 23 and 26 Oct 2026) — item 21, Marker part
+
+- "Like SAP_ALL": an account with appOwners/{uid} = { active: true } may correct, hide, delete and
+  re-post ANY Marker card at any time, including cards of groups it did not create and is not in.
+- worker/src/correct.js isAppOwner(), used by rights(); a group owner or admin is still recorded as
+  "admin"; the override is recorded as as: "appOwner" on every correction / deletion. The phone shows
+  "As the app owner" on such cards (app.js).
+- The record is written only outside the apps (build/own.mjs, dry first); no Firestore rule allows a
+  phone to read or write appOwners (no match = denied).
+- The Scorecard's part (rules and screens treating the app owner as owner of every group) waits for
+  the freeze.
+- Tests: test/unit/owner.test.mjs (O1-O5).
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").

@@ -652,7 +652,7 @@ function screenCorrections() {
     : !list.length ? `<p>No posted card can be corrected by you right now.</p><p class="muted">The scorer can correct a card for 24 hours after posting it. An owner or admin of the group can correct any card of the group, at any time.</p>`
     : `<div class="list">${list.map((x) => `
       <button class="item" data-act="correct-card" data-v="${esc(x.cardId)}"><span class="txt"><span class="name">${esc(x.course)} · ${esc(niceDate(x.date))}</span>
-        <span class="meta">${esc(x.players.join(", "))}<br>${x.as === "scorer" ? `Your card · until ${esc(new Date(x.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }))}` : "As owner or admin of the group"}${x.corrections ? ` · corrected ${x.corrections}×` : ""}</span></span></button>`).join("")}</div>`;
+        <span class="meta">${esc(x.players.join(", "))}<br>${x.as === "scorer" ? `Your card · until ${esc(new Date(x.until).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }))}` : x.as === "appOwner" ? "As the app owner" : "As owner or admin of the group"}${x.corrections ? ` · corrected ${x.corrections}×` : ""}</span></span></button>`).join("")}</div>`;
   return `${top("Correct a posted card", "Cards already in The Scorecard")}
     <main class="body">${banner()}${rows}</main>
     <footer class="foot"><button class="btn" data-act="history">← Back</button></footer>`;

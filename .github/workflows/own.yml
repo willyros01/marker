@@ -1,0 +1,34 @@
+name: App owner record (item 21)
+on:
+  push:
+    branches: [main]
+    paths: [build/own.mjs]
+permissions:
+  contents: write   # only to save the log to ci-logs
+  id-token: write
+jobs:
+  look:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - id: auth
+        uses: google-github-actions/auth@v3.0.0
+        with:
+          workload_identity_provider: projects/811267714235/locations/global/workloadIdentityPools/scorecard-github/providers/marker-provider
+          service_account: marker-deployer@scorecard-f41b8.iam.gserviceaccount.com
+          token_format: access_token
+      - name: Own
+        env: { TOKEN: "${{ steps.auth.outputs.access_token }}", PROJECT: scorecard-f41b8 }
+        run: node build/own.mjs 2>&1 | tee own.log
+      - name: Save the log
+        if: always()
+        run: |
+          d="logs/own/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"; mkdir -p /tmp/$d; cp own.log /tmp/$d/ 2>/dev/null || true
+          git config user.name marker-ci; git config user.email marker-ci@users.noreply.github.com
+          git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p $d; cp /tmp/$d/* $d/; git add logs && git commit -qm "own ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
