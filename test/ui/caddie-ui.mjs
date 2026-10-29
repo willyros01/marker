@@ -118,8 +118,10 @@ ok(true, "the caddie's phone says the golfer has taken the card back");
 await shot(cad, "09-caddie-taken-back");
 
 /* 7. the old code no longer works */
-await cad.goto(APP); await cad.waitForSelector('[data-act="caddie-open"]');
-await act(cad, "caddie-open"); await cad.fill("#caddiecode", code2); await act(cad, "caddie-join");
+/* the QR link opens the Join screen with the code already filled in */
+await cad.goto(`${APP}&caddie=${code2}`); await cad.waitForSelector("#caddiecode", { timeout: 20000 });
+ok((await cad.inputValue("#caddiecode")).replace(/\s/g, "") === code2, "the QR link opens the Join screen with the code filled in");
+await act(cad, "caddie-join");
 await cad.waitForFunction(() => document.body.innerText.includes("stopped working"), null, { timeout: 15000 });
 ok(true, "the code stops working after the take-over");
 await shot(cad, "10-caddie-code-stopped");
