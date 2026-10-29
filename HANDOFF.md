@@ -260,6 +260,12 @@ the card from there, trying once more after 2.5 s if the first try fails for a
 network or start-up reason. Any failure is shown on the Follow screen with the
 code still filled in. Browser test step 10 covers a link with a wrong code.
 
+0.8.2: 0.8.1 did not help on Willy's iPad (the scan opens the app, the first
+screen stays, no Follow screen). Every link that opens the app now goes through
+useLink(): a link the app cannot use shows on the first screen, in full, so
+the next scan tells us what the iPad hands over (or, if nothing shows, that no
+link reaches the app at all).
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").

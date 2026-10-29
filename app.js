@@ -1942,12 +1942,19 @@ function openCaddieLink(url) {
   go("caddie-join");
   return true;
 }
+/* A link that opened the app but could not be used is never ignored in
+   silence: the first screen says so and shows the link (Willy, 29 Oct 2026). */
+function useLink(url) {
+  let used = false;
+  try { used = openCaddieLink(url); } catch { used = false; }
+  if (!used) { go("start"); S.error = `The Marker was opened with a link it could not use: ${String(url).slice(0, 300)}`; render(); }
+}
 async function listenForCaddieLinks() {
   const Cap = (typeof window !== "undefined" && window.Capacitor) || null;
   const App = Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.Plugins ? Cap.Plugins.App : null;
   if (!App) return;
-  try { const l = await App.getLaunchUrl(); if (l && l.url) openCaddieLink(l.url); } catch { /* no launch link */ }
-  try { App.addListener("appUrlOpen", (e) => { if (e && e.url) openCaddieLink(e.url); }); } catch { /* older app */ }
+  try { const l = await App.getLaunchUrl(); if (l && l.url) useLink(l.url); } catch { /* no launch link */ }
+  try { App.addListener("appUrlOpen", (e) => { if (e && e.url) useLink(e.url); }); } catch { /* older app */ }
 }
 
 async function boot() {
