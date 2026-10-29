@@ -18,7 +18,7 @@ echo "Building The Marker $VERSION, build $BUILD"
 echo "--- 1. Tests"
 npm test
 echo "--- 2. Capacitor $CAP (installed for this build only)"
-npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/ios@$CAP"
+npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/ios@$CAP" "@capacitor/app@8.1.1"
 
 echo "--- 3. The web files (same list as Android)"
 rm -rf www && mkdir -p www
@@ -34,6 +34,7 @@ rm -rf ios
 npx cap add ios
 npx cap sync ios
 cp build/ios/PrivacyInfo.xcprivacy ios/App/App/PrivacyInfo.xcprivacy
+cp build/ios/App.entitlements ios/App/App/App.entitlements
 ruby -e 'require "xcodeproj"' 2>/dev/null || gem install xcodeproj --user-install --no-document
 ruby build/ios/configure.rb
 PLIST=ios/App/App/Info.plist

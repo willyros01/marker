@@ -701,10 +701,12 @@ function screenStatus(c) {
 
 /* ---------------- a caddie scores the card (Willy, 29 Oct 2026) ---------------- */
 
-/* The QR code holds a link to the web app with the code in it: the caddie
-   points the phone's own camera at it, and The Marker opens on the Join
-   screen with the code filled in. No app needs to be installed. */
-const WEB = "https://willyros01.github.io/marker/";
+/* The QR code holds a link to the caddie page on the Cuberoot site, with the
+   code in it (Willy, 29 Oct 2026: "just like the invite on The Scorecard").
+   The caddie points the phone's own camera at it: with The Marker installed,
+   iPhone and Android open the app on the Join screen with the code filled in;
+   otherwise the page forwards to the web app, which does the same. */
+const WEB = "https://www.cuberoot-systems.com/marker/caddie/";
 const spaced = (code) => `${String(code).slice(0, 3)} ${String(code).slice(3)}`;
 function qrSvg(text) {
   const q = qrcode(0, "M");
@@ -1750,6 +1752,31 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 
 /* ---------------- start ---------------- */
 
+/* Inside the iPhone and Android apps a caddie link does not arrive in the
+   address bar: it comes from the App plugin, once at a cold start and as an
+   event while the app is open. Both open the Join screen with the code. */
+function caddieCodeFrom(url) {
+  try {
+    const u = new URL(url);
+    if (!/^\/marker\/caddie\/?/.test(u.pathname)) return "";
+    return (u.searchParams.get("caddie") || "").slice(0, 12);
+  } catch { return ""; }
+}
+function openCaddieLink(url) {
+  const code = caddieCodeFrom(url);
+  if (!code) return false;
+  S.caddieCode = code; S.error = "";
+  go("caddie-join");
+  return true;
+}
+async function listenForCaddieLinks() {
+  const Cap = (typeof window !== "undefined" && window.Capacitor) || null;
+  const App = Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.Plugins ? Cap.Plugins.App : null;
+  if (!App) return;
+  try { const l = await App.getLaunchUrl(); if (l && l.url) openCaddieLink(l.url); } catch { /* no launch link */ }
+  try { App.addListener("appUrlOpen", (e) => { if (e && e.url) openCaddieLink(e.url); }); } catch { /* older app */ }
+}
+
 async function boot() {
   render();
   try { await db.init(); }
@@ -1767,6 +1794,7 @@ async function boot() {
     }
   } catch {}
   if (c && c.caddieOf && c.caddieOf.done) sendNow();
+  await listenForCaddieLinks();
   try { db.dropReplaced(); } catch {}
   render();
   refreshMine(true);

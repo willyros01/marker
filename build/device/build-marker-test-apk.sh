@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 CAP=8.5.2
 rm -rf /tmp/mk && mkdir -p /tmp/mk && git archive HEAD | tar -x -C /tmp/mk && cd /tmp/mk
-npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/android@$CAP" > /dev/null 2>&1
+npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/android@$CAP" "@capacitor/app@8.1.1" > /dev/null 2>&1
 mkdir -p www
 while IFS= read -r line; do
   line="${line%%#*}"; line="${line//[[:space:]]/}"; [ -n "$line" ] || continue

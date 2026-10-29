@@ -11,8 +11,20 @@ perms = ['<uses-permission android:name="android.permission.CAMERA" />',
 for p in perms:
     if p not in s:
         s = s.replace("</manifest>", "    " + p + "\n</manifest>", 1)
+# Caddie links on the Cuberoot site open the app (Willy, 29 Oct 2026); verified by
+# www.cuberoot-systems.com/.well-known/assetlinks.json.
+link = """<intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="www.cuberoot-systems.com" android:pathPrefix="/marker/caddie/" />
+            </intent-filter>
+        """
+if "/marker/caddie/" not in s:
+    i = s.index("</activity>")
+    s = s[:i] + link + s[i:]
 m.write_text(s)
-print("Manifest: camera permission added (camera optional, so tablets without one can install).")
+print("Manifest: camera permission added (camera optional, so tablets without one can install); caddie links open the app.")
 PY
 # Launcher icons from the app's own icon.svg (the plain icons; Android's
 # adaptive icon set from the template is removed so the real icon shows).

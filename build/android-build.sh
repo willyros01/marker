@@ -5,7 +5,7 @@ set -Eeuo pipefail
 cd "$(dirname "$0")/.."
 CAP=8.5.2
 npm test
-npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/android@$CAP"
+npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/android@$CAP" "@capacitor/app@8.1.1"
 rm -rf www android
 mkdir -p www
 while IFS= read -r line; do
