@@ -1,0 +1,105 @@
+
+F1  Invitation for Ivy on a fresh phone: Terms, create account, 'Yes, that's me — join', lands in Saturday Group
+adb: error: listener 'tcp:9222' not found
+    screenshot 01-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 02-invited-create-account.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 03-joining-as-ivy.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 04-in-the-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  F1
+
+F2  Application on a fresh phone (Auto): apply in the app, open the approval link, Create your password, lands in the public group
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 05-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 06-apply-form.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 07-check-your-email.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 08-create-your-password.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 09-in-the-public-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Pat is a member of the public group
+PASS  F2
+
+F3  Someone else (Rex) is signed in; an invitation for Jay arrives: the app asks whether it is for him
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 10-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 11-F3-failed.png  (in front: com.google.android.apps.nexuslauncher/.NexusLauncherActivity)
+FAIL  F3  —  Command failed: adb shell pidof io.github.willyros01.scorecard
+    last app messages:
+      W/ActivityManager(  523): Scheduling restart of crashed service com.google.android.gms/.common.stats.GmsCoreStatsService in 210953ms for start-requested
+      W/ActivityManager(  523): Scheduling restart of crashed service com.google.android.gms/.location.persistent.LocationPersistentService in 220953ms for start-requested
+      W/ActivityManager(  523): Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentApiService in 230953ms for connection
+      W/ActivityManager(  523): Scheduling restart of crashed service com.google.android.gms/.nearby.messages.service.NearbyMessagesService in 240953ms for start-requested
+      W/ActivityManager(  523): Scheduling restart of crashed service com.google.android.gms/.gcm.GcmService in 250953ms for start-requested
+      W/ActivityManager(  523): Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentBoundBrokerService in 260953ms for connection
+      W/ActivityManager(  523): Scheduling restart of crashed service com.google.android.gms/com.google.android.contextmanager.service.ContextManagerService in 270953ms for start-requested
+      W/ActivityManager(  523): Scheduling restart of crashed service com.google.android.gms/com.google.android.location.fused.FusedLocationService in 280953ms for connection
+      W/ActivityManager(  523): Scheduling restart of crashed service com.google.android.gms/.chimera.PersistentIntentOperationService in 290953ms for start-requested
+      I/libprocessgroup(  523): Successfully killed process cgroup uid 10194 pid 5948 in 0ms
+      W/lowmemorykiller(  133): Failed to open /proc/4364/oom_score_adj; errno=2: process 4364 might have been killed
+      I/ActivityManager(  523): Process com.google.android.gms.ui (pid 4364) has died: cch+5 CEM 
+      I/ActivityManager(  523): Start proc 6152:com.google.android.gms.persistent/u0a131 for service {com.google.android.gms/com.google.android.gms.chimera.PersistentBoundBrokerService}
+      I/ActivityManager(  523): Killing 5978:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a194i2 (adj 0): isolated not needed
+      W/ActivityTaskManager(  523): Force removing ActivityRecord{5ada712 u0 io.github.willyros01.scorecard/.MainActivity t10}: app died, no saved state
+      W/ActivityManager(  523): setHasOverlayUi called on unknown pid: 5948
+      I/libprocessgroup(  523): Successfully killed process cgroup uid 10131 pid 4364 in 0ms
+      I/libprocessgroup(  523): Successfully killed process cgroup uid 99002 pid 5978 in 0ms
+      W/ActivityManager(  523): Rescheduling restart of crashed service com.google.android.gms/.chimera.GmsIntentOperationService in 777ms for other
+      W/ActivityManager(  523): Rescheduling restart of crashed service com.google.android.gms/.icing.service.IndexService in 10777ms for other
+      W/ActivityManager(  523): Rescheduling restart of crashed service com.google.android.gms/.chimera.container.ExternalFileApkService in 20777ms for other
+      I/ActivityManager(  523): Flag disabled. Ignoring finishAttachApplication from uid: 10131. pid: 6152
+      I/ActivityManager(  523): Start proc 6241:com.google.android.gms/u0a131 for service {com.google.android.gms/com.google.android.gms.chimera.GmsIntentOperationService}
+      I/ActivityManager(  523): Flag disabled. Ignoring finishAttachApplication from uid: 10131. pid: 6241
+      
+
+RESULT: 2 passed, 1 failed
+
+M1  The Marker: Rex signs in, scores 18 holes for himself and Jay, and posts the card
+args: [-p, io.github.willyros01.marker, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.marker"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.marker"
+data="android.intent.category.LAUNCHER"
+    screenshot 101-marker-start.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 102-marker-signed-in.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 103-marker-setup.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 104-marker-players.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 105-marker-hole-9.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 106-marker-totals.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 107-marker-posted.png  (in front: io.github.willyros01.marker/.MainActivity)
+PASS  M1
+
+M2  The worker posts the card into The Scorecard: two rounds, gross 90 and 108, in one commit
+    worker: card mvu2… posted
+    worker result: {"posted":1,"refused":0,"left":0}
+    database: Rex gross 90, Jay gross 108, entered via marker
+PASS  M2
+
+M3  Rex opens The Scorecard: the Marker round is in his rounds
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 108-scorecard-my-rounds.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  M3
+
+MARKER RESULT: 3 passed, 0 failed
