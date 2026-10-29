@@ -234,6 +234,21 @@ two Royal Ontario cards are hidden and can still be re-posted from the phone if 
 - Tests: test/unit/caddie.test.mjs (K1-K10); two browsers end to end: test/ui/run-caddie.sh, workflow
   ui-caddie.yml (screenshots in ci-logs logs/ui-caddie/).
 
+## Following a card live (Willy, 29 Oct 2026, option A) — version 0.8.0
+
+- Menu (or the member's caddie screen) > "Let others follow this card": worker follow.js makes a follow code
+  (markerFollowCodes/{CODE}) on the card's live copy (markerLive): the caddie's live card if a caddie is
+  scoring, otherwise a new one with status "self". QR: https://www.cuberoot-systems.com/marker/follow/?follow=CODE
+  (claimed by the apps like the caddie links; otherwise forwards to the web app).
+- Followers (any sign-in, no account needed) tap the Follow icon on the first screen (shown to everyone), type
+  the code or open the link: read-only card, refreshed every 12 s; "No connection right now. Showing the scores
+  from …" without signal; "The round is finished." after posting. The last followed card is offered on the
+  first screen ("Follow: <course>") until "Stop following".
+- The member's phone sends its own scores (whole card, 1.5 s after a change, one send at a time) except while a
+  caddie scores; Post marks the live card finished. Stops after 12 hours.
+- Option B (a live leaderboard for a game, for tournaments) is for later, built on this.
+- Tests: test/unit/follow.test.mjs (F1-F6); the two-browser test (ui-caddie.yml) also follows a card.
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").
