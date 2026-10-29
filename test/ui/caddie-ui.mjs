@@ -155,8 +155,9 @@ await act(fan, "follow-join");
 await fan.waitForFunction(() => document.body.innerText.includes("Following"), null, { timeout: 20000 });
 ok(!(await fan.locator('[data-act="score"], [data-act="plus"], [data-act="jump"]').count()), "the follower sees the card read-only");
 for (let i = 0; i < 2; i++) { if (await member.locator('[data-act="who"]').count()) { await act(member, "who", i); await act(member, "score", i === 0 ? 3 : 6); } else { await member.locator(`[data-act="plus"][data-v="${i}"]`).click(); } }
-await fan.waitForFunction(() => /Updated at/.test(document.body.innerText) && /\b3\b/.test(document.body.innerText), null, { timeout: 40000 });
-ok(true, "the member's scores reach the follower by themselves");
+await fan.waitForFunction(() => /Thru 1\b/.test(document.body.innerText), null, { timeout: 45000 });
+const row1 = await fan.locator(".crow").nth(1).innerText();
+ok(/\b3\b[\s\S]*\b6\b/.test(row1.split("\n").slice(4).join(" ")), `the member's scores reach the follower by themselves (hole 1: ${row1.replace(/\s+/g, " ")})`);
 await shot(fan, "13-follower-live");
 
 /* 9. a follow link opens the card straight away */
