@@ -223,6 +223,13 @@ two Royal Ontario cards are hidden and can still be re-posted from the phone if 
   usual Round finished screen, posted by the member; rounds note "by a caddie" (scoredBy on the card).
 - Code stops on take-over, finish, or after 12 hours. One caddie per card (the same phone may rejoin). A phone
   gets 20 wrong codes a day. Willy's choices: phone camera or typed code (no scanner in the app), 12 hours.
+- 0.7.1: the QR square links to https://www.cuberoot-systems.com/marker/caddie/?caddie=CODE (Willy: "just
+  like the invite on The Scorecard"). The Cuberoot site claims it for the apps (.well-known: AASA appID
+  VXMLKHF72B.io.github.willyros01.marker, path /marker/caddie/*; assetlinks io.github.willyros01.marker with the
+  permanent signing key's SHA-256) and otherwise forwards to the web app. The apps carry the associated domain
+  (build/ios/App.entitlements) and an autoVerify App Link (android-native.sh), with @capacitor/app 8.1.1 for
+  getLaunchUrl / appUrlOpen. No scanner inside the app (Willy's choice); the Fire HD 8's camera cannot read QR
+  squares, so a caddie with a Fire types the code. Caddie scoring needs a signal to join and to hand back.
 - Everything goes through the worker (service account); no Firestore rule change.
 - Tests: test/unit/caddie.test.mjs (K1-K10); two browsers end to end: test/ui/run-caddie.sh, workflow
   ui-caddie.yml (screenshots in ci-logs logs/ui-caddie/).
