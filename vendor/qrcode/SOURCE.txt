@@ -1,0 +1,1 @@
+qrcode-generator by Kazuhiko Arase (MIT), from github.com/kazuhikoarase/qrcode-generator at commit 83b7e8f (tag js2.0.4), file js/dist/qrcode.mjs, unchanged.

@@ -191,7 +191,7 @@ export function roundFor(card, p, { uid, courseId, teeId, roundId = model.newId(
     tee: { id: teeId, name: card.tee.name, rating: card.tee.rating, slope: card.tee.slope, par: card.tee.par },
     gross: t.gross,
     adjusted: t.adjusted,
-    notes: "Scored hole by hole with The Marker",
+    notes: card.scoredBy === "caddie" ? "Scored hole by hole with The Marker, by a caddie" : "Scored hole by hole with The Marker",
     enteredBy: uid,
     handicapIndexAtEntry: pl.index,
   });

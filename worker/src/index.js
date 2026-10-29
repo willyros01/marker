@@ -15,6 +15,11 @@
  *   POST /discard-editable {cardId} -> { status }  deletes a card with deleted rounds from the lists for good
  *   POST /my-cards           -> { correctable, editable }  for the Your cards screen
  *   POST /hide-editable {cardId, hidden} -> { status }  hides (or shows again) a card with deleted rounds
+ *   POST /caddie/start {card}        -> { liveId, code, expiresAt }   members: a code for a caddie
+ *   POST /caddie/status {liveId}     -> { status, joined, scores, lastAt }   the card's member
+ *   POST /caddie/stop {liveId}       -> { status }   the member takes the card back
+ *   POST /caddie/join {code}         -> { liveId, setup, scores }   any sign-in (a caddie needs no account)
+ *   POST /caddie/scores {liveId, scores, done} -> { status }   the caddie who joined
  *   every 5 minutes          -> posts a card still waiting (one per run)
  *   GET  /cleanup-status     -> { ok, lastRun, hoursAgo, ... }  no sign-in; 503 when the
  *                               daily clean-up has not run for 48 hours (cron-job.org watchdog)
@@ -32,6 +37,7 @@ import * as search from "./search.js";
 import * as fix from "./correct.js";
 import { Refusal } from "./post.js";
 import { cleanGolfers, cleanupStatus } from "./cleanup.js";
+import * as caddie from "./caddie.js";
 
 /* Must match the daily line in wrangler.toml. 07:00 UTC = 3 am Toronto (summer), 2 am (winter). */
 const DAILY = "0 7 * * *";
@@ -117,6 +123,19 @@ export default {
           if (url.pathname === "/correctable") return reply({ cards: await fix.correctable(fs, who) }, 200, h);
           if (url.pathname === "/correction-card") return reply(await fix.cardForCorrection(fs, who, body.cardId), 200, h);
           return reply(await fix.correct(fs, who, body), 200, h);
+        } catch (e) {
+          if (e instanceof Refusal) return reply({ error: "REFUSED", reason: e.message }, 200, h);
+          throw e;
+        }
+      }
+      if (url.pathname.startsWith("/caddie/") && req.method === "POST") {
+        const body = await req.json().catch(() => ({}));
+        try {
+          if (url.pathname === "/caddie/start") return reply(await caddie.start(fs, who, body.card), 200, h);
+          if (url.pathname === "/caddie/status") return reply(await caddie.status(fs, who, body.liveId), 200, h);
+          if (url.pathname === "/caddie/stop") return reply(await caddie.stop(fs, who, body.liveId), 200, h);
+          if (url.pathname === "/caddie/join") return reply(await caddie.join(fs, who, body.code), 200, h);
+          if (url.pathname === "/caddie/scores") return reply(await caddie.scores(fs, who, body), 200, h);
         } catch (e) {
           if (e instanceof Refusal) return reply({ error: "REFUSED", reason: e.message }, 200, h);
           throw e;

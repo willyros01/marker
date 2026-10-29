@@ -10,6 +10,7 @@ import * as local from "./storage.js";
 import * as db from "./store.js";
 import * as W from "./withdrawn.js";
 import * as check from "./cardcheck.js";
+import qrcode from "./vendor/qrcode/qrcode.mjs";
 
 const VERSION = self.APP_VERSION || "dev";
 const app = document.getElementById("app");
@@ -155,7 +156,9 @@ function screenStart() {
   }
   return `${top("The Marker", "Hole-by-hole scorecard", netPill())}
     <main class="body">${banner()}${resume}${main}</main>
-    <footer class="foot">${signedIn ? `<div class="who">Signed in as ${esc(u.email)}</div><button class="btn" data-act="sign-out">Sign out</button>` : ""}
+    <footer class="foot">${signedIn ? "" : `<button class="caddie-icon" data-act="caddie-open" aria-label="I'm a caddie: score a golfer's card with their code">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"></path><rect x="8" y="8" width="8" height="8" rx="1"></rect></svg>
+        <span>Caddie</span></button>`}${signedIn ? `<div class="who">Signed in as ${esc(u.email)}</div><button class="btn" data-act="sign-out">Sign out</button>` : ""}
       <div class="links">
       <a href="https://www.cuberoot-systems.com/marker/guide/" target="_blank" rel="noopener">Support</a>
       <a href="https://www.cuberoot-systems.com/scorecard/privacy/" target="_blank" rel="noopener">Privacy</a>
@@ -446,6 +449,7 @@ function screenPlayers() {
       ${full ? "" : `<div class="row2" style="grid-template-columns: minmax(0,1fr) auto"><input class="input" id="guest" placeholder="${member() ? "Guest's name" : "Player's name"}" value="${esc(S.guestName)}" autocomplete="off"><button class="btn" data-act="add-guest">Add</button></div>`}
     </main>
     <footer class="foot"><button class="btn primary" data-act="tee-off" ${count ? "" : "disabled"}>Tee off on hole ${esc(s.start)} →</button>
+      ${member() ? `<button class="btn outline" data-act="caddie-start" ${count && !S.busy ? "" : "disabled"}>${S.busy === "caddie" ? "Getting a code…" : "Let my caddie score"}</button>` : ""}
       <button class="btn" data-act="back-setup">← Back</button></footer>`;
 }
 
@@ -455,7 +459,7 @@ function holeHeader(c, n) {
   const h = card.holeInfo(c, n);
   const pos = c.order.indexOf(n) + 1;
   return `<header class="top"><div class="row"><div class="sub">${esc(c.course.name)} · ${esc(c.tee.name)} · hole ${pos} of ${c.order.length}</div>
-      <div class="row"><span class="pill">✓ Saved</span><button class="pill light" data-act="menu">Menu</button></div></div>
+      <div class="row"><span class="pill">${c.caddieOf ? (c.caddieOf.sentAt && c.caddieOf.sentAt >= (c.caddieOf.changedAt || 0) ? "✓ Sent to the golfer" : "Saved · not sent yet") : "✓ Saved"}</span><button class="pill light" data-act="menu">Menu</button></div></div>
     <div class="hole-title"><span class="big">Hole ${n}</span><span class="par">Par ${h.par}</span></div>
     <div class="hole-meta"><span>${h.yards ? `${h.yards} yards` : "Yards not known"}</span><span>${h.si ? `Handicap ${h.si}` : "No handicap number"}</span></div></header>`;
 }
@@ -551,7 +555,8 @@ function screenMenu(c) {
       <button class="btn tall" data-act="card"><span>See the whole card</span><small>Every hole, with par, yards and handicap number. Tap a hole to go to it.</small></button>
       <button class="btn tall" data-act="share-card"><span>Share the card</span><small>WhatsApp, email or text message.</small></button>
       <button class="btn tall" data-act="to-start"><span>Go to the start screen</span><small>The round stays on this phone. "Continue your round" brings you back to this hole.</small></button>
-      ${c.correcting ? `<button class="btn tall" data-act="cancel-correction" style="color:var(--over)"><span>Cancel the correction</span><small>Nothing is changed in The Scorecard.</small></button>`
+      ${c.caddieOf ? `<button class="btn tall" data-act="caddie-quit" style="color:var(--over)"><span>Stop scoring this card</span><small>The scores already sent stay with the golfer.</small></button>`
+        : c.correcting ? `<button class="btn tall" data-act="cancel-correction" style="color:var(--over)"><span>Cancel the correction</span><small>Nothing is changed in The Scorecard.</small></button>`
         : `<button class="btn tall" data-act="end-round" style="color:var(--over)"><span>End this round without posting</span><small>The card is kept under "Your cards" and is never posted.</small></button>`}
     </main>
     <footer class="foot"><button class="btn primary" data-act="back-play">Back to hole ${esc(c.order[c.pos])} →</button></footer>`;
@@ -620,6 +625,7 @@ function summaries(c) {
 
 function screenFinish(c) {
   if (c.correcting) return screenCorrectFinish(c);
+  if (c.caddieOf) return screenCaddieFinish(c);
   const check = card.postable(c);
   const n = c.players.filter((p) => !p.guest).length;
   const postBtn = check.ok
@@ -690,6 +696,72 @@ function screenStatus(c) {
     <main class="body">${banner()}<h2>${esc(head)}</h2><p>${esc(text)}</p><div class="list">${rows}</div>
       <p class="muted">Each one shows "Posted" only once The Scorecard has actually saved it.</p></main>
     <footer class="foot"><button class="btn primary" data-act="done">Done</button><button class="btn" data-act="share-card">Share the card</button></footer>`;
+}
+
+
+/* ---------------- a caddie scores the card (Willy, 29 Oct 2026) ---------------- */
+
+/* The QR code holds a link to the web app with the code in it: the caddie
+   points the phone's own camera at it, and The Marker opens on the Join
+   screen with the code filled in. No app needs to be installed. */
+const WEB = "https://willyros01.github.io/marker/";
+const spaced = (code) => `${String(code).slice(0, 3)} ${String(code).slice(3)}`;
+function qrSvg(text) {
+  const q = qrcode(0, "M");
+  q.addData(text);
+  q.make();
+  const n = q.getModuleCount(), m = 4, size = n + m * 2;
+  let d = "";
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c + m} ${r + m}h1v1h-1z`;
+  return `<svg class="qr" viewBox="0 0 ${size} ${size}" role="img" aria-label="Code for the caddie: ${esc(spaced(text.slice(-6)))}"><rect width="${size}" height="${size}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+}
+
+function screenCaddieMember(c) {
+  const k = c.caddie;
+  const when = k.lastAt ? new Date(k.lastAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "";
+  if (!k.joined) {
+    return `${top("Let my caddie score", `${c.course.name} · ${niceDate(c.date)}`)}
+    <main class="body">${banner()}
+      <p style="font-size:20px">Ask your caddie to open <b>The Marker</b>, tap <b>Caddie</b> at the bottom, and type this code. Or let them point their phone's camera at the square.</p>
+      <div class="qrbox">${qrSvg(`${WEB}?caddie=${k.code}`)}</div>
+      <div class="bigcode" aria-label="Code ${esc(k.code.split("").join(" "))}">${esc(spaced(k.code))}</div>
+      <div class="banner"><span class="wheel" aria-hidden="true"></span> Waiting for your caddie…</div>
+      <p class="muted">The code works for this card only, and stops after 12 hours. Your caddie can only enter scores: no posting, no groups, nobody's details.</p>
+    </main>
+    <footer class="foot"><button class="btn" data-act="caddie-takeover">I'll score myself instead</button>
+      <button class="btn" data-act="to-start">Go to the start screen</button></footer>`;
+  }
+  return `${top("Your caddie is scoring", `${c.course.name} · ${c.tee.name}`)}
+    <main class="body" style="padding:10px">${banner()}
+      <div class="banner ok">Caddie connected${when ? ` · last score at ${esc(when)}` : " · no scores yet"}</div>
+      ${cardGrid(c, false)}
+      <p class="muted">Scores appear here as your caddie enters them. You can put the phone away; "Continue your round" brings you back here.</p>
+    </main>
+    <footer class="foot"><button class="btn" data-act="caddie-takeover">Take over scoring myself</button>
+      <button class="btn" data-act="to-start">Go to the start screen</button></footer>`;
+}
+
+function screenCaddieJoin() {
+  return `${top("Caddie", "Score a golfer's card")}
+    <main class="body">${banner()}
+      <p style="font-size:20px">Type the code the golfer shows you.</p>
+      <label class="field"><span class="label">Code</span>
+        <input class="input bigcode-in" id="caddiecode" value="${esc(S.caddieCode || "")}" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7P 4QX"></label>
+      <p class="muted">No account is needed. You enter the scores; the golfer checks the card and posts it.</p>
+    </main>
+    <footer class="foot"><button class="btn primary" data-act="caddie-join" ${S.busy ? "disabled" : ""}>${S.busy === "join" ? "Joining…" : "Join the card"}</button>
+      <button class="btn" data-act="home">← Back</button></footer>`;
+}
+
+function screenCaddieFinish(c) {
+  const sent = c.caddieOf.done;
+  return `${top("Round finished", `${c.course.name} · ${niceDate(c.date)}`)}
+    <main class="body">${banner()}
+      <p class="muted">Check the totals with the golfers, then hand the card back. The golfer checks it again and posts it.</p>
+      ${summaries(c)}
+      ${sent ? `<div class="banner warn">Not sent yet: no signal. It is sent by itself as soon as the signal returns. Keep The Marker open.</div>` : ""}</main>
+    <footer class="foot"><button class="btn primary" data-act="caddie-handback" ${S.busy ? "disabled" : ""}>${S.busy === "handback" ? "Sending…" : "Hand the card back to the golfer"}</button>
+      <div class="row2"><button class="btn" data-act="card">Review card</button><button class="btn" data-act="fix-score">✎ Fix a score</button></div></footer>`;
 }
 
 /* ---------------- your cards ---------------- */
@@ -786,6 +858,8 @@ function render() {
     case "history": html = screenHistory(); break;
     case "view": html = S.view ? screenView(S.view) : screenHistory(); break;
     case "share": html = screenShare(); break;
+    case "caddie": html = c && c.caddie ? screenCaddieMember(c) : screenStart(); break;
+    case "caddie-join": html = screenCaddieJoin(); break;
     default: html = screenStart();
   }
   app.innerHTML = html;
@@ -822,7 +896,12 @@ async function loadGolfers(assocId) {
 function updateCard(fn) {
   const c = local.currentCard();
   if (!c) return;
-  try { saveCard(fn(c)); S.error = ""; }
+  try {
+    let next = fn(c);
+    if (next.caddieOf && JSON.stringify(scoresOf(next)) !== JSON.stringify(scoresOf(c))) next = { ...next, caddieOf: { ...next.caddieOf, changedAt: Date.now() } };
+    saveCard(next); S.error = "";
+    if (next.caddieOf) sendSoon();
+  }
   catch (e) { S.error = e.message; }
   render();
 }
@@ -830,6 +909,96 @@ function updateCard(fn) {
 function setScoreNow(pi, value) {
   updateCard((c) => card.setScore(c, pi, c.order[c.pos], value));
 }
+
+
+/* ---------------- caddie: sending and watching ---------------- */
+
+/* Scores by player and hole, the shape the worker keeps. */
+function scoresOf(c) {
+  return Object.fromEntries(c.players.map((p, i) => [String(i), Object.fromEntries(Object.entries(p.scores || {}).map(([n, v]) => [String(n), v]))]));
+}
+function withScores(c, scores) {
+  return { ...c, players: c.players.map((p, i) => ({ ...p, scores: Object.fromEntries(Object.entries((scores && scores[String(i)]) || {}).map(([n, v]) => [Number(n), v])) })) };
+}
+const firstOpen = (c) => { const k = c.order.findIndex((n) => !card.holeComplete(c, n)); return k < 0 ? c.order.length - 1 : k; };
+
+/* The caddie's phone: everything entered so far goes to the golfer, a moment
+   after the last change (the whole card each time, so a late or repeated send
+   does no harm). Kept on the phone until it has gone. */
+let sendTimer = null, sending = false;
+function sendSoon() { clearTimeout(sendTimer); sendTimer = setTimeout(() => sendNow(), 1200); }
+const STOPPED = {
+  TAKEN_BACK: "The golfer has taken the card back. Thank you.",
+  FINISHED: "This card is finished. Thank you.",
+  EXPIRED: "The code has stopped working (12 hours have passed). The golfer has the scores sent so far.",
+};
+function endCaddie(text) {
+  clearTimeout(sendTimer);
+  local.clearCurrent();
+  S.busy = ""; S.flash = text;
+  go("start");
+}
+async function sendNow() {
+  const c = local.currentCard();
+  if (!c || !c.caddieOf || sending) return;
+  const stamp = c.caddieOf.changedAt || 0;
+  const done = !!c.caddieOf.done;
+  sending = true;
+  try {
+    await db.caddieSend(c.caddieOf.liveId, scoresOf(c), done);
+    sending = false;
+    if (done) { endCaddie("Thank you. The card is with the golfer now, who checks it and posts it."); return; }
+    const now = local.currentCard();
+    if (now && now.caddieOf) { local.saveCurrent({ ...now, caddieOf: { ...now.caddieOf, sentAt: Math.max(stamp, now.caddieOf.sentAt || 0) || Date.now() } }); render(); }
+    if (now && now.caddieOf && (now.caddieOf.changedAt || 0) > stamp) sendSoon();
+  } catch (e) {
+    sending = false;
+    const m = String((e && e.message) || e);
+    if (STOPPED[m]) { endCaddie(STOPPED[m]); return; }
+    if (/not yours/.test(m)) { endCaddie("Another phone is scoring this card now."); return; }
+    S.busy = ""; render();   /* no signal: tried again when it returns */
+  }
+}
+
+/* The member's phone: what the caddie has entered, every few seconds while
+   the caddie screen is open. */
+let pollTimer = null;
+function startPolling() { clearTimeout(pollTimer); poll(); }
+async function poll() {
+  clearTimeout(pollTimer);
+  if (S.screen !== "caddie") return;
+  const c = local.currentCard();
+  if (!c || !c.caddie || c.caddie.ended) return;
+  try {
+    const st = await db.caddieStatus(c.caddie.liveId);
+    const cur = local.currentCard();
+    if (!cur || !cur.caddie || cur.caddie.liveId !== c.caddie.liveId) return;
+    let next = withScores(cur, st.scores);
+    next = { ...next, pos: firstOpen(next), caddie: { ...cur.caddie, joined: st.joined, lastAt: st.lastAt, status: st.status } };
+    if (st.status === "finished" || st.status === "expired" || st.status === "taken") {
+      const complete = card.cardComplete(next);
+      next = { ...next, caddie: { ...next.caddie, ended: true }, state: complete ? "finished" : "playing" };
+      saveCard(next);
+      S.flash = st.status === "finished" ? "Your caddie has finished. Check the card, then post it."
+        : st.status === "expired" ? "The caddie's code has stopped (12 hours passed). Carry on scoring yourself."
+        : "You are scoring this card now.";
+      go(complete ? "finish" : "play");
+      return;
+    }
+    saveCard(next);
+    if (S.screen === "caddie") render();
+  } catch { /* no signal: try again */ }
+  const again = local.currentCard();
+  pollTimer = setTimeout(poll, again && again.caddie && again.caddie.joined ? 8000 : 4000);
+}
+
+const joinWhy = (e) => {
+  const m = String((e && e.message) || e);
+  if (m === "OFFLINE") return "No signal. Joining a card needs a connection; try again when you have signal.";
+  if (m === "UNREACHABLE" || m === "TRY_LATER" || m === "NOT_SET_UP") return "The Marker could not be reached. Try again in a moment.";
+  if (m === "SIGN_IN") return "The Marker could not start on this phone. Close it, open it again and try once more.";
+  return m;
+};
 
 const actions = {
   home() { go("start"); refreshMine(); },
@@ -864,7 +1033,7 @@ const actions = {
     await loadGroupsAndGames();
     render();
   },
-  resume() { const c = local.currentCard(); go(c.state === "finished" ? "finish" : "play"); },
+  resume() { const c = local.currentCard(); if (c.caddie && !c.caddie.ended) { go("caddie"); startPolling(); return; } go(c.state === "finished" ? "finish" : "play"); },
   date(el) { S.setup.date = notFuture(shiftDate(S.setup.date, Number(el.dataset.v))); S.setup.game = null; render(); loadGames(); },
   "cal-open"() { cal.open = !cal.open; cal.month = null; cal.pick = null; cal.typed = ""; render(); },
   "cal-prev"() { cal.month = shiftMonth(cal.month || S.setup.date.slice(0, 7), -1); cal.pick = null; render(); },
@@ -1073,6 +1242,69 @@ const actions = {
     S.guestName = ""; S.error = ""; render();
   },
   unguest(el) { S.picked = S.picked.filter((p) => p.golferId || p.name !== el.dataset.v); render(); },
+  async "caddie-start"() {
+    if (S.busy) return;
+    const s = S.setup;
+    const c = card.newCard({ mode: "member", date: s.date, course: s.course, tee: s.tee, holes: s.holes, start: s.start, entry: s.entry, game: s.game, players: S.picked });
+    S.busy = "caddie"; S.error = ""; render();
+    let r;
+    try { r = await db.caddieStart(c); }
+    catch (e) { S.busy = ""; S.error = `${joinWhy(e)} You can tee off and score yourself instead.`; render(); return; }
+    try { saveCard({ ...c, caddie: { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt, joined: false } }); }
+    catch (e) { S.busy = ""; fail(e); return; }
+    S.busy = "";
+    go("caddie");
+    startPolling();
+  },
+  async "caddie-takeover"() {
+    const c = local.currentCard();
+    if (!c || !c.caddie) return;
+    if (c.caddie.joined && !window.confirm("Take over scoring yourself? Your caddie's phone stops at once; the scores entered so far stay on the card.")) return;
+    let st;
+    try { st = await db.caddieStop(c.caddie.liveId); }
+    catch (e) { S.error = `Taking over needs a signal, so that your caddie's phone is stopped first. ${joinWhy(e)}`; render(); return; }
+    clearTimeout(pollTimer);
+    const next = withScores(c, st.scores);
+    try { saveCard({ ...next, pos: firstOpen(next), caddie: { ...c.caddie, ended: true }, state: "playing" }); } catch (e) { fail(e); return; }
+    S.typing = false;
+    go("play");
+    keepAwake();
+  },
+  "caddie-open"() { S.error = ""; go("caddie-join"); },
+  async "caddie-join"() {
+    if (S.busy) return;
+    const code = (document.getElementById("caddiecode") || {}).value || "";
+    S.caddieCode = code;
+    if (code.replace(/[^A-Za-z0-9]/g, "").length !== 6) { S.error = "The code has six letters and numbers."; render(); return; }
+    const cur = local.currentCard();
+    if (cur && cur.state === "playing" && !cur.caddieOf && !confirmLeave(cur)) return;
+    S.busy = "join"; S.error = ""; render();
+    let r;
+    try { r = await db.caddieJoin(code); }
+    catch (e) { S.busy = ""; S.error = joinWhy(e); render(); return; }
+    const k = r.setup;
+    let c = card.newCard({ mode: "caddie", date: k.date, course: { name: k.course.name }, tee: k.tee, holes: k.holes, start: k.start,
+      entry: local.prefs().entry || "all", players: k.players.map((p) => ({ name: p.name })) });
+    c = withScores({ ...c, order: k.order.map(Number), players: c.players.map((p, i) => ({ ...p, ch: k.players[i].ch })) }, r.scores);
+    c = { ...c, pos: firstOpen(c), caddieOf: { liveId: r.liveId, sentAt: Date.now(), changedAt: 0 } };
+    try { saveCard(c); } catch (e) { S.busy = ""; fail(e); return; }
+    S.busy = ""; S.caddieCode = ""; S.typing = false;
+    S.flash = "Joined. Enter the scores as usual; they go to the golfer's phone.";
+    go("play");
+    keepAwake();
+  },
+  async "caddie-handback"() {
+    const c = local.currentCard();
+    if (!c || !c.caddieOf || S.busy) return;
+    try { saveCard({ ...c, caddieOf: { ...c.caddieOf, done: true } }); } catch (e) { fail(e); return; }
+    S.busy = "handback"; render();
+    await sendNow();
+    S.busy = ""; render();
+  },
+  "caddie-quit"() {
+    if (!window.confirm("Stop scoring this card? The scores already sent stay with the golfer, who can take over.")) return;
+    endCaddie("You have stopped scoring. The golfer has the scores sent so far.");
+  },
   "tee-off"() {
     const s = S.setup;
     const c = card.newCard({ mode: member() ? "member" : "guest", date: s.date, course: s.course, tee: s.tee, holes: s.holes, start: s.start, entry: s.entry, game: s.game, players: S.picked });
@@ -1488,6 +1720,7 @@ document.addEventListener("keydown", (e) => {
   else if (id === "guest") actions["add-guest"]();
   else if (id === "cq") actions.search();
   else if (id === "password") actions["sign-in"]();
+  else if (id === "caddiecode") actions["caddie-join"]();
 });
 
 document.addEventListener("click", async (e) => {
@@ -1516,10 +1749,19 @@ async function boot() {
   window.__markerBooted = true;
   const c = local.currentCard();
   if (c && c.state === "posting") S.screen = "status";
+  try {
+    const u = new URL(location.href);
+    const code = u.searchParams.get("caddie");
+    if (code) {
+      S.caddieCode = code; S.screen = "caddie-join";
+      u.searchParams.delete("caddie"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
+    }
+  } catch {}
+  if (c && c.caddieOf && c.caddieOf.done) sendNow();
   try { db.dropReplaced(); } catch {}
   render();
   refreshMine(true);
 }
-addEventListener("online", () => render());
+addEventListener("online", () => { render(); const c = local.currentCard(); if (c && c.caddieOf) sendNow(); if (S.screen === "caddie") startPolling(); });
 addEventListener("offline", () => render());
 boot();

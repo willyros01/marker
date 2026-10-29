@@ -241,7 +241,7 @@ export async function plan(fs, sub, today) {
   const trusted = {
     id: sub.id, mode: "member", date: c.date, holes: "18", start: order[0], order,
     course: { providerId: c.course.providerId || null, name: String(c.course.name).trim(), where: c.course.where || "" },
-    tee, game, players,
+    tee, game, players, ...(c.scoredBy === "caddie" ? { scoredBy: "caddie" } : {}),
   };
 
   const rounds = {};

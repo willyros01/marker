@@ -210,3 +210,10 @@ h3.sec { font-family: var(--serif); font-size: 23px; font-weight: 600; margin: 4
 .item.amb .meta { color: #5C3D0A; }
 .item .row2 { margin-top: 8px; }
 .item .row2 .btn { min-height: 50px; }
+
+/* Caddie scoring (Willy, 29 Oct 2026): a quiet icon on the first screen, the code and its QR square. */
+.caddie-icon { align-self: center; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; color: var(--ink-3); min-width: 64px; min-height: 64px; padding: 6px; font-size: 15px; }
+.qrbox { align-self: center; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px; width: min(260px, 70vw); }
+.qr { display: block; width: 100%; height: auto; }
+.bigcode { text-align: center; font-size: 40px; font-weight: 800; letter-spacing: 6px; }
+.bigcode-in { font-size: 30px !important; font-weight: 800; letter-spacing: 6px; text-align: center; text-transform: uppercase; }

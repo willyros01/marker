@@ -329,6 +329,7 @@ export function submissionCard(c) {
     },
     game: c.game ? { id: c.game.id, name: c.game.name || "", assocId: c.game.assocId } : null,
     ...(c.repostOf ? { repostOf: c.repostOf } : {}),
+    ...(c.caddie ? { scoredBy: "caddie" } : {}),
     players: members.map((p) => ({
       golferId: p.golferId, assocId: p.assocId, name: p.name,
       scores: Object.fromEntries(c.order.map((n) => [String(n), p.scores[n]])),
@@ -440,3 +441,21 @@ export async function saveCorrection(cardId, scores) {
   if (!user || user.anonymous) throw new Error("SIGN_IN");
   return callWorker("/correct", { method: "POST", body: { cardId, scores } });
 }
+
+/* ---------------- a caddie scores the card (Willy, 29 Oct 2026) ---------------- */
+
+/* The member: a code for the caddie. Only what a caddie needs is sent. */
+export async function caddieStart(c) {
+  const payload = { id: c.id, date: c.date, holes: c.holes, start: c.start, order: c.order, course: { name: c.course.name }, tee: c.tee,
+    players: c.players.map((p) => ({ name: p.name, ch: p.ch, scores: p.scores })) };
+  return callWorker("/caddie/start", { method: "POST", body: { card: payload } });
+}
+export const caddieStatus = (liveId) => callWorker("/caddie/status", { method: "POST", body: { liveId } });
+export const caddieStop = (liveId) => callWorker("/caddie/stop", { method: "POST", body: { liveId } });
+
+/* The caddie: joining needs a sign-in, so an anonymous one is made first. */
+export async function caddieJoin(code) {
+  if (!user) await playWithoutAccount();
+  return callWorker("/caddie/join", { method: "POST", body: { code } });
+}
+export const caddieSend = (liveId, scores, done = false) => callWorker("/caddie/scores", { method: "POST", body: { liveId, scores, done } });
