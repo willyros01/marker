@@ -209,6 +209,24 @@ two Royal Ontario cards are hidden and can still be re-posted from the phone if 
   the freeze.
 - Tests: test/unit/owner.test.mjs (O1-O5).
 
+## Caddie scoring (Willy, 29 Oct 2026) — version 0.7.0
+
+- A member taps "Let my caddie score" on Who's playing?: the worker makes markerLive/{liveId} (owner, setup
+  with names and course handicaps only, scores, status) and markerCaddieCodes/{CODE} (6 characters, no 0/O/1/I).
+  The member's phone shows the code and a QR square (vendor/qrcode, MIT) holding
+  https://willyros01.github.io/marker/?caddie=CODE, which opens the Join screen with the code filled in.
+- The caddie (no account, anonymous sign-in) taps the small Caddie icon on the first screen (shown only when
+  no member is signed in), types the code and scores with the usual screens. The whole card is sent a moment
+  after each change (one send at a time); no Post button; "Hand the card back to the golfer" ends it.
+- The member's phone asks for the scores every 4 s (waiting) or 8 s (caddie connected) while the caddie screen
+  is open; "Take over scoring myself" stops the code at once (needs a signal). Finished cards go to the
+  usual Round finished screen, posted by the member; rounds note "by a caddie" (scoredBy on the card).
+- Code stops on take-over, finish, or after 12 hours. One caddie per card (the same phone may rejoin). A phone
+  gets 20 wrong codes a day. Willy's choices: phone camera or typed code (no scanner in the app), 12 hours.
+- Everything goes through the worker (service account); no Firestore rule change.
+- Tests: test/unit/caddie.test.mjs (K1-K10); two browsers end to end: test/ui/run-caddie.sh, workflow
+  ui-caddie.yml (screenshots in ci-logs logs/ui-caddie/).
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").
