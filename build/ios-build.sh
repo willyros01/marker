@@ -19,6 +19,9 @@ echo "--- 1. Tests"
 npm test
 echo "--- 2. Capacitor $CAP (installed for this build only)"
 npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/ios@$CAP" "@capacitor/app@8.1.1"
+# The link piece must be listed in package.json, or "cap sync" leaves it out of
+# the app and scanned links never reach it (0.8.3, Willy 29 Oct 2026).
+npm pkg set "dependencies.@capacitor/app=8.1.1"
 
 echo "--- 3. The web files (same list as Android)"
 rm -rf www && mkdir -p www
@@ -32,7 +35,8 @@ test -s www/index.html && test -s www/firebase-config.js
 echo "--- 4. The iOS project (fresh every build)"
 rm -rf ios
 npx cap add ios
-npx cap sync ios
+npx cap sync ios 2>&1 | tee "${RUNNER_TEMP:-/tmp}/capsync.log"
+grep -q "@capacitor/app" "${RUNNER_TEMP:-/tmp}/capsync.log" || { echo "RESULT: the link piece (@capacitor/app) is not in the app; links would not open it"; exit 1; }
 cp build/ios/PrivacyInfo.xcprivacy ios/App/App/PrivacyInfo.xcprivacy
 cp build/ios/App.entitlements ios/App/App/App.entitlements
 ruby -e 'require "xcodeproj"' 2>/dev/null || gem install xcodeproj --user-install --no-document

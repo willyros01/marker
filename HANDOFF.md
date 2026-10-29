@@ -266,6 +266,15 @@ useLink(): a link the app cannot use shows on the first screen, in full, so
 the next scan tells us what the iPad hands over (or, if nothing shows, that no
 link reaches the app at all).
 
+0.8.3: the real cause. Caddie scans failed on the iPad too. The builds
+installed @capacitor/app with --no-save, so it was never in package.json, and
+"cap sync" only packs plugins listed there: the app had no App plugin, so
+listenForCaddieLinks() returned at once and no link ever reached the app (The
+Scorecard lists it in package.json, which is why its invitations work). The
+iOS, Android and device-test builds now run npm pkg set
+dependencies.@capacitor/app=8.1.1 before cap sync, and stop if the sync output
+does not mention @capacitor/app.
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").

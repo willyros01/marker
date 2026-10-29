@@ -7,6 +7,7 @@ set -Eeuo pipefail
 CAP=8.5.2
 rm -rf /tmp/mk && mkdir -p /tmp/mk && git archive HEAD | tar -x -C /tmp/mk && cd /tmp/mk
 npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/android@$CAP" "@capacitor/app@8.1.1" > /dev/null 2>&1
+npm pkg set "dependencies.@capacitor/app=8.1.1"
 mkdir -p www
 while IFS= read -r line; do
   line="${line%%#*}"; line="${line//[[:space:]]/}"; [ -n "$line" ] || continue
@@ -26,6 +27,7 @@ json.dump(c, open('capacitor.config.json', 'w'), indent=2)
 print('Marker test copy: emulators only, test project demo-scorecard')
 PY
 npx cap add android > /tmp/mcap.log 2>&1 && npx cap sync android >> /tmp/mcap.log 2>&1 || { tail -40 /tmp/mcap.log; exit 1; }
+grep -q "@capacitor/app" /tmp/mcap.log || { echo "the link piece (@capacitor/app) is not in the app"; exit 1; }
 bash build/android-native.sh
 python3 - <<'PY'
 p='android/app/src/main/AndroidManifest.xml'; s=open(p).read()

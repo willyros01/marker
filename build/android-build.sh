@@ -6,6 +6,9 @@ cd "$(dirname "$0")/.."
 CAP=8.5.2
 npm test
 npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/android@$CAP" "@capacitor/app@8.1.1"
+# The link piece must be listed in package.json, or "cap sync" leaves it out of
+# the app and scanned links never reach it (0.8.3, Willy 29 Oct 2026).
+npm pkg set "dependencies.@capacitor/app=8.1.1"
 rm -rf www android
 mkdir -p www
 while IFS= read -r line; do
@@ -16,7 +19,8 @@ while IFS= read -r line; do
 done < build/www-files.txt
 test -s www/index.html && test -s www/firebase-config.js && test -s www/vendor/firebase/firebase-10.12.0.js
 npx cap add android
-npx cap sync android
+npx cap sync android 2>&1 | tee "${RUNNER_TEMP:-/tmp}/capsync.log"
+grep -q "@capacitor/app" "${RUNNER_TEMP:-/tmp}/capsync.log" || { echo "RESULT: the link piece (@capacitor/app) is not in the app; links would not open it"; exit 1; }
 bash build/android-native.sh
 export MARKER_ANDROID_BUILD="${GITHUB_RUN_NUMBER:-1}"
 python3 - <<'PY'
