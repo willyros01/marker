@@ -1,7 +1,7 @@
 /* Caddie scoring, end to end in two browsers (member and caddie), against the
  * Firebase emulators and the worker stand-in (caddie-server.mjs). Run by
  * test/ui/run-caddie.sh. Screenshots go to $SHOTS. */
-import { chromium } from "playwright";
+import { chromium, webkit } from "playwright";
 import { client, setWrite } from "../../worker/src/firestore.js";
 
 const APP = "http://127.0.0.1:8099/?emulators";
@@ -20,7 +20,8 @@ await fs.commit([
   setWrite(fs, "markerConfig/public", { workerUrl: "http://127.0.0.1:8788", version: "test" }),
 ]);
 
-const browser = await chromium.launch();
+const browser = await (process.env.BROWSER === "webkit" ? webkit : chromium).launch();
+console.log("browser:", process.env.BROWSER || "chromium");
 const phone = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 };
 const member = await (await browser.newContext(phone)).newPage();
 const cad = await (await browser.newContext(phone)).newPage();
@@ -63,7 +64,8 @@ await member.waitForSelector('[data-act="new-round"]', { timeout: 20000 });
 ok(!(await member.locator('[data-act="caddie-open"]').count()), "a signed-in member's first screen has no Caddie icon");
 const code = await memberToCode();
 ok(/^[A-Z2-9]{6}$/.test(code), `the member gets a code (${code}) and a QR square`);
-ok(await member.locator("svg.qr").count() === 1, "the QR square is shown");
+const box = await member.locator("svg.qr").boundingBox();
+ok(box && box.width >= 200 && box.height >= 200, `the QR square is shown, ${box && Math.round(box.width)} x ${box && Math.round(box.height)}`);
 await shot(member, "02-member-code");
 
 /* 2. the caddie, with no account, joins with the code typed loosely */

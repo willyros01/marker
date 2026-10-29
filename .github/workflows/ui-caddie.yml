@@ -32,25 +32,31 @@ jobs:
         run: |
           npm install -g firebase-tools@15.31.0
           npm install --no-save --no-audit --no-fund playwright@1.48.2
-          npx playwright@1.48.2 install --with-deps chromium
-      - name: Run
+          npx playwright@1.48.2 install --with-deps chromium webkit
+      - name: Run (Chrome, as on Android)
         env: { SHOTS: /tmp/shots }
         run: |
           set -o pipefail
           bash test/ui/run-caddie.sh 2>&1 | tee ui.log
+      - name: Run (WebKit, as on iPhone and iPad)
+        env: { SHOTS: /tmp/shots/webkit, BROWSER: webkit }
+        run: |
+          set -o pipefail
+          bash test/ui/run-caddie.sh 2>&1 | tee ui-webkit.log
       - name: Save the log and screenshots to the ci-logs branch
         if: always()
         run: |
           set -e
           dir="logs/ui-caddie/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
-          mkdir -p "/tmp/$dir"; cp ui.log "/tmp/$dir/" 2>/dev/null || true; cp /tmp/shots/*.png "/tmp/$dir/" 2>/dev/null || true
+          mkdir -p "/tmp/$dir"; cp ui.log ui-webkit.log "/tmp/$dir/" 2>/dev/null || true; cp /tmp/shots/*.png "/tmp/$dir/" 2>/dev/null || true
+          mkdir -p "/tmp/$dir/webkit"; cp /tmp/shots/webkit/*.png "/tmp/$dir/webkit/" 2>/dev/null || true
           cp /tmp/caddie-server.log "/tmp/$dir/" 2>/dev/null || true
           git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
           for i in 1 2 3; do
             git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
             git rm -rq --cached . 2>/dev/null || true
             find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
-            mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+            mkdir -p "$dir"; cp -R /tmp/$dir/* "$dir/" 2>/dev/null || true
             git add logs && git commit -qm "ui-caddie ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs && break
             sleep 5
           done

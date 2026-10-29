@@ -713,7 +713,9 @@ function qrSvg(text) {
   const n = q.getModuleCount(), m = 4, size = n + m * 2;
   let d = "";
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c + m} ${r + m}h1v1h-1z`;
-  return `<svg class="qr" viewBox="0 0 ${size} ${size}" role="img" aria-label="Code for the caddie: ${esc(spaced(text.slice(-6)))}"><rect width="${size}" height="${size}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+  /* A fixed size in pixels: WebKit (iPhone, iPad) can draw an SVG sized only
+     by CSS as nothing at all. */
+  return `<svg class="qr" width="240" height="240" viewBox="0 0 ${size} ${size}" role="img" aria-label="Code for the caddie: ${esc(spaced(text.slice(-6)))}"><rect width="${size}" height="${size}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
 }
 
 function screenCaddieMember(c) {
