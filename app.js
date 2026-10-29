@@ -759,7 +759,7 @@ function screenCaddieFinish(c) {
     <main class="body">${banner()}
       <p class="muted">Check the totals with the golfers, then hand the card back. The golfer checks it again and posts it.</p>
       ${summaries(c)}
-      ${sent ? `<div class="banner warn">Not sent yet: no signal. It is sent by itself as soon as the signal returns. Keep The Marker open.</div>` : ""}</main>
+      ${sent && S.busy !== "handback" ? `<div class="banner warn">Not sent yet: no signal. It is sent by itself as soon as the signal returns. Keep The Marker open.</div>` : ""}</main>
     <footer class="foot"><button class="btn primary" data-act="caddie-handback" ${S.busy ? "disabled" : ""}>${S.busy === "handback" ? "Sending…" : "Hand the card back to the golfer"}</button>
       <div class="row2"><button class="btn" data-act="card">Review card</button><button class="btn" data-act="fix-score">✎ Fix a score</button></div></footer>`;
 }
@@ -925,7 +925,7 @@ const firstOpen = (c) => { const k = c.order.findIndex((n) => !card.holeComplete
 /* The caddie's phone: everything entered so far goes to the golfer, a moment
    after the last change (the whole card each time, so a late or repeated send
    does no harm). Kept on the phone until it has gone. */
-let sendTimer = null, sending = false;
+let sendTimer = null, sending = false, again = false;
 function sendSoon() { clearTimeout(sendTimer); sendTimer = setTimeout(() => sendNow(), 1200); }
 const STOPPED = {
   TAKEN_BACK: "The golfer has taken the card back. Thank you.",
@@ -938,25 +938,35 @@ function endCaddie(text) {
   S.busy = ""; S.flash = text;
   go("start");
 }
+/* One send at a time; anything asked for meanwhile (a new score, or handing
+   the card back) is sent straight after. */
 async function sendNow() {
+  if (sending) { again = true; return; }
   const c = local.currentCard();
-  if (!c || !c.caddieOf || sending) return;
+  if (!c || !c.caddieOf) return;
   const stamp = c.caddieOf.changedAt || 0;
   const done = !!c.caddieOf.done;
-  sending = true;
+  sending = true; again = false;
+  let ended = false;
   try {
     await db.caddieSend(c.caddieOf.liveId, scoresOf(c), done);
-    sending = false;
-    if (done) { endCaddie("Thank you. The card is with the golfer now, who checks it and posts it."); return; }
+    if (done) { ended = true; endCaddie("Thank you. The card is with the golfer now, who checks it and posts it."); return; }
     const now = local.currentCard();
-    if (now && now.caddieOf) { local.saveCurrent({ ...now, caddieOf: { ...now.caddieOf, sentAt: Math.max(stamp, now.caddieOf.sentAt || 0) || Date.now() } }); render(); }
-    if (now && now.caddieOf && (now.caddieOf.changedAt || 0) > stamp) sendSoon();
+    if (now && now.caddieOf) {
+      local.saveCurrent({ ...now, caddieOf: { ...now.caddieOf, sentAt: Math.max(stamp, now.caddieOf.sentAt || 0) || Date.now() } });
+      if ((now.caddieOf.changedAt || 0) > stamp || (now.caddieOf.done && !done)) again = true;
+      render();
+    }
   } catch (e) {
-    sending = false;
     const m = String((e && e.message) || e);
-    if (STOPPED[m]) { endCaddie(STOPPED[m]); return; }
-    if (/not yours/.test(m)) { endCaddie("Another phone is scoring this card now."); return; }
-    S.busy = ""; render();   /* no signal: tried again when it returns */
+    if (STOPPED[m]) { ended = true; endCaddie(STOPPED[m]); return; }
+    if (/not yours/.test(m)) { ended = true; endCaddie("Another phone is scoring this card now."); return; }
+    again = false;   /* no signal: tried again when it returns */
+    if (S.busy === "handback") { S.busy = ""; render(); }
+  } finally {
+    sending = false;
+    if (ended) again = false;
+    if (again) { again = false; sendNow(); }
   }
 }
 
@@ -1299,7 +1309,6 @@ const actions = {
     try { saveCard({ ...c, caddieOf: { ...c.caddieOf, done: true } }); } catch (e) { fail(e); return; }
     S.busy = "handback"; render();
     await sendNow();
-    S.busy = ""; render();
   },
   "caddie-quit"() {
     if (!window.confirm("Stop scoring this card? The scores already sent stay with the golfer, who can take over.")) return;
