@@ -1116,11 +1116,22 @@ async function watchPoll() {
   if (S.screen === "follow-view") render();
   if (S.watch && S.watch.status !== "finished") watchTimer = setTimeout(watchPoll, 12000);
 }
-async function openFollow(code) {
+/* A first try right as the phone hands a link to the app can fail: the app
+   has only just woken up. Those failures are tried once more (Willy, 29 Oct 2026). */
+const wakeFailure = (e) => {
+  const m = String((e && e.message) || e);
+  return ["OFFLINE", "UNREACHABLE", "TRY_LATER", "SIGN_IN"].includes(m) || (e && e.name === "TypeError") || /network|fetch|load failed/i.test(m);
+};
+async function openFollow(code, { retry = false } = {}) {
   S.busy = "follow"; S.error = ""; render();
   let v;
   try { v = await db.followView(code); }
-  catch (e) { S.busy = ""; S.error = joinWhy(e); render(); return; }
+  catch (e) {
+    if (retry && wakeFailure(e)) { await new Promise((r) => setTimeout(r, 2500)); return openFollow(code); }
+    S.busy = ""; S.followCode = code;
+    if (S.screen !== "follow-join") go("follow-join");
+    S.error = joinWhy(e); render(); return;
+  }
   S.busy = ""; S.followCode = "";
   S.watch = { code, ...v, stale: false };
   try { local.save("following", { code, course: v.setup.course.name }); } catch { /* following still works without it */ }
@@ -1915,9 +1926,16 @@ function followCodeFrom(url) {
     return (u.searchParams.get("follow") || "").slice(0, 12);
   } catch { return ""; }
 }
+/* A follow link (QR scan or web address): the Follow screen with the code
+   filled in, like a caddie link, then the card opens from there. */
+function followLink(code) {
+  S.followCode = code; S.watch = null; clearTimeout(watchTimer);
+  go("follow-join");
+  openFollow(code, { retry: true });
+}
 function openCaddieLink(url) {
   const f = followCodeFrom(url);
-  if (f) { openFollow(f); return true; }
+  if (f) { followLink(f); return true; }
   const code = caddieCodeFrom(url);
   if (!code) return false;
   S.caddieCode = code; S.error = "";
@@ -1949,7 +1967,7 @@ async function boot() {
       u.searchParams.delete("caddie"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
     } else if (fcode) {
       u.searchParams.delete("follow"); history.replaceState(null, "", u.pathname + (u.search || "") + u.hash);
-      setTimeout(() => openFollow(fcode), 0);
+      setTimeout(() => followLink(fcode), 0);
     }
   } catch {}
   if (c && c.caddieOf && c.caddieOf.done) sendNow();

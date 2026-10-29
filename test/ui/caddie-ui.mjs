@@ -166,5 +166,12 @@ await fan2.goto(`${APP}&follow=${fcode}`);
 await fan2.waitForFunction(() => document.body.innerText.includes("Following"), null, { timeout: 20000 });
 ok(true, "the follow link opens the card directly");
 
+/* 10. a follow link that can't open shows the Follow screen with the code and the reason, never a silent first screen */
+const fan3 = await (await browser.newContext(phone)).newPage();
+await fan3.goto(`${APP}&follow=ZZZZ22`);
+await fan3.waitForSelector('[role="alert"]', { timeout: 20000 });
+ok((await fan3.inputValue("#followcode")) === "ZZZZ22", "a failed follow link leaves the code filled in on the Follow screen");
+ok(/doesn't work/.test(await fan3.locator('[role="alert"]').innerText()), "and says why");
+
 await browser.close();
 console.log("ALL PASSED");

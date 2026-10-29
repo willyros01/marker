@@ -249,6 +249,17 @@ two Royal Ontario cards are hidden and can still be re-posted from the phone if 
 - Option B (a live leaderboard for a game, for tournaments) is for later, built on this.
 - Tests: test/unit/follow.test.mjs (F1-F6); the two-browser test (ui-caddie.yml) also follows a card.
 
+## Follow links open the Follow screen first — version 0.8.1
+
+Willy (29 Oct 2026): scanning a follow QR on the iPad opened The Marker but
+stayed on the first screen, while typing the same code worked and caddie scans
+worked. A follow link used to fetch the card the instant the app woke up; a
+caddie link only opens a screen. Now a follow link (app link or ?follow=) goes
+to the Follow screen with the code filled in, like a caddie link, then opens
+the card from there, trying once more after 2.5 s if the first try fails for a
+network or start-up reason. Any failure is shown on the Follow screen with the
+code still filled in. Browser test step 10 covers a link with a wrong code.
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").
