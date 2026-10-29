@@ -11,6 +11,7 @@ on:
       - card.js
       - styles.css
       - worker/src/caddie.js
+      - worker/src/follow.js
       - test/ui/**
       - .github/workflows/ui-caddie.yml
   workflow_dispatch:

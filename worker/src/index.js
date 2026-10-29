@@ -20,6 +20,9 @@
  *   POST /caddie/stop {liveId}       -> { status }   the member takes the card back
  *   POST /caddie/join {code}         -> { liveId, setup, scores }   any sign-in (a caddie needs no account)
  *   POST /caddie/scores {liveId, scores, done} -> { status }   the caddie who joined
+ *   POST /follow/start {card | liveId}  -> { liveId, code }   members: a follow code for their card
+ *   POST /follow/scores {liveId, scores, done} -> { status }  the member's own scores, for followers
+ *   POST /follow/view {code}         -> { setup, scores, lastAt, status }   any sign-in, read-only
  *   every 5 minutes          -> posts a card still waiting (one per run)
  *   GET  /cleanup-status     -> { ok, lastRun, hoursAgo, ... }  no sign-in; 503 when the
  *                               daily clean-up has not run for 48 hours (cron-job.org watchdog)
@@ -38,6 +41,7 @@ import * as fix from "./correct.js";
 import { Refusal } from "./post.js";
 import { cleanGolfers, cleanupStatus } from "./cleanup.js";
 import * as caddie from "./caddie.js";
+import * as follow from "./follow.js";
 
 /* Must match the daily line in wrangler.toml. 07:00 UTC = 3 am Toronto (summer), 2 am (winter). */
 const DAILY = "0 7 * * *";
@@ -136,6 +140,17 @@ export default {
           if (url.pathname === "/caddie/stop") return reply(await caddie.stop(fs, who, body.liveId), 200, h);
           if (url.pathname === "/caddie/join") return reply(await caddie.join(fs, who, body.code), 200, h);
           if (url.pathname === "/caddie/scores") return reply(await caddie.scores(fs, who, body), 200, h);
+        } catch (e) {
+          if (e instanceof Refusal) return reply({ error: "REFUSED", reason: e.message }, 200, h);
+          throw e;
+        }
+      }
+      if (url.pathname.startsWith("/follow/") && req.method === "POST") {
+        const body = await req.json().catch(() => ({}));
+        try {
+          if (url.pathname === "/follow/start") return reply(await follow.start(fs, who, { card: body.card, liveId: body.liveId || null }), 200, h);
+          if (url.pathname === "/follow/scores") return reply(await follow.scores(fs, who, body), 200, h);
+          if (url.pathname === "/follow/view") return reply(await follow.view(fs, who, body.code), 200, h);
         } catch (e) {
           if (e instanceof Refusal) return reply({ error: "REFUSED", reason: e.message }, 200, h);
           throw e;

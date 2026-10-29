@@ -5,6 +5,7 @@
 import http from "node:http";
 import { client } from "../../worker/src/firestore.js";
 import * as caddie from "../../worker/src/caddie.js";
+import * as follow from "../../worker/src/follow.js";
 import { Refusal } from "../../worker/src/post.js";
 
 const fs = client({ project: process.env.PROJECT || "demo-marker", base: "http://127.0.0.1:8080/v1", token: async () => "owner" });
@@ -19,6 +20,9 @@ const routes = {
   "/caddie/stop": (w, b) => caddie.stop(fs, w, b.liveId),
   "/caddie/join": (w, b) => caddie.join(fs, w, b.code),
   "/caddie/scores": (w, b) => caddie.scores(fs, w, b),
+  "/follow/start": (w, b) => follow.start(fs, w, { card: b.card, liveId: b.liveId || null }),
+  "/follow/scores": (w, b) => follow.scores(fs, w, b),
+  "/follow/view": (w, b) => follow.view(fs, w, b.code),
 };
 http.createServer(async (req, res) => {
   const h = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Authorization, Content-Type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Content-Type": "application/json" };

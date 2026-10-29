@@ -217,3 +217,4 @@ h3.sec { font-family: var(--serif); font-size: 23px; font-weight: 600; margin: 4
 .qr { display: block; width: 100%; height: auto; }
 .bigcode { text-align: center; font-size: 40px; font-weight: 800; letter-spacing: 6px; }
 .bigcode-in { font-size: 30px !important; font-weight: 800; letter-spacing: 6px; text-align: center; text-transform: uppercase; }
+.icon-row { display: flex; justify-content: center; gap: 28px; }

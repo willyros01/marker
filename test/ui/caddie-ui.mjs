@@ -126,5 +126,44 @@ await cad.waitForFunction(() => document.body.innerText.includes("stopped workin
 ok(true, "the code stops working after the take-over");
 await shot(cad, "10-caddie-code-stopped");
 
+/* 8. following a card the member scores: read-only, live */
+const fan = await (await browser.newContext(phone)).newPage();
+fan.on("dialog", (d) => d.accept());
+await member.goto(APP); await member.waitForSelector('[data-act="new-round"]', { timeout: 20000 });
+await act(member, "new-round");
+await act(member, "go-course");
+await member.waitForSelector('[data-act="pick-saved"]', { timeout: 20000 });
+await member.locator('[data-act="pick-saved"]').first().click();
+await member.waitForSelector('[data-act="tee"]'); await act(member, "tee", 0);
+await act(member, "go-players");
+for (const n of ["Ana Cruz", "Ben Reyes"]) { await member.fill("#guest", n); await act(member, "add-guest"); }
+await act(member, "tee-off");
+await member.waitForSelector('[data-act="menu"]');
+await act(member, "menu");
+await act(member, "follow-start");
+await member.waitForSelector(".bigcode", { timeout: 20000 });
+const fcode = (await member.locator(".bigcode").innerText()).replace(/\s/g, "");
+ok(/^[A-Z2-9]{6}$/.test(fcode), `the member gets a follow code (${fcode})`);
+await shot(member, "11-member-follow-code");
+await member.click('[data-act="follow-back"]');
+await member.waitForSelector('[data-act="score"], [data-act="plus"]');
+await fan.goto(APP); await fan.waitForSelector('[data-act="follow-open"]', { timeout: 20000 });
+await shot(fan, "12-follower-first-screen");
+await act(fan, "follow-open");
+await fan.fill("#followcode", fcode);
+await act(fan, "follow-join");
+await fan.waitForFunction(() => document.body.innerText.includes("Following"), null, { timeout: 20000 });
+ok(!(await fan.locator('[data-act="score"], [data-act="plus"], [data-act="jump"]').count()), "the follower sees the card read-only");
+for (let i = 0; i < 2; i++) { if (await member.locator('[data-act="who"]').count()) { await act(member, "who", i); await act(member, "score", i === 0 ? 3 : 6); } else { await member.locator(`[data-act="plus"][data-v="${i}"]`).click(); } }
+await fan.waitForFunction(() => /Updated at/.test(document.body.innerText) && /\b3\b/.test(document.body.innerText), null, { timeout: 40000 });
+ok(true, "the member's scores reach the follower by themselves");
+await shot(fan, "13-follower-live");
+
+/* 9. a follow link opens the card straight away */
+const fan2 = await (await browser.newContext(phone)).newPage();
+await fan2.goto(`${APP}&follow=${fcode}`);
+await fan2.waitForFunction(() => document.body.innerText.includes("Following"), null, { timeout: 20000 });
+ok(true, "the follow link opens the card directly");
+
 await browser.close();
 console.log("ALL PASSED");

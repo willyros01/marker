@@ -459,3 +459,20 @@ export async function caddieJoin(code) {
   return callWorker("/caddie/join", { method: "POST", body: { code } });
 }
 export const caddieSend = (liveId, scores, done = false) => callWorker("/caddie/scores", { method: "POST", body: { liveId, scores, done } });
+
+/* ---------------- following a card live, read-only (Willy, 29 Oct 2026) ---------------- */
+
+/* The member: a follow code. A card a caddie is scoring already has a live
+   copy (its liveId); otherwise the card itself is sent. */
+export async function followStart(c) {
+  const body = c.caddie && c.caddie.liveId ? { liveId: c.caddie.liveId }
+    : { card: { id: c.id, date: c.date, holes: c.holes, start: c.start, order: c.order, course: { name: c.course.name }, tee: c.tee,
+        players: c.players.map((p) => ({ name: p.name, ch: p.ch, scores: p.scores })) } };
+  return callWorker("/follow/start", { method: "POST", body });
+}
+export const followSend = (liveId, scores, done = false) => callWorker("/follow/scores", { method: "POST", body: { liveId, scores, done } });
+/* A follower needs no account: an anonymous sign-in is made if nobody is signed in. */
+export async function followView(code) {
+  if (!user) await playWithoutAccount();
+  return callWorker("/follow/view", { method: "POST", body: { code } });
+}

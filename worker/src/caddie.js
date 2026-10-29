@@ -20,19 +20,19 @@ import { Refusal } from "./post.js";
 
 export const HOURS = 12;
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   /* no 0/O, 1/I */
-const MAX_TRIES = 20;                                   /* wrong codes a phone may try per day */
+export const MAX_TRIES = 20;                                   /* wrong codes a phone may try per day */
 const refuse = (why) => { throw new Refusal(why); };
 const day = (now) => new Date(now).toISOString().slice(0, 10);
 
 export const cleanCode = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "").replace(/O/g, "0").replace(/I/g, "1");
-function newCode(rand = Math.random) {
+export function newCode(rand = Math.random) {
   let s = "";
   for (let i = 0; i < 6; i++) s += ALPHABET[Math.floor(rand() * ALPHABET.length)];
   return s;
 }
 
 /* Only what a caddie needs to score, never golfer or group ids. */
-function setupFrom(c) {
+export function setupFrom(c) {
   if (!c || typeof c !== "object") refuse("The card is empty.");
   const order = (Array.isArray(c.order) ? c.order : []).map(Number);
   if (!order.length || order.length > 18 || order.some((n) => !(n >= 1 && n <= 18)) || new Set(order).size !== order.length) refuse("The card has no proper holes.");
@@ -52,7 +52,7 @@ function setupFrom(c) {
 }
 
 /* Scores from a phone: { "<player index>": { "<hole>": 1..20 | "X" } } for the card's holes only. */
-function cleanScores(raw, setup) {
+export function cleanScores(raw, setup) {
   const out = {};
   setup.players.forEach((_, i) => {
     const mine = raw && typeof raw === "object" ? raw[i] || raw[String(i)] || {} : {};
@@ -120,7 +120,7 @@ export async function stop(fs, who, liveId, { now = Date.now() } = {}) {
   return view({ ...d.data, status: d.data.status === "open" ? "taken" : d.data.status }, now);
 }
 
-async function wrongTry(fs, who, now) {
+export async function wrongTry(fs, who, now) {
   const at = `markerLimits/caddie-${who.uid}`;
   const d = await fs.get(at);
   const used = d && d.data.day === day(now) ? Number(d.data.count) || 0 : 0;
