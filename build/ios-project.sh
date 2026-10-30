@@ -32,6 +32,16 @@ cp build/ios/App.entitlements ios/App/App/App.entitlements
 
 # The app's own bridge with the WatchLink plugin ("Send to my watch", 0.9.0).
 cp build/ios/native/MarkerViewController.swift build/ios/native/WatchLinkPlugin.swift ios/App/App/
+# Capacitor 8 starts the app from SceneDelegate.swift, which makes the bridge
+# itself (the storyboard below is not used then): it must make ours (0.9.5).
+SD=ios/App/App/SceneDelegate.swift
+if [ -f "$SD" ]; then
+  perl -pi -e 's/CAPBridgeViewController\(\)/MarkerViewController()/g' "$SD"
+  grep -q 'MarkerViewController()' "$SD" || { echo "RESULT: SceneDelegate.swift does not start MarkerViewController"; cat "$SD"; exit 1; }
+fi
+if grep -rn 'CAPBridgeViewController()' ios/App/App --include=*.swift; then
+  echo "RESULT: the app would still start without the watch link (CAPBridgeViewController() above)"; exit 1
+fi
 SB=ios/App/App/Base.lproj/Main.storyboard
 perl -pi -e 's/customClass="CAPBridgeViewController" customModule="Capacitor"/customClass="MarkerViewController" customModule="App" customModuleProvider="target"/' "$SB"
 grep -q 'customClass="MarkerViewController"' "$SB" || { echo "RESULT: Main.storyboard was not pointed at MarkerViewController"; grep -n customClass "$SB" || true; exit 1; }

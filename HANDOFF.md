@@ -318,6 +318,12 @@ shows "Posted · following has ended", then clears itself the next time it is
 opened at least 10 minutes later; clears after 12 hours or when the code
 stops working (message on the No card yet screen). Test F7.
 
+0.9.5: on Willy's iPhone the button said the watch link was missing: the
+WatchLink plugin was never registered. Capacitor 8's SceneDelegate.swift makes
+CAPBridgeViewController() itself, so the Main.storyboard change did nothing.
+build/ios-project.sh now makes SceneDelegate start MarkerViewController() and
+stops the build if any CAPBridgeViewController() is left in the app's Swift.
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").
