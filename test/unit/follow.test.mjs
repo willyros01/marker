@@ -85,3 +85,23 @@ test("F6 a caddie code is not a follow code, and a follow code is not a caddie c
   await assert.rejects(follow.view(fs, GUEST, k.code, { now: NOW }), refused(/doesn't work/));
   await assert.rejects(caddie.join(fs, CADDIE, f.code, { now: NOW }), refused(/doesn't work/));
 });
+
+test("F7 posting ends following: followers see the card as posted (Willy, 30 Oct 2026)", async () => {
+  const fs = fakeFs();
+  const r = await follow.start(fs, MEMBER, { card: theCard() }, { now: NOW, rand });
+  let v = await follow.view(fs, FRIEND, r.code, { now: NOW + 1000 });
+  assert.equal(v.posted, false);
+  await follow.scores(fs, MEMBER, { liveId: r.liveId, scores: { 0: { 1: 5 }, 1: { 1: 6 } }, done: true, posted: true }, { now: NOW + 60_000 });
+  v = await follow.view(fs, FRIEND, r.code, { now: NOW + 61_000 });
+  assert.equal(v.posted, true);
+  assert.equal(v.status, "finished");
+  /* a caddie's card the caddie handed back (finished): posting afterwards still marks it posted */
+  const fs2 = fakeFs();
+  const k = await caddie.start(fs2, MEMBER, theCard(), { now: NOW, rand });
+  await caddie.join(fs2, CADDIE, k.code, { now: NOW + 1000 });
+  const f = await follow.start(fs2, MEMBER, { liveId: k.liveId }, { now: NOW + 2000, rand });
+  await caddie.scores(fs2, CADDIE, { liveId: k.liveId, scores: { 0: { 1: 4 } }, done: true }, { now: NOW + 3000 });
+  assert.equal((await follow.view(fs2, FRIEND, f.code, { now: NOW + 4000 })).posted, false);
+  await follow.scores(fs2, MEMBER, { liveId: k.liveId, scores: { 0: { 1: 4 } }, done: true, posted: true }, { now: NOW + 5000 });
+  assert.equal((await follow.view(fs2, FRIEND, f.code, { now: NOW + 6000 })).posted, true);
+});

@@ -41,6 +41,8 @@ p { margin: 0; line-height: 1.45; }
 .btn.primary { background: var(--green); color: #fff; border-color: var(--green); }
 .btn.outline { border: 2px solid var(--green); color: var(--green); }
 .btn.dashed { border: 2px dashed var(--line-strong); background: transparent; color: var(--green); min-height: 52px; }
+.followrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+.btn.rm { min-height: 92px; padding: 0 18px; color: var(--ink-3); font-weight: 700; }
 .btn .ico { width: 26px; height: 26px; margin-right: 10px; flex: none; }
 .btn.danger { color: var(--over); border-color: var(--over); }
 .btn[disabled] { opacity: .45; cursor: default; }

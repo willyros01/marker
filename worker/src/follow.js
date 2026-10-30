@@ -66,15 +66,17 @@ export async function start(fs, who, { card: cardIn = null, liveId = null } = {}
 
 /* The member's phone sends its scores (the whole card each time). Not while a
    caddie is scoring: then the caddie's scores are what followers see. */
-export async function scores(fs, who, { liveId, scores: raw, done = false } = {}, { now = Date.now() } = {}) {
+/* `posted` (Willy, 30 Oct 2026): the member has posted the round; following ends there. */
+export async function scores(fs, who, { liveId, scores: raw, done = false, posted = false } = {}, { now = Date.now() } = {}) {
   for (let i = 0; i < 3; i++) {
     const d = await liveFor(fs, liveId);
     if (d.data.owner !== who.uid) refuse("This is not your card.");
     if (now >= d.data.expiresAt) refuse("EXPIRED");
     if (!OWNER_WRITES.includes(d.data.status)) refuse("CADDIE_SCORING");
     try {
-      await fs.commit([updateWrite(fs, d.path, { scores: cleanScores(raw, d.data.setup), lastAt: now, ...(done ? { status: "finished", endedAt: now } : {}) }, { updateTime: d.updateTime })]);
-      return { status: done ? "finished" : d.data.status };
+      const ends = done || posted === true;
+      await fs.commit([updateWrite(fs, d.path, { scores: cleanScores(raw, d.data.setup), lastAt: now, ...(ends ? { status: "finished", endedAt: now } : {}), ...(posted === true ? { posted: true, postedAt: now } : {}) }, { updateTime: d.updateTime })]);
+      return { status: ends ? "finished" : d.data.status };
     } catch (e) {
       if (!e.conflict) throw e;
     }
@@ -95,6 +97,6 @@ export async function view(fs, who, codeIn, { now = Date.now() } = {}) {
   return {
     setup: d.data.setup, scores: d.data.scores || {}, lastAt: d.data.lastAt || null,
     status: d.data.status === "finished" ? "finished" : "live",
-    byCaddie: !!d.data.caddieUid, expiresAt: d.data.expiresAt,
+    byCaddie: !!d.data.caddieUid, expiresAt: d.data.expiresAt, posted: d.data.posted === true,
   };
 }

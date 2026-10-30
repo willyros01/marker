@@ -477,7 +477,7 @@ export async function followStart(c) {
         players: c.players.map((p) => ({ name: p.name, ch: p.ch, scores: p.scores })) } };
   return callWorker("/follow/start", { method: "POST", body });
 }
-export const followSend = (liveId, scores, done = false) => callWorker("/follow/scores", { method: "POST", body: { liveId, scores, done } });
+export const followSend = (liveId, scores, done = false, posted = false) => callWorker("/follow/scores", { method: "POST", body: { liveId, scores, done, ...(posted ? { posted: true } : {}) } });
 /* A follower needs no account: an anonymous sign-in is made if nobody is signed in. */
 export async function followView(code) {
   if (!user) await playWithoutAccount();

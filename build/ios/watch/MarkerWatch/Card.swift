@@ -37,7 +37,9 @@ struct FollowCard {
   var players: [Player]
   var lastAt: Date?
   var finished: Bool
+  var posted: Bool
   var byCaddie: Bool
+  var expiresAt: Date?
 
   static func num(_ v: Any?) -> Int? {
     if let n = v as? NSNumber { return Int(n.doubleValue.rounded()) }
@@ -74,9 +76,12 @@ struct FollowCard {
     guard !players.isEmpty else { return nil }
     var lastAt: Date? = nil
     if let ms = obj["lastAt"] as? NSNumber { lastAt = Date(timeIntervalSince1970: ms.doubleValue / 1000) }
+    var expiresAt: Date? = nil
+    if let ms = obj["expiresAt"] as? NSNumber { expiresAt = Date(timeIntervalSince1970: ms.doubleValue / 1000) }
     return FollowCard(course: course, tee: teeObj["name"] as? String ?? "", order: order, holes: holes,
                       players: players, lastAt: lastAt, finished: (obj["status"] as? String) == "finished",
-                      byCaddie: (obj["byCaddie"] as? Bool) ?? false)
+                      posted: (obj["posted"] as? Bool) ?? false,
+                      byCaddie: (obj["byCaddie"] as? Bool) ?? false, expiresAt: expiresAt)
   }
 
   func hole(_ n: Int) -> Hole {

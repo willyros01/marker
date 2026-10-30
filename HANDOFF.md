@@ -308,6 +308,16 @@ WatchLink.status() to say "paired", which may answer late. Now shown on every
 iPhone app (native iOS + "iPhone" in the user agent); paired / installed /
 plugin missing are reported when tapped (watchWhy).
 
+0.9.4 (Willy, 30 Oct 2026): following ends when the member posts. post()
+sends followNow(true, true) -> /follow/scores {posted:true} -> the live card
+gets posted:true (status finished); /follow/view returns posted. Followers'
+phones: "The round has been posted. Following has ended.", the first-screen
+shortcut is removed and polling stops. The shortcut also goes after its 12
+hours (expiresAt saved with it) and has a Remove button beside it. Watch:
+shows "Posted · following has ended", then clears itself the next time it is
+opened at least 10 minutes later; clears after 12 hours or when the code
+stops working (message on the No card yet screen). Test F7.
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").

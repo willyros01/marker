@@ -34,6 +34,7 @@ final class FollowStore: NSObject, ObservableObject, WCSessionDelegate {
   private var loading = false
   private var idToken: String?
   private var idExpires = Date.distantPast
+  private var endedSeen: Date?   /* when the watch first saw the round posted */
   private let defaults = UserDefaults.standard
   let demo = ProcessInfo.processInfo.arguments.contains("-markerDemo")
 
@@ -76,8 +77,9 @@ final class FollowStore: NSObject, ObservableObject, WCSessionDelegate {
     refresh()
   }
 
-  func stop() {
-    link = nil; card = nil; message = nil; stale = false; path = []
+  func stop(_ why: String? = nil) {
+    link = nil; card = nil; stale = false; path = []; endedSeen = nil
+    message = why
     defaults.removeObject(forKey: "link")
   }
 
@@ -86,23 +88,31 @@ final class FollowStore: NSObject, ObservableObject, WCSessionDelegate {
   func setActive(_ on: Bool) {
     timer?.invalidate(); timer = nil
     guard on, !demo else { return }
+    /* Following ends when the round is posted (shown until the watch is next
+       opened, at least 10 minutes later) and after its 12 hours (Willy, 30 Oct 2026). */
+    if let seen = endedSeen, Date().timeIntervalSince(seen) > 600 { stop(); return }
+    if let c = card, let until = c.expiresAt, Date() >= until { stop("The 12 hours are over. Send a card again from the iPhone."); return }
     refresh()
     timer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in self?.refresh() }
   }
 
   func refresh() {
     guard !demo, let l = link, !loading else { return }
-    if let c = card, c.finished { return }
+    if let c = card, c.posted { return }
     loading = true
     Task { @MainActor in
       defer { self.loading = false }
       do {
         let obj = try await self.view(l)
         guard self.link == l else { return }
-        if let c = FollowCard.parse(obj) { self.card = c; self.stale = false; self.message = nil }
+        if let c = FollowCard.parse(obj) {
+          self.card = c; self.stale = false; self.message = nil
+          if c.posted && self.endedSeen == nil { self.endedSeen = Date() }
+        }
         else { self.message = "This card could not be read." }
       } catch let r as Refused {
         guard self.link == l else { return }
+        if r.reason.contains("stopped working") || r.reason.contains("doesn't work") { self.stop(r.reason); return }
         self.message = r.reason
         if self.card != nil { self.stale = true }
       } catch {

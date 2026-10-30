@@ -778,7 +778,10 @@ function screenCaddieFinish(c) {
 const FOLLOW_WEB = "https://www.cuberoot-systems.com/marker/follow/";
 function followingBtn() {
   const f = local.load("following", null);
-  return f && f.code ? `<button class="btn tall" data-act="follow-resume"><span>Follow: ${esc(f.course || "a card")}</span><small>See the card as it fills in.</small></button>` : "";
+  if (!f || !f.code) return "";
+  if (f.expiresAt && Date.now() >= f.expiresAt) { try { local.remove("following"); } catch {} return ""; }   /* 12 hours are over */
+  return `<div class="followrow"><button class="btn tall" data-act="follow-resume"><span>Follow: ${esc(f.course || "a card")}</span><small>See the card as it fills in.</small></button>
+    <button class="btn rm" data-act="follow-remove" aria-label="Remove ${esc(f.course || "this card")} from this screen">Remove</button></div>`;
 }
 
 function screenFollowShare(c) {
@@ -811,12 +814,13 @@ function screenFollowView() {
   const w = S.watch;
   const c = watchCard(w);
   const when = w.lastAt ? new Date(w.lastAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "";
-  const line = w.status === "finished" ? `<div class="banner ok">The round is finished.${when ? ` Last scores at ${esc(when)}.` : ""}</div>`
+  const line = w.posted ? `<div class="banner ok">The round has been posted. Following has ended.</div>`
+    : w.status === "finished" ? `<div class="banner ok">The round is finished.${when ? ` Last scores at ${esc(when)}.` : ""}</div>`
     : w.stale ? `<div class="banner warn">No connection right now. Showing the scores from ${esc(when || "earlier")}.</div>`
     : `<div class="banner">${when ? `Updated at ${esc(when)}` : "No scores yet"} · refreshes by itself${w.byCaddie ? " · scored by a caddie" : ""}</div>`;
   return `${top("Following", `${c.course.name} · ${c.tee.name}`)}
     <main class="body" style="padding:10px">${banner()}${line}${cardGrid(c, false)}</main>
-    <footer class="foot">${watchBtn("watch-send")}
+    <footer class="foot">${w.posted ? "" : watchBtn("watch-send")}
       <button class="btn" data-act="follow-stop">Stop following</button></footer>`;
 }
 
@@ -1078,18 +1082,22 @@ const joinWhy = (e) => {
 const ownerSends = (c) => !!(c && c.follow && !c.caddieOf && !c.follow.stopped && (!c.caddie || c.caddie.ended));
 let followTimer = null, followSending = false, followAgain = false;
 function followSoon() { clearTimeout(followTimer); followTimer = setTimeout(() => followNow(false), 1500); }
-async function followNow(done = false) {
+let followDone = false, followPosted = false;   /* kept for a retry, so a late send still ends the card */
+async function followNow(done = false, posted = false) {
+  followDone = followDone || done; followPosted = followPosted || posted;
   if (followSending) { followAgain = true; return; }
   const c = local.currentCard();
-  if (!ownerSends(c)) return;
+  if (!ownerSends(c)) { followDone = followPosted = false; return; }
   followSending = true; followAgain = false;
-  try { await db.followSend(c.follow.liveId, scoresOf(c), done); }
+  const d = followDone, p = followPosted;
+  try { await db.followSend(c.follow.liveId, scoresOf(c), d, p); if (p) followPosted = false; if (d) followDone = false; }
   catch (e) {
     const m = String((e && e.message) || e);
     /* past 12 hours, or a caddie is scoring: stop sending, nothing else changes */
     if (m === "EXPIRED" || m === "CADDIE_SCORING" || /not your card|not live/.test(m)) {
       const now = local.currentCard();
       if (now && now.follow) { try { local.saveCurrent({ ...now, follow: { ...now.follow, stopped: true } }); } catch {} }
+      followDone = followPosted = false;
     } else followAgain = true;   /* no signal: try again later */
   } finally {
     followSending = false;
@@ -1116,8 +1124,9 @@ async function watchPoll() {
     if (/stopped working|doesn't work/.test(m)) { local.remove("following"); S.watch = null; S.error = m; go("follow-join"); return; }
     S.watch = { ...S.watch, stale: true };
   }
+  if (S.watch && S.watch.posted) { try { local.remove("following"); } catch {} }
   if (S.screen === "follow-view") render();
-  if (S.watch && S.watch.status !== "finished") watchTimer = setTimeout(watchPoll, 12000);
+  if (S.watch && !S.watch.posted) watchTimer = setTimeout(watchPoll, 12000);
 }
 /* A first try right as the phone hands a link to the app can fail: the app
    has only just woken up. Those failures are tried once more (Willy, 29 Oct 2026). */
@@ -1137,9 +1146,10 @@ async function openFollow(code, { retry = false } = {}) {
   }
   S.busy = ""; S.followCode = "";
   S.watch = { code, ...v, stale: false };
-  try { local.save("following", { code, course: v.setup.course.name }); } catch { /* following still works without it */ }
+  if (v.posted) { try { local.remove("following"); } catch {} }   /* posted: following has ended */
+  else { try { local.save("following", { code, course: v.setup.course.name, expiresAt: v.expiresAt || null }); } catch { /* following still works without it */ } }
   go("follow-view");
-  if (v.status !== "finished") watchTimer = setTimeout(watchPoll, 12000);
+  if (!v.posted) watchTimer = setTimeout(watchPoll, 12000);
 }
 
 const actions = {
@@ -1415,6 +1425,7 @@ const actions = {
     if (!S.watch || S.busy) return;
     await sendToWatch(S.watch.code, (S.watch.setup && S.watch.setup.course && S.watch.setup.course.name) || "");
   },
+  "follow-remove"() { clearTimeout(watchTimer); local.remove("following"); S.watch = null; render(); },
   "follow-stop"() { clearTimeout(watchTimer); local.remove("following"); S.watch = null; go("start"); },
   async "caddie-start"() {
     if (S.busy) return;
@@ -1616,7 +1627,7 @@ const actions = {
   finish() { updateCard((c) => ({ ...c, state: "finished", fixing: false })); go("finish"); },
   post() {
     const c = local.currentCard();
-    if (c && ownerSends(c)) followNow(true);
+    if (c && ownerSends(c)) followNow(true, true);   /* posting ends following (Willy, 30 Oct 2026) */
     try { db.queuePost(c); } catch (e) { fail(e); return; }
     go("status");
   },

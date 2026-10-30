@@ -91,7 +91,9 @@ struct StatusLine: View {
   let card: FollowCard
   var body: some View {
     let when = clock(card.lastAt)
-    if card.finished {
+    if card.posted {
+      Text("Posted · following has ended").font(.footnote).foregroundStyle(markerGreen)
+    } else if card.finished {
       Text("Finished\(when.isEmpty ? "" : " · \(when)")").font(.footnote).foregroundStyle(markerGreen)
     } else if store.stale {
       Text("No signal · \(when.isEmpty ? "earlier" : when)").font(.footnote).foregroundStyle(overColor)
