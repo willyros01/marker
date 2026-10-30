@@ -1,0 +1,81 @@
+--- Capacitor 8.5.2 (installed for this build only)
+npm warn deprecated uuid@7.0.3: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+
+added 197 packages in 22s
+--- The web files (same list as Android)
+--- The iOS project (fresh every build)
+✔ Adding native Xcode project in ios in 34.36ms
+✔ add in 35.02ms
+✔ Copying web assets from www to ios/App/App/public in 14.95ms
+✔ Creating capacitor.config.json in ios/App/App in 874.38μs
+✔ copy ios in 29.99ms
+✔ Updating iOS plugins in 558.92μs
+[info] All Capacitor plugins have a Package.swift file and will be included in Package.swift
+[info] Writing Package.swift
+[info] Found 1 Capacitor plugin for ios:
+       @capacitor/app@8.1.1
+✔ update ios in 21.88ms
+[success] ios platform added!
+Follow the Developer Workflow guide to get building:
+https://capacitorjs.com/docs/basics/workflow
+✔ Copying web assets from www to ios/App/App/public in 14.32ms
+✔ Creating capacitor.config.json in ios/App/App in 1.05ms
+✔ copy ios in 26.80ms
+✔ Updating iOS plugins in 814.54μs
+[info] All Capacitor plugins have a Package.swift file and will be included in Package.swift
+[info] Writing Package.swift
+[info] Found 1 Capacitor plugin for ios:
+       @capacitor/app@8.1.1
+✔ update ios in 24.93ms
+[info] Sync finished in 0.068s
+--- App icons (before the project is finished, so the watch target gets its icon) from icon.svg (square, no transparency, as Apple requires)
+[32m==>[0m [1mDownloading bottle manifests[0m
+✔︎ Bottle Manifest librsvg (2.63.2)
+[32m==>[0m [1mFetching downloads for: [32mlibrsvg[39m[0m
+✔︎ Bottle Manifest libdatrie (0.2.14)
+✔︎ Bottle Manifest gdk-pixbuf (2.44.8)
+✔︎ Bottle Manifest fribidi (1.0.17)
+✔︎ Bottle Manifest libthai (0.1.30)
+✔︎ Bottle librsvg (2.63.2)
+✔︎ Bottle Manifest pango (1.58.2)
+✔︎ Bottle gdk-pixbuf (2.44.8)
+✔︎ Bottle fribidi (1.0.17)
+✔︎ Bottle libdatrie (0.2.14)
+✔︎ Bottle libthai (0.1.30)
+✔︎ Bottle pango (1.58.2)
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+Xcode project: privacy manifest, entitlements, WatchLink bridge, and the MarkerWatch app (embedded).
+Project ready: iPhone app + Apple Watch app.
+--- Build for the simulators (iPhone app + watch app)
+iPhone app: /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/App.app
+Watch app: /Users/runner/work/_temp/dd/Build/Products/Debug-watchsimulator/MarkerWatch.app
+The watch app is embedded in the iPhone app.
+  "CFBundleIconName" => "AppIcon"
+      "CFBundleIconName" => "AppIcon"
+  "CFBundleIdentifier" => "io.github.willyros01.marker.watchkitapp"
+  "WKApplication" => true
+  "WKCompanionAppBundleIdentifier" => "io.github.willyros01.marker"
+The watch app has its icon.
+--- An Apple Watch Ultra simulator
+Simulator: D64CADF9-1B04-4FB8-8B5E-154EE8747596
+Monitoring boot status for Apple Watch Ultra 3 (49mm) (D64CADF9-1B04-4FB8-8B5E-154EE8747596).
+Device already booted, nothing to do.
+
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 1AC9ED6D-1DDD-477F-9527-23DBC64749E9 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-waiting.png
+picture: watch-waiting.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 1AC9ED6D-1DDD-477F-9527-23DBC64749E9 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-group.png
+picture: watch-group.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 1AC9ED6D-1DDD-477F-9527-23DBC64749E9 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-player.png
+picture: watch-player.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: 1AC9ED6D-1DDD-477F-9527-23DBC64749E9 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-summary.png
+picture: watch-summary.png
+The watch app is still running.
+RESULT: success — the watch app builds, is embedded, and opens on the simulator.
