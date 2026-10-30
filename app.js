@@ -814,7 +814,8 @@ function screenFollowView() {
     : `<div class="banner">${when ? `Updated at ${esc(when)}` : "No scores yet"} · refreshes by itself${w.byCaddie ? " · scored by a caddie" : ""}</div>`;
   return `${top("Following", `${c.course.name} · ${c.tee.name}`)}
     <main class="body" style="padding:10px">${banner()}${line}${cardGrid(c, false)}</main>
-    <footer class="foot"><button class="btn" data-act="follow-stop">Stop following</button></footer>`;
+    <footer class="foot">${S.watchSupported ? `<button class="btn primary" data-act="watch-send" ${S.busy ? "disabled" : ""}>${S.busy === "watch" ? "Sending…" : "Send to my watch"}</button>` : ""}
+      <button class="btn" data-act="follow-stop">Stop following</button></footer>`;
 }
 
 /* ---------------- your cards ---------------- */
@@ -1137,6 +1138,7 @@ async function openFollow(code, { retry = false } = {}) {
   try { local.save("following", { code, course: v.setup.course.name }); } catch { /* following still works without it */ }
   go("follow-view");
   if (v.status !== "finished") watchTimer = setTimeout(watchPoll, 12000);
+  checkWatch(1);
 }
 
 const actions = {
@@ -1407,6 +1409,19 @@ const actions = {
     const f = local.load("following", null);
     if (!f || !f.code) { go("follow-join"); return; }
     await openFollow(f.code);
+  },
+  async "watch-send"() {
+    const W = watchPlugin();
+    if (!W || !S.watch || S.busy) return;
+    S.busy = "watch"; S.error = ""; render();
+    try {
+      const info = await db.watchInfo();
+      for (let tries = 0; ; tries++) {
+        try { await W.send({ code: S.watch.code, course: (S.watch.setup && S.watch.setup.course && S.watch.setup.course.name) || "", ...info }); break; }
+        catch (e) { if (/NOT_READY/.test(String((e && e.message) || e)) && tries < 3) { await new Promise((r) => setTimeout(r, 1000)); continue; } throw e; }
+      }
+      S.busy = ""; S.flash = "Sent. Open The Marker on your watch."; render();
+    } catch (e) { S.busy = ""; S.error = watchWhy(e); render(); }
   },
   "follow-stop"() { clearTimeout(watchTimer); local.remove("following"); S.watch = null; go("start"); },
   async "caddie-start"() {
@@ -1942,6 +1957,35 @@ function openCaddieLink(url) {
   go("caddie-join");
   return true;
 }
+/* The Apple Watch (Willy, 30 Oct 2026): "Send to my watch" on the Following
+   screen, shown only on an iPhone with a paired watch. */
+let watchLink = null;
+function watchPlugin() {
+  const Cap = (typeof window !== "undefined" && window.Capacitor) || null;
+  if (!Cap || !Cap.isNativePlatform || !Cap.isNativePlatform() || (Cap.getPlatform && Cap.getPlatform() !== "ios")) return null;
+  if (!watchLink) watchLink = (Cap.Plugins && Cap.Plugins.WatchLink) || (Cap.registerPlugin ? Cap.registerPlugin("WatchLink") : null);
+  return watchLink;
+}
+async function checkWatch(again = 2) {
+  const W = watchPlugin();
+  if (!W) return;
+  let st = null;
+  try { st = await W.status(); } catch { st = null; }
+  const was = !!S.watchSupported;
+  S.watchSupported = !!(st && st.supported && st.paired);
+  if (st && st.supported && !st.ready && again > 0) setTimeout(() => checkWatch(again - 1), 1500);   /* the link starts in the background */
+  if (S.screen === "follow-view" && was !== S.watchSupported) render();
+}
+function watchWhy(e) {
+  const m = String((e && e.message) || e);
+  if (/NOT_PAIRED/.test(m)) return "No Apple Watch is paired with this iPhone.";
+  if (/NOT_INSTALLED/.test(m)) return "The Marker is not on your watch yet. On this iPhone, open the Watch app, scroll down to The Marker and tap Install. Then tap Send to my watch again.";
+  if (/NOT_READY/.test(m)) return "The link to your watch is still starting. Try again in a moment.";
+  if (/NOT_SUPPORTED/.test(m)) return "This device cannot send to an Apple Watch.";
+  if (/NOT_SET_UP|UNREACHABLE|OFFLINE/.test(m)) return joinWhy(e);
+  return "The card could not be sent to your watch. Try again.";
+}
+
 /* A link that opened the app but could not be used is never ignored in
    silence: the first screen says so and shows the link (Willy, 29 Oct 2026). */
 function useLink(url) {
@@ -1979,6 +2023,7 @@ async function boot() {
   } catch {}
   if (c && c.caddieOf && c.caddieOf.done) sendNow();
   await listenForCaddieLinks();
+  checkWatch();
   try { db.dropReplaced(); } catch {}
   render();
   refreshMine(true);

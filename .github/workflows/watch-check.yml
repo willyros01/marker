@@ -1,0 +1,48 @@
+name: Apple Watch check (simulator)
+
+# Builds The Marker with its Apple Watch app for the simulators (no signing),
+# opens the watch app with made-up scores on an Apple Watch Ultra simulator and
+# saves a picture of each screen to the ci-logs branch.
+on:
+  push:
+    branches: [main]
+    paths: [build/ios/**, build/ios-project.sh, build/watch-check.sh, .github/workflows/watch-check.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only to save the pictures to the ci-logs branch
+
+jobs:
+  check:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Build and open the watch app
+        id: check
+        run: |
+          set -o pipefail
+          bash build/watch-check.sh 2>&1 | tee watch-check.log
+      - name: Save the pictures to the ci-logs branch
+        if: always()
+        env:
+          OUTCOME: ${{ steps.check.outcome }}
+        run: |
+          set -e
+          dir="logs/watch/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}-${OUTCOME}"
+          mkdir -p "/tmp/$dir"; cp watch-check.log "/tmp/$dir/" 2>/dev/null || true; cp shots/*.png "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          for try in 1 2 3; do
+            git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+            mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+            git add logs && git commit -qm "Watch check ${GITHUB_RUN_NUMBER}: ${OUTCOME}" && git push -q origin ci-logs && break
+            sleep 5
+          done

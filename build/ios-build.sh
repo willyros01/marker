@@ -5,7 +5,6 @@
 # APPLE_TEAM_ID, and RUN_NUMBER (the build number, rising every run).
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
-CAP=8.5.2
 for v in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID; do
   [ -n "${!v:-}" ] || { echo "RESULT: not started — the Apple secret $v is not set."; exit 1; }
 done
@@ -17,49 +16,8 @@ echo "Building The Marker $VERSION, build $BUILD"
 
 echo "--- 1. Tests"
 npm test
-echo "--- 2. Capacitor $CAP (installed for this build only)"
-npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/ios@$CAP" "@capacitor/app@8.1.1"
-# The link piece must be listed in package.json, or "cap sync" leaves it out of
-# the app and scanned links never reach it (0.8.3, Willy 29 Oct 2026).
-npm pkg set "dependencies.@capacitor/app=8.1.1"
-
-echo "--- 3. The web files (same list as Android)"
-rm -rf www && mkdir -p www
-while IFS= read -r line; do
-  line="${line%%#*}"; line="${line//[[:space:]]/}"
-  [ -n "$line" ] || continue
-  mkdir -p "www/$(dirname "$line")"; cp -R "${line%/}" "www/${line%/}"
-done < build/www-files.txt
-test -s www/index.html && test -s www/firebase-config.js
-
-echo "--- 4. The iOS project (fresh every build)"
-rm -rf ios
-npx cap add ios
-npx cap sync ios 2>&1 | tee "${RUNNER_TEMP:-/tmp}/capsync.log"
-grep -q "@capacitor/app" "${RUNNER_TEMP:-/tmp}/capsync.log" || { echo "RESULT: the link piece (@capacitor/app) is not in the app; links would not open it"; exit 1; }
-cp build/ios/PrivacyInfo.xcprivacy ios/App/App/PrivacyInfo.xcprivacy
-cp build/ios/App.entitlements ios/App/App/App.entitlements
-ruby -e 'require "xcodeproj"' 2>/dev/null || gem install xcodeproj --user-install --no-document
-ruby build/ios/configure.rb
-PLIST=ios/App/App/Info.plist
-plutil -replace CFBundleDisplayName -string "The Marker" "$PLIST"
-plutil -replace ITSAppUsesNonExemptEncryption -bool NO "$PLIST"
-plutil -replace NSCameraUsageDescription -string "The Marker uses the camera to take a picture of the club's scorecard, so the course details can be read for you." "$PLIST"
-plutil -replace NSPhotoLibraryUsageDescription -string "The Marker opens your photos so you can choose a picture of the club's scorecard to read the course details." "$PLIST"
-
-echo "--- 5. App icon from icon.svg (square, no transparency, as Apple requires)"
-command -v rsvg-convert >/dev/null || HOMEBREW_NO_AUTO_UPDATE=1 brew install librsvg >/dev/null
-rsvg-convert -w 1024 -h 1024 -b "#2E5541" icon.svg -o "$TMP/icon-a.png"
-sips -s format jpeg -s formatOptions 100 "$TMP/icon-a.png" --out "$TMP/icon.jpg" >/dev/null
-sips -s format png "$TMP/icon.jpg" --out "$TMP/icon.png" >/dev/null
-sips -g hasAlpha "$TMP/icon.png" | grep -q "hasAlpha: no" || { echo "RESULT: the icon still has transparency"; exit 1; }
-ICONSET=ios/App/App/Assets.xcassets/AppIcon.appiconset
-rm -rf "$ICONSET"; mkdir -p "$ICONSET"
-cp "$TMP/icon.png" "$ICONSET/AppIcon-1024.png"
-cat > "$ICONSET/Contents.json" <<'JSON'
-{ "images": [ { "filename": "AppIcon-1024.png", "idiom": "universal", "platform": "ios", "size": "1024x1024" } ],
-  "info": { "author": "xcode", "version": 1 } }
-JSON
+echo "--- 2. The Xcode project: iPhone app + Apple Watch app"
+bash build/ios-project.sh
 
 echo "--- 6. App Store Connect key (this build machine only)"
 mkdir -p "$TMP/keys"
@@ -72,10 +30,12 @@ echo "--- 7. Archive"
 xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release \
   -destination "generic/platform=iOS" -archivePath "$TMP/App.xcarchive" "${AUTH[@]}" \
   DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY="-" AD_HOC_CODE_SIGNING_ALLOWED=YES \
-  PRODUCT_BUNDLE_IDENTIFIER=io.github.willyros01.marker \
   MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
   > "$TMP/xcodebuild.log" 2>&1 || { tail -n 80 "$TMP/xcodebuild.log"; echo "RESULT: failed at archive"; exit 1; }
 tail -n 3 "$TMP/xcodebuild.log"
+test -d "$TMP/App.xcarchive/Products/Applications/App.app/Watch/MarkerWatch.app" \
+  || { echo "RESULT: the Apple Watch app is not inside the archive"; exit 1; }
+echo "The Apple Watch app is inside the archive."
 
 cat > "$TMP/ExportOptions.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>

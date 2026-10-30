@@ -24,12 +24,14 @@ export const currentUser = () => user;
 export const ready = () => !!fb;
 export const lastProblem = () => lastError;
 
+let webKey = "";   /* the public Firebase web key, handed to the watch (it signs in on its own) */
 export async function init() {
   const config = await import("./firebase-config.js");
   const { app, auth, store } = await import(FIREBASE_BUNDLE);
   const firebaseConfig = EMULATORS
     ? { apiKey: "fake-api-key", projectId: "demo-marker", authDomain: "localhost", appId: "demo" }
     : config.firebaseConfig;
+  webKey = String(firebaseConfig.apiKey || "");
   const instance = app.initializeApp(firebaseConfig, "marker");
   const authInstance = auth.initializeAuth(instance, { persistence: [auth.indexedDBLocalPersistence] });
   if (EMULATORS) auth.connectAuthEmulator(authInstance, "http://127.0.0.1:9099", { disableWarnings: true });
@@ -193,6 +195,11 @@ async function callWorker(path, { method = "GET", body = null } = {}) {
   if (data.error === "REFUSED") throw new Error(data.reason || "The Scorecard refused this.");
   if (data.error) throw new Error(data.error);
   return data;
+}
+
+/* What the Apple Watch needs to read a followed card itself (Willy, 30 Oct 2026). */
+export async function watchInfo() {
+  return { workerUrl: await workerUrl(), apiKey: webKey };
 }
 
 /* Course search. The golf key stays on the worker; the phone never sees it. */
