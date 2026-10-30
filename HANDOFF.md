@@ -330,6 +330,17 @@ scored hole (FollowCard.lastIndex) and follows new scores; turning the crown
 looks back, and 30 s after the last turn it returns to the latest hole
 (TimelineView every 5 s).
 
+0.9.7 (Willy, 30 Oct 2026): watch-face widgets, so The Marker co-exists with
+Arccos (which keeps itself in front as a workout). MarkerWidgets (WidgetKit
+app extension in the watch app, io.github.willyros01.marker.watchkitapp.widgets),
+two accessoryRectangular widgets: "my score" (the golfer last opened on the
+watch, Shared.me) and "the group". Shared code in build/ios/watch/Shared
+(Card, FollowNet, WidgetViews); link, refresh token and the last card read
+are in the app group group.io.github.willyros01.marker. The widget refreshes
+itself every ~10 min (watchOS budget) and the app reloads it on new scores.
+Tap -> themarker://group -> the group screen. Willy keeps his date face: the
+group card goes in the Smart Stack; a Modular golf face is optional.
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").
