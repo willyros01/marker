@@ -143,30 +143,51 @@ struct GroupScreen: View {
   }
 }
 
-/* One golfer at a time: swipe for the next golfer, turn the crown for other holes. */
+/* One golfer at a time: swipe for the next golfer. Each golfer's latest
+   scored hole is shown and moves on by itself as scores arrive; turning the
+   crown looks at other holes, and 30 seconds after the last turn the screen
+   goes back to the latest hole (Willy, 30 Oct 2026). */
 struct PlayerPager: View {
   @EnvironmentObject var store: FollowStore
   @State private var page: Int
   @State private var crown: Double
+  @State private var autoK: Int
+  @State private var lookUntil = Date.distantPast
 
   init(start: Int, hole: Int) {
     _page = State(initialValue: start)
     _crown = State(initialValue: Double(hole))
+    _autoK = State(initialValue: hole)
+  }
+
+  private func sync(_ k: Int) {
+    autoK = k
+    crown = Double(k)
   }
 
   var body: some View {
     if let card = store.card {
       let last = max(card.order.count - 1, 0)
-      let k = min(max(Int(crown.rounded()), 0), last)
-      TabView(selection: $page) {
-        ForEach(card.players.indices, id: \.self) { i in
-          PlayerHole(card: card, p: i, k: k).tag(i)
+      TimelineView(.periodic(from: .now, by: 5)) { tl in
+        let looking = tl.date < lookUntil
+        let crownK = min(max(Int(crown.rounded()), 0), last)
+        let liveK = card.lastIndex(page)
+        TabView(selection: $page) {
+          ForEach(card.players.indices, id: \.self) { i in
+            PlayerHole(card: card, p: i, k: looking ? crownK : card.lastIndex(i)).tag(i)
+          }
         }
+        .tabViewStyle(.page)
+        .focusable()
+        .digitalCrownRotation($crown, from: 0, through: Double(last), by: 1, sensitivity: .low,
+                              isContinuous: false, isHapticFeedbackEnabled: true)
+        .onChange(of: crown) { _, v in
+          if Int(v.rounded()) != autoK { lookUntil = Date().addingTimeInterval(30) }
+        }
+        .onChange(of: looking) { _, now in if !now { sync(liveK) } }
+        .onChange(of: liveK) { _, k in if !looking { sync(k) } }
+        .onAppear { if !looking { sync(liveK) } }
       }
-      .tabViewStyle(.page)
-      .focusable()
-      .digitalCrownRotation($crown, from: 0, through: Double(last), by: 1, sensitivity: .low,
-                            isContinuous: false, isHapticFeedbackEnabled: true)
     } else {
       Text("The card is closed.").font(.body)
     }

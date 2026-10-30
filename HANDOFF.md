@@ -324,6 +324,12 @@ CAPBridgeViewController() itself, so the Main.storyboard change did nothing.
 build/ios-project.sh now makes SceneDelegate start MarkerViewController() and
 stops the build if any CAPBridgeViewController() is left in the app's Swift.
 
+0.9.6: Willy's watch showed hole 5 while Thru was 6: the one-golfer screen
+kept the hole it opened on. Now each golfer page shows that golfer's latest
+scored hole (FollowCard.lastIndex) and follows new scores; turning the crown
+looks back, and 30 s after the last turn it returns to the latest hole
+(TimelineView every 5 s).
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").

@@ -97,6 +97,14 @@ struct FollowCard {
     return last
   }
 
+  /* A golfer's latest scored hole (index in playing order); the card's current hole when none. */
+  func lastIndex(_ p: Int) -> Int {
+    guard p >= 0 && p < players.count else { return currentIndex }
+    var last: Int? = nil
+    for (k, n) in order.enumerated() where players[p].scores[n] != nil { last = k }
+    return last ?? currentIndex
+  }
+
   /* Strokes received on a hole (World Handicap System allocation), as card.js strokesOn. */
   static func strokesOn(_ ch: Int?, _ si: Int?) -> Int {
     guard let ch = ch else { return 0 }
