@@ -47,8 +47,11 @@ perl -pi -e 's/customClass="CAPBridgeViewController" customModule="Capacitor"/cu
 grep -q 'customClass="MarkerViewController"' "$SB" || { echo "RESULT: Main.storyboard was not pointed at MarkerViewController"; grep -n customClass "$SB" || true; exit 1; }
 
 # The Apple Watch app (0.9.0).
-rm -rf ios/App/MarkerWatch
+# ... and its watch-face widgets (0.9.7), sharing code from Shared/.
+rm -rf ios/App/MarkerWatch ios/App/MarkerWidgets ios/App/Shared
 cp -R build/ios/watch/MarkerWatch ios/App/MarkerWatch
+cp -R build/ios/watch/MarkerWidgets ios/App/MarkerWidgets
+cp -R build/ios/watch/Shared ios/App/Shared
 
 echo "--- App icons (before the project is finished, so the watch target gets its icon) from icon.svg (square, no transparency, as Apple requires)"
 command -v rsvg-convert >/dev/null || HOMEBREW_NO_AUTO_UPDATE=1 brew install librsvg >/dev/null

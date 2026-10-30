@@ -3,20 +3,6 @@
  * next, turn the crown for other holes); the Out / In / Total summary. */
 import SwiftUI
 
-let markerGreen = Color(red: 0.56, green: 0.83, blue: 0.66)
-let overColor = Color(red: 1.0, green: 0.77, blue: 0.54)
-let underColor = Color(red: 0.56, green: 0.83, blue: 0.66)
-
-func parColor(_ d: Int) -> Color { d > 0 ? overColor : d < 0 ? underColor : .white }
-
-func clock(_ d: Date?) -> String {
-  guard let d = d else { return "" }
-  let f = DateFormatter()
-  f.timeStyle = .short
-  f.dateStyle = .none
-  return f.string(from: d)
-}
-
 @main
 struct MarkerWatchApp: App {
   @StateObject private var store = FollowStore()
@@ -32,7 +18,8 @@ struct RootView: View {
   var body: some View {
     NavigationStack(path: $store.path) {
       Group {
-        if let card = store.card { GroupScreen(card: card) }
+        if store.showWidgets { WidgetGallery() }
+        else if let card = store.card { GroupScreen(card: card) }
         else if let l = store.link { OpeningScreen(link: l) }
         else { WaitingScreen() }
       }
@@ -44,6 +31,7 @@ struct RootView: View {
       }
     }
     .onAppear { store.setActive(true) }
+    .onOpenURL { _ in store.path = [] }   /* a tap on a watch-face box: the group screen */
     .onChange(of: phase) { _, p in store.setActive(p == .active) }
   }
 }
@@ -186,7 +174,8 @@ struct PlayerPager: View {
         }
         .onChange(of: looking) { _, now in if !now { sync(liveK) } }
         .onChange(of: liveK) { _, k in if !looking { sync(k) } }
-        .onAppear { if !looking { sync(liveK) } }
+        .onAppear { if !looking { sync(liveK) }; store.setMe(page) }
+        .onChange(of: page) { _, p in store.setMe(p) }
       }
     } else {
       Text("The card is closed.").font(.body)
@@ -264,6 +253,21 @@ struct SummaryRow: View {
       Spacer()
       Text(t.done > 0 ? toParText(t.toPar) : "—").font(big ? .title2.bold() : .title3.weight(.semibold))
         .foregroundStyle(t.done > 0 ? parColor(t.toPar) : .secondary)
+    }
+  }
+}
+
+/* The build check only: the two watch-face boxes, as the widgets draw them. */
+struct WidgetGallery: View {
+  @EnvironmentObject var store: FollowStore
+  var body: some View {
+    ScrollView {
+      VStack(spacing: 10) {
+        MineBox(card: store.card, me: 1)
+          .padding(8).background(RoundedRectangle(cornerRadius: 14).stroke(Color.gray, lineWidth: 1))
+        GroupBox(card: store.card)
+          .padding(8).background(RoundedRectangle(cornerRadius: 14).stroke(Color.gray, lineWidth: 1))
+      }
     }
   }
 }

@@ -23,6 +23,7 @@ echo "iPhone app: $APP"; echo "Watch app: $WAPP"
 [ -d "$APP/Watch/MarkerWatch.app" ] && echo "The watch app is embedded in the iPhone app." || { echo "RESULT: the watch app is not embedded in the iPhone app"; ls -la "$APP" | head -40; exit 1; }
 plutil -p "$WAPP/Info.plist" | grep -E "WKApplication|WKCompanionAppBundleIdentifier|CFBundleIdentifier|CFBundleIconName"
 [ -f "$WAPP/Assets.car" ] && echo "The watch app has its icon." || { echo "RESULT: the watch app has no icon (Assets.car)"; exit 1; }
+[ -d "$WAPP/PlugIns/MarkerWidgets.appex" ] && echo "The watch-face widgets are inside the watch app." || { echo "RESULT: the watch-face widgets are not inside the watch app"; ls -la "$WAPP" "$WAPP/PlugIns" 2>/dev/null | head -30; exit 1; }
 
 echo "--- An Apple Watch Ultra simulator"
 UDID="$(xcrun simctl list devices available -j | python3 -c '
@@ -51,7 +52,7 @@ xcrun simctl boot "$UDID" 2>/dev/null || true
 xcrun simctl bootstatus "$UDID" -b
 xcrun simctl install "$UDID" "$WAPP"
 
-for screen in waiting group player summary; do
+for screen in waiting group player summary widgets; do
   xcrun simctl launch --terminate-running-process "$UDID" io.github.willyros01.marker.watchkitapp -markerDemo -markerShow "$screen" >/dev/null
   sleep 8
   xcrun simctl io "$UDID" screenshot "shots/watch-$screen.png" >/dev/null
