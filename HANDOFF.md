@@ -275,6 +275,28 @@ iOS, Android and device-test builds now run npm pkg set
 dependencies.@capacitor/app=8.1.1 before cap sync, and stop if the sync output
 does not mention @capacitor/app.
 
+## Apple Watch follower (Willy, 30 Oct 2026) — version 0.9.0
+
+Mockup: claude.ai artifact L2bcFtzgvbCQCNb7hgQuKm. Willy has an Apple Watch
+Ultra; he chose "Send to my watch" from the iPhone over typing on the watch.
+
+- Watch app: build/ios/watch/MarkerWatch (SwiftUI, watchOS 10+, bundle
+  io.github.willyros01.marker.watchkitapp). Screens: no card yet; all golfers
+  on the current hole (the furthest hole anyone has a score on); one golfer
+  (swipe for the next, crown for holes); Out / In / Total. Reads
+  /follow/view itself every 20 s while on screen, with its own anonymous
+  Firebase sign-in over REST (key handed over by the phone; Referer
+  willyros01.github.io). Scoring as card.js (picked up = hole cap).
+- iPhone: WatchLink plugin (build/ios/native, WatchConnectivity application
+  context: code, course, workerUrl, apiKey, sentAt) registered by
+  MarkerViewController; Main.storyboard pointed at it by build/ios-project.sh.
+  "Send to my watch" on the Following screen only when a watch is paired.
+- Build: build/ios-project.sh makes the project for both ios-build.sh and
+  watch-check.sh; configure.rb adds the MarkerWatch target and embeds it
+  (Embed Watch Content). The archive is checked for Watch/MarkerWatch.app.
+- watch-check.yml: simulator build + pictures of each screen (-markerDemo,
+  -markerShow waiting|group|player|summary) to ci-logs logs/watch/.
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").
