@@ -1998,8 +1998,9 @@ async function sendToWatch(code, course) {
     S.busy = ""; S.flash = "Sent. Open The Marker on your watch."; render();
   } catch (e) { S.busy = ""; S.error = watchWhy(e); render(); }
 }
+const WATCH_ICON = `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="3.5"/><path d="M9 6l.7-3h4.6l.7 3M9 18l.7 3h4.6l.7-3M12 9.5V12l1.6 1"/></svg>`;
 const watchBtn = (act) => S.watchSupported
-  ? `<button class="btn" data-act="${act}" ${S.busy ? "disabled" : ""}>${S.busy === "watch" ? "Sending…" : "Send to my watch"}</button>` : "";
+  ? `<button class="btn outline" data-act="${act}" ${S.busy ? "disabled" : ""}>${WATCH_ICON}${S.busy === "watch" ? "Sending…" : "Send to my watch"}</button>` : "";
 function watchWhy(e) {
   const m = String((e && e.message) || e);
   if (/NOT_PAIRED/.test(m)) return "No Apple Watch is paired with this iPhone.";

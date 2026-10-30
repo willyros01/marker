@@ -41,6 +41,7 @@ p { margin: 0; line-height: 1.45; }
 .btn.primary { background: var(--green); color: #fff; border-color: var(--green); }
 .btn.outline { border: 2px solid var(--green); color: var(--green); }
 .btn.dashed { border: 2px dashed var(--line-strong); background: transparent; color: var(--green); min-height: 52px; }
+.btn .ico { width: 26px; height: 26px; margin-right: 10px; flex: none; }
 .btn.danger { color: var(--over); border-color: var(--over); }
 .btn[disabled] { opacity: .45; cursor: default; }
 .btn.tall { min-height: 92px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; text-align: left; padding: 14px 18px; }
