@@ -97,3 +97,29 @@ struct GroupBox: View {
     }
   }
 }
+
+/* The round "my score" (0.9.8): for round slots such as the X-Large face's.
+   The hole on top, the score to par large. */
+struct MineRound: View {
+  let card: FollowCard?
+  let me: Int
+  var body: some View {
+    ZStack {
+      Circle().fill(Color(white: 0.16))
+      if let c = card, !c.players.isEmpty {
+        let p = (me >= 0 && me < c.players.count) ? me : 0
+        let n = c.order[c.lastIndex(p)]
+        let t = c.totals(p)
+        VStack(spacing: -1) {
+          Text("H\(n)").font(.system(size: 13, weight: .bold)).foregroundStyle(markerGreen)
+          Text(t.done > 0 ? toParText(t.toPar) : "–").font(.system(size: 24, weight: .heavy, design: .rounded))
+            .foregroundStyle(t.done > 0 ? parColor(t.toPar) : .white)
+            .minimumScaleFactor(0.5).lineLimit(1)
+        }
+        .padding(4)
+      } else {
+        Text("MKR").font(.system(size: 13, weight: .bold)).foregroundStyle(markerGreen)
+      }
+    }
+  }
+}

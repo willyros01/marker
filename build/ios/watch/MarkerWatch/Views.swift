@@ -267,6 +267,7 @@ struct WidgetGallery: View {
           .padding(8).background(RoundedRectangle(cornerRadius: 14).stroke(Color.gray, lineWidth: 1))
         GroupBox(card: store.card)
           .padding(8).background(RoundedRectangle(cornerRadius: 14).stroke(Color.gray, lineWidth: 1))
+        MineRound(card: store.card, me: 1).frame(width: 80, height: 80)
       }
     }
   }

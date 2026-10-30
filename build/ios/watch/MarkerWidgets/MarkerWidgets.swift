@@ -36,13 +36,23 @@ struct MarkerProvider: TimelineProvider {
 struct MyScoreWidget: Widget {
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: "MarkerMine", provider: MarkerProvider()) { e in
-      MineBox(card: e.card, me: e.me)
+      MineView(entry: e)
         .containerBackground(for: .widget) { Color.black }
         .widgetURL(URL(string: "themarker://group"))
     }
     .configurationDisplayName("The Marker: my score")
     .description("The golfer you last opened: hole, score and score to par.")
-    .supportedFamilies([.accessoryRectangular])
+    .supportedFamilies([.accessoryRectangular, .accessoryCircular])
+  }
+}
+
+/* The wide box, or the round one for round slots (0.9.8). */
+struct MineView: View {
+  @Environment(\.widgetFamily) var family
+  let entry: MarkerEntry
+  var body: some View {
+    if family == .accessoryCircular { MineRound(card: entry.card, me: entry.me) }
+    else { MineBox(card: entry.card, me: entry.me) }
   }
 }
 

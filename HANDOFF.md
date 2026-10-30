@@ -341,6 +341,12 @@ itself every ~10 min (watchOS budget) and the app reloads it on new scores.
 Tap -> themarker://group -> the group screen. Willy keeps his date face: the
 group card goes in the Smart Stack; a Modular golf face is optional.
 
+0.9.8: Willy's face is X-Large, whose slot takes round widgets only, so
+"my score" also comes round (accessoryCircular, MineRound: H7 over +6).
+Apple setup done by Willy on 30 Oct: App Group group.io.github.willyros01.marker
+("The Marker watch"), on the watchkitapp App ID and on a new App ID
+io.github.willyros01.marker.watchkitapp.widgets ("The Marker watch face").
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").
