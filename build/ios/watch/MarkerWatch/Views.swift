@@ -110,11 +110,10 @@ struct GroupScreen: View {
     let n = card.order[k]
     let h = card.hole(n)
     ScrollView {
-      VStack(alignment: .leading, spacing: 6) {
+      VStack(alignment: .leading, spacing: 5) {
         Text("Hole \(n) · Par \(h.par)").font(.headline).foregroundStyle(markerGreen)
-        StatusLine(card: card)
         HStack { Text("Golfer"); Spacer(); Text("Hole · Total") }
-          .font(.footnote).foregroundStyle(.secondary)
+          .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 10)
         ForEach(card.players.indices, id: \.self) { i in
           let t = card.totals(i)
           NavigationLink(value: Route.player(i, k)) {
@@ -126,13 +125,19 @@ struct GroupScreen: View {
               Text(t.done > 0 ? toParText(t.toPar) : "–").font(.title3.weight(.semibold))
                 .foregroundStyle(t.done > 0 ? parColor(t.toPar) : .secondary)
             }
+            .padding(.vertical, 5).padding(.horizontal, 10)
+            .frame(maxWidth: .infinity)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color(white: 0.2)))
+            .contentShape(Rectangle())
           }
+          .buttonStyle(.plain)
         }
-        Text(card.course).font(.footnote).foregroundStyle(.secondary).padding(.top, 4)
+        StatusLine(card: card).padding(.top, 2)
+        Text(card.course).font(.footnote).foregroundStyle(.secondary)
         Button("Stop following", role: .destructive) { store.stop() }
       }
+      .padding(.horizontal, 4)
     }
-    .navigationTitle("The Marker")
   }
 }
 
@@ -217,6 +222,7 @@ struct SummaryScreen: View {
           SummaryRow(label: "Total", t: all, big: true)
           StatusLine(card: card)
         }
+        .padding(.horizontal, 6)
       }
     } else {
       Text("The card is closed.").font(.body)
