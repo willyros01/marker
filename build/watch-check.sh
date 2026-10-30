@@ -21,7 +21,8 @@ WAPP="$(find "$DD/Build/Products" -name "MarkerWatch.app" -path "*watchsimulator
 echo "iPhone app: $APP"; echo "Watch app: $WAPP"
 [ -n "$WAPP" ] || { echo "RESULT: the watch app was not built"; exit 1; }
 [ -d "$APP/Watch/MarkerWatch.app" ] && echo "The watch app is embedded in the iPhone app." || { echo "RESULT: the watch app is not embedded in the iPhone app"; ls -la "$APP" | head -40; exit 1; }
-plutil -p "$WAPP/Info.plist" | grep -E "WKApplication|WKCompanionAppBundleIdentifier|CFBundleIdentifier"
+plutil -p "$WAPP/Info.plist" | grep -E "WKApplication|WKCompanionAppBundleIdentifier|CFBundleIdentifier|CFBundleIconName"
+[ -f "$WAPP/Assets.car" ] && echo "The watch app has its icon." || { echo "RESULT: the watch app has no icon (Assets.car)"; exit 1; }
 
 echo "--- An Apple Watch Ultra simulator"
 UDID="$(xcrun simctl list devices available -j | python3 -c '

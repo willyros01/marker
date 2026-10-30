@@ -40,15 +40,7 @@ grep -q 'customClass="MarkerViewController"' "$SB" || { echo "RESULT: Main.story
 rm -rf ios/App/MarkerWatch
 cp -R build/ios/watch/MarkerWatch ios/App/MarkerWatch
 
-ruby -e 'require "xcodeproj"' 2>/dev/null || gem install xcodeproj --user-install --no-document
-ruby build/ios/configure.rb
-PLIST=ios/App/App/Info.plist
-plutil -replace CFBundleDisplayName -string "The Marker" "$PLIST"
-plutil -replace ITSAppUsesNonExemptEncryption -bool NO "$PLIST"
-plutil -replace NSCameraUsageDescription -string "The Marker uses the camera to take a picture of the club's scorecard, so the course details can be read for you." "$PLIST"
-plutil -replace NSPhotoLibraryUsageDescription -string "The Marker opens your photos so you can choose a picture of the club's scorecard to read the course details." "$PLIST"
-
-echo "--- App icons from icon.svg (square, no transparency, as Apple requires)"
+echo "--- App icons (before the project is finished, so the watch target gets its icon) from icon.svg (square, no transparency, as Apple requires)"
 command -v rsvg-convert >/dev/null || HOMEBREW_NO_AUTO_UPDATE=1 brew install librsvg >/dev/null
 rsvg-convert -w 1024 -h 1024 -b "#2E5541" icon.svg -o "$TMP/icon-a.png"
 sips -s format jpeg -s formatOptions 100 "$TMP/icon-a.png" --out "$TMP/icon.jpg" >/dev/null
@@ -71,4 +63,12 @@ cat > "$WICON/Contents.json" <<'JSON'
 { "images": [ { "filename": "AppIcon-1024.png", "idiom": "universal", "platform": "watchos", "size": "1024x1024" } ],
   "info": { "author": "xcode", "version": 1 } }
 JSON
+ruby -e 'require "xcodeproj"' 2>/dev/null || gem install xcodeproj --user-install --no-document
+ruby build/ios/configure.rb
+PLIST=ios/App/App/Info.plist
+plutil -replace CFBundleDisplayName -string "The Marker" "$PLIST"
+plutil -replace ITSAppUsesNonExemptEncryption -bool NO "$PLIST"
+plutil -replace NSCameraUsageDescription -string "The Marker uses the camera to take a picture of the club's scorecard, so the course details can be read for you." "$PLIST"
+plutil -replace NSPhotoLibraryUsageDescription -string "The Marker opens your photos so you can choose a picture of the club's scorecard to read the course details." "$PLIST"
+
 echo "Project ready: iPhone app + Apple Watch app."

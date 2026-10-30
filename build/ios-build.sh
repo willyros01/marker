@@ -36,6 +36,8 @@ tail -n 3 "$TMP/xcodebuild.log"
 test -d "$TMP/App.xcarchive/Products/Applications/App.app/Watch/MarkerWatch.app" \
   || { echo "RESULT: the Apple Watch app is not inside the archive"; exit 1; }
 echo "The Apple Watch app is inside the archive."
+test -f "$TMP/App.xcarchive/Products/Applications/App.app/Watch/MarkerWatch.app/Assets.car" \
+  || { echo "RESULT: the Apple Watch app has no icon"; exit 1; }
 
 cat > "$TMP/ExportOptions.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
