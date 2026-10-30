@@ -1,0 +1,121 @@
+--- Capacitor 8.5.2 (installed for this build only)
+npm warn deprecated uuid@7.0.3: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+
+added 197 packages in 27s
+--- The web files (same list as Android)
+--- The iOS project (fresh every build)
+✔ Adding native Xcode project in ios in 24.88ms
+✔ add in 25.35ms
+✔ Copying web assets from www to ios/App/App/public in 19.06ms
+✔ Creating capacitor.config.json in ios/App/App in 477.13μs
+✔ copy ios in 29.81ms
+✔ Updating iOS plugins in 417.17μs
+[info] All Capacitor plugins have a Package.swift file and will be included in Package.swift
+[info] Writing Package.swift
+[info] Found 1 Capacitor plugin for ios:
+       @capacitor/app@8.1.1
+✔ update ios in 17.42ms
+[success] ios platform added!
+Follow the Developer Workflow guide to get building:
+https://capacitorjs.com/docs/basics/workflow
+✔ Copying web assets from www to ios/App/App/public in 11.10ms
+✔ Creating capacitor.config.json in ios/App/App in 1.03ms
+✔ copy ios in 23.68ms
+✔ Updating iOS plugins in 640.42μs
+[info] All Capacitor plugins have a Package.swift file and will be included in Package.swift
+[info] Writing Package.swift
+[info] Found 1 Capacitor plugin for ios:
+       @capacitor/app@8.1.1
+✔ update ios in 22.54ms
+[info] Sync finished in 0.06s
+Xcode project: privacy manifest, entitlements, WatchLink bridge, and the MarkerWatch app (embedded).
+--- App icons from icon.svg (square, no transparency, as Apple requires)
+[32m==>[0m [1mDownloading bottle manifests[0m
+✔︎ Bottle Manifest librsvg (2.63.3)
+[32m==>[0m [1mFetching downloads for: [32mlibrsvg[39m[0m
+✔︎ Bottle Manifest gdk-pixbuf (2.44.8)
+✔︎ Bottle Manifest fribidi (1.0.17)
+✔︎ Bottle Manifest libdatrie (0.2.14)
+✔︎ Bottle Manifest libthai (0.1.30)
+✔︎ Bottle librsvg (2.63.3)
+✔︎ Bottle Manifest pango (1.58.2)
+✔︎ Bottle gdk-pixbuf (2.44.8)
+✔︎ Bottle fribidi (1.0.17)
+✔︎ Bottle libdatrie (0.2.14)
+✔︎ Bottle pango (1.58.2)
+✔︎ Bottle libthai (0.1.30)
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+Project ready: iPhone app + Apple Watch app.
+--- Build for the simulators (iPhone app + watch app)
+iPhone app: /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/App.app
+Watch app: /Users/runner/work/_temp/dd/Build/Products/Debug-watchsimulator/MarkerWatch.app
+The watch app is embedded in the iPhone app.
+  "CFBundleIdentifier" => "io.github.willyros01.marker.watchkitapp"
+  "WKApplication" => true
+  "WKCompanionAppBundleIdentifier" => "io.github.willyros01.marker"
+--- An Apple Watch Ultra simulator
+Simulator: E1C880B0-741C-4D68-8547-8F50DB49405E
+Monitoring boot status for Apple Watch Ultra 3 (49mm) (E1C880B0-741C-4D68-8547-8F50DB49405E).
+[2026-10-30 14:09:52 +0000] Status=4, isTerminal=NO, Elapsed=00:55.
+	Waiting on System App
+
+[2026-10-30 14:09:53 +0000] Status=4, isTerminal=NO, Elapsed=00:56.
+	Waiting on System App
+
+[2026-10-30 14:09:54 +0000] Status=4, isTerminal=NO, Elapsed=00:57.
+	Waiting on System App
+
+[2026-10-30 14:09:55 +0000] Status=4, isTerminal=NO, Elapsed=00:58.
+	Waiting on System App
+
+[2026-10-30 14:09:58 +0000] Status=4, isTerminal=NO, Elapsed=01:01.
+	Waiting on System App
+
+[2026-10-30 14:09:59 +0000] Status=4, isTerminal=NO, Elapsed=01:02.
+	Waiting on System App
+
+[2026-10-30 14:10:00 +0000] Status=4, isTerminal=NO, Elapsed=01:03.
+	Waiting on System App
+
+[2026-10-30 14:10:01 +0000] Status=4, isTerminal=NO, Elapsed=01:04.
+	Waiting on System App
+
+[2026-10-30 14:10:01 +0000] Status=4, isTerminal=NO, Elapsed=01:04.
+	Waiting on System App
+
+[2026-10-30 14:10:02 +0000] Status=4, isTerminal=NO, Elapsed=01:05.
+	Waiting on System App
+
+[2026-10-30 14:10:04 +0000] Status=4, isTerminal=NO, Elapsed=01:07.
+	Waiting on System App
+
+[2026-10-30 14:10:04 +0000] Status=4, isTerminal=NO, Elapsed=01:08.
+	Waiting on System App
+
+[2026-10-30 14:10:05 +0000] Status=4, isTerminal=NO, Elapsed=01:08.
+	Waiting on System App
+
+[2026-10-30 14:10:06 +0000] Status=4, isTerminal=NO, Elapsed=01:09.
+	Waiting on System App
+
+[2026-10-30 14:10:08 +0000] Status=4294967295, isTerminal=YES, Elapsed=01:11.
+	Finished
+
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BCCEEE14-7281-4496-92A4-70B697CEA38F (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-waiting.png
+picture: watch-waiting.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BCCEEE14-7281-4496-92A4-70B697CEA38F (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-group.png
+picture: watch-group.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BCCEEE14-7281-4496-92A4-70B697CEA38F (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-player.png
+picture: watch-player.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BCCEEE14-7281-4496-92A4-70B697CEA38F (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-summary.png
+picture: watch-summary.png
+Note: the watch app is not in the running list.
+RESULT: success — the watch app builds, is embedded, and opens on the simulator.
