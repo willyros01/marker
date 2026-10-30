@@ -743,7 +743,8 @@ function screenCaddieMember(c) {
       ${cardGrid(c, false)}
       <p class="muted">Scores appear here as your caddie enters them. You can put the phone away; "Continue your round" brings you back here.</p>
     </main>
-    <footer class="foot"><button class="btn" data-act="follow-start">${c.follow ? "Show the follow code" : "Let others follow this card"}</button>
+    <footer class="foot">${watchBtn("watch-mine")}
+      <button class="btn" data-act="follow-start">${c.follow ? "Show the follow code" : "Let others follow this card"}</button>
       <button class="btn" data-act="caddie-takeover">Take over scoring myself</button>
       <button class="btn" data-act="to-start">Go to the start screen</button></footer>`;
 }
@@ -790,7 +791,8 @@ function screenFollowShare(c) {
       <div class="bigcode" aria-label="Code ${esc(f.code.split("").join(" "))}">${esc(spaced(f.code))}</div>
       <p class="muted">Followers only look: they cannot change anything. They see the scores as they are entered, signal permitting. The code stops working after 12 hours.</p>
     </main>
-    <footer class="foot"><button class="btn primary" data-act="follow-back" data-v="${back}">${back === "caddie" ? "Back to your caddie's card" : back === "finish" ? "Back to the totals" : `Back to hole ${esc(c.order[c.pos])} →`}</button></footer>`;
+    <footer class="foot"><button class="btn primary" data-act="follow-back" data-v="${back}">${back === "caddie" ? "Back to your caddie's card" : back === "finish" ? "Back to the totals" : `Back to hole ${esc(c.order[c.pos])} →`}</button>
+      ${watchBtn("watch-mine")}</footer>`;
 }
 
 function screenFollowJoin() {
@@ -814,7 +816,7 @@ function screenFollowView() {
     : `<div class="banner">${when ? `Updated at ${esc(when)}` : "No scores yet"} · refreshes by itself${w.byCaddie ? " · scored by a caddie" : ""}</div>`;
   return `${top("Following", `${c.course.name} · ${c.tee.name}`)}
     <main class="body" style="padding:10px">${banner()}${line}${cardGrid(c, false)}</main>
-    <footer class="foot">${S.watchSupported ? `<button class="btn primary" data-act="watch-send" ${S.busy ? "disabled" : ""}>${S.busy === "watch" ? "Sending…" : "Send to my watch"}</button>` : ""}
+    <footer class="foot">${watchBtn("watch-send")}
       <button class="btn" data-act="follow-stop">Stop following</button></footer>`;
 }
 
@@ -1387,14 +1389,14 @@ const actions = {
     const c = local.currentCard();
     if (!c || S.busy) return;
     if (c.follow) { go("follow-share"); return; }
-    S.busy = "followstart"; S.error = ""; render();
-    let r;
-    try { r = await db.followStart(c); }
-    catch (e) { S.busy = ""; S.error = `No follow code could be made. ${joinWhy(e)}`; render(); return; }
-    S.busy = "";
-    const now = local.currentCard();
-    try { saveCard({ ...now, follow: { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt } }); } catch (e) { fail(e); return; }
-    go("follow-share");
+    if (await ensureFollow("followstart")) go("follow-share");
+  },
+  /* The member's own card to their Apple Watch: makes the follow code first if there is none. */
+  async "watch-mine"() {
+    if (S.busy) return;
+    const c = await ensureFollow("watch");
+    if (!c) return;
+    await sendToWatch(c.follow.code, c.course.name, "watch");
   },
   "follow-back"(el) { const v = el.dataset.v; go(v); if (v === "caddie") startPolling(); },
   "follow-open"() { S.error = ""; go("follow-join"); },
@@ -1411,17 +1413,8 @@ const actions = {
     await openFollow(f.code);
   },
   async "watch-send"() {
-    const W = watchPlugin();
-    if (!W || !S.watch || S.busy) return;
-    S.busy = "watch"; S.error = ""; render();
-    try {
-      const info = await db.watchInfo();
-      for (let tries = 0; ; tries++) {
-        try { await W.send({ code: S.watch.code, course: (S.watch.setup && S.watch.setup.course && S.watch.setup.course.name) || "", ...info }); break; }
-        catch (e) { if (/NOT_READY/.test(String((e && e.message) || e)) && tries < 3) { await new Promise((r) => setTimeout(r, 1000)); continue; } throw e; }
-      }
-      S.busy = ""; S.flash = "Sent. Open The Marker on your watch."; render();
-    } catch (e) { S.busy = ""; S.error = watchWhy(e); render(); }
+    if (!S.watch || S.busy) return;
+    await sendToWatch(S.watch.code, (S.watch.setup && S.watch.setup.course && S.watch.setup.course.name) || "");
   },
   "follow-stop"() { clearTimeout(watchTimer); local.remove("following"); S.watch = null; go("start"); },
   async "caddie-start"() {
@@ -1974,8 +1967,39 @@ async function checkWatch(again = 2) {
   const was = !!S.watchSupported;
   S.watchSupported = !!(st && st.supported && st.paired);
   if (st && st.supported && !st.ready && again > 0) setTimeout(() => checkWatch(again - 1), 1500);   /* the link starts in the background */
-  if (S.screen === "follow-view" && was !== S.watchSupported) render();
+  if (["follow-view", "caddie", "follow-share"].includes(S.screen) && was !== S.watchSupported) render();
 }
+/* The card's follow code, made now if it has none. Returns the saved card, or null (message shown). */
+async function ensureFollow(busy) {
+  const c = local.currentCard();
+  if (!c) return null;
+  if (c.follow) return c;
+  S.busy = busy; S.error = ""; render();
+  let r;
+  try { r = await db.followStart(c); }
+  catch (e) { S.busy = ""; S.error = `No follow code could be made. ${joinWhy(e)}`; render(); return null; }
+  S.busy = "";
+  const now = local.currentCard();
+  const saved = { ...now, follow: { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt } };
+  try { saveCard(saved); } catch (e) { fail(e); return null; }
+  if (ownerSends(saved)) followNow(false);
+  return saved;
+}
+async function sendToWatch(code, course) {
+  const W = watchPlugin();
+  if (!W) return;
+  S.busy = "watch"; S.error = ""; render();
+  try {
+    const info = await db.watchInfo();
+    for (let tries = 0; ; tries++) {
+      try { await W.send({ code, course: course || "", ...info }); break; }
+      catch (e) { if (/NOT_READY/.test(String((e && e.message) || e)) && tries < 3) { await new Promise((r) => setTimeout(r, 1000)); continue; } throw e; }
+    }
+    S.busy = ""; S.flash = "Sent. Open The Marker on your watch."; render();
+  } catch (e) { S.busy = ""; S.error = watchWhy(e); render(); }
+}
+const watchBtn = (act) => S.watchSupported
+  ? `<button class="btn" data-act="${act}" ${S.busy ? "disabled" : ""}>${S.busy === "watch" ? "Sending…" : "Send to my watch"}</button>` : "";
 function watchWhy(e) {
   const m = String((e && e.message) || e);
   if (/NOT_PAIRED/.test(m)) return "No Apple Watch is paired with this iPhone.";

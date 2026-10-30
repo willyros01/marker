@@ -297,6 +297,12 @@ Ultra; he chose "Send to my watch" from the iPhone over typing on the watch.
 - watch-check.yml: simulator build + pictures of each screen (-markerDemo,
   -markerShow waiting|group|player|summary) to ci-logs logs/watch/.
 
+0.9.1: Willy, with a caddie scoring his card, could not send his own card to
+the watch (the button was only on a follower's screen). "Send to my watch"
+(action watch-mine) is now also on the caddie screen and on the Let others
+follow screen; it makes the follow code first when the card has none
+(ensureFollow), then sends. Shown only when a watch is paired.
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").
