@@ -1,0 +1,78 @@
+--- Capacitor 8.5.2 (installed for this build only)
+npm warn deprecated uuid@7.0.3: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+
+added 197 packages in 16s
+--- The web files (same list as Android)
+--- The iOS project (fresh every build)
+✔ Adding native Xcode project in ios in 12.85ms
+✔ add in 13.23ms
+✔ Copying web assets from www to ios/App/App/public in 5.48ms
+✔ Creating capacitor.config.json in ios/App/App in 296.71μs
+✔ copy ios in 10.36ms
+✔ Updating iOS plugins in 439.13μs
+[info] All Capacitor plugins have a Package.swift file and will be included in Package.swift
+[info] Writing Package.swift
+[info] Found 1 Capacitor plugin for ios:
+       @capacitor/app@8.1.1
+✔ update ios in 9.52ms
+[success] ios platform added!
+Follow the Developer Workflow guide to get building:
+https://capacitorjs.com/docs/basics/workflow
+✔ Copying web assets from www to ios/App/App/public in 7.00ms
+✔ Creating capacitor.config.json in ios/App/App in 491.29μs
+✔ copy ios in 12.62ms
+✔ Updating iOS plugins in 462.21μs
+[info] All Capacitor plugins have a Package.swift file and will be included in Package.swift
+[info] Writing Package.swift
+[info] Found 1 Capacitor plugin for ios:
+       @capacitor/app@8.1.1
+✔ update ios in 11.60ms
+[info] Sync finished in 0.033s
+Xcode project: privacy manifest, entitlements, WatchLink bridge, and the MarkerWatch app (embedded).
+--- App icons from icon.svg (square, no transparency, as Apple requires)
+[32m==>[0m [1mDownloading bottle manifests[0m
+✔︎ Bottle Manifest librsvg (2.63.2)
+[32m==>[0m [1mFetching downloads for: [32mlibrsvg[39m[0m
+✔︎ Bottle Manifest libdatrie (0.2.14)
+✔︎ Bottle Manifest fribidi (1.0.17)
+✔︎ Bottle Manifest gdk-pixbuf (2.44.8)
+✔︎ Bottle Manifest libthai (0.1.30)
+✔︎ Bottle fribidi (1.0.17)
+✔︎ Bottle Manifest pango (1.58.2)
+✔︎ Bottle gdk-pixbuf (2.44.8)
+✔︎ Bottle librsvg (2.63.2)
+✔︎ Bottle libthai (0.1.30)
+✔︎ Bottle pango (1.58.2)
+✔︎ Bottle libdatrie (0.2.14)
+IOServiceMatchingfailed for: AppleM2ScalerParavirtDriver
+Project ready: iPhone app + Apple Watch app.
+--- Build for the simulators (iPhone app + watch app)
+iPhone app: /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/App.app
+Watch app: /Users/runner/work/_temp/dd/Build/Products/Debug-watchsimulator/MarkerWatch.app
+The watch app is embedded in the iPhone app.
+  "CFBundleIdentifier" => "io.github.willyros01.marker.watchkitapp"
+  "WKApplication" => true
+  "WKCompanionAppBundleIdentifier" => "io.github.willyros01.marker"
+--- An Apple Watch Ultra simulator
+Simulator: D64CADF9-1B04-4FB8-8B5E-154EE8747596
+Monitoring boot status for Apple Watch Ultra 3 (49mm) (D64CADF9-1B04-4FB8-8B5E-154EE8747596).
+Device already booted, nothing to do.
+
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: A9EF0CF6-BC99-4D76-9AF4-036E5E5D38FE (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-waiting.png
+picture: watch-waiting.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: A9EF0CF6-BC99-4D76-9AF4-036E5E5D38FE (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-group.png
+picture: watch-group.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: A9EF0CF6-BC99-4D76-9AF4-036E5E5D38FE (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-player.png
+picture: watch-player.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: A9EF0CF6-BC99-4D76-9AF4-036E5E5D38FE (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/shots/watch-summary.png
+picture: watch-summary.png
+The watch app is still running.
+RESULT: success — the watch app builds, is embedded, and opens on the simulator.
