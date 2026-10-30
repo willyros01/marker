@@ -303,6 +303,11 @@ the watch (the button was only on a follower's screen). "Send to my watch"
 follow screen; it makes the follow code first when the card has none
 (ensureFollow), then sends. Shown only when a watch is paired.
 
+0.9.3: on Willy's iPhone (0.9.2) the button never showed: it waited for
+WatchLink.status() to say "paired", which may answer late. Now shown on every
+iPhone app (native iOS + "iPhone" in the user agent); paired / installed /
+plugin missing are reported when tapped (watchWhy).
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").

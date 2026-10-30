@@ -1140,7 +1140,6 @@ async function openFollow(code, { retry = false } = {}) {
   try { local.save("following", { code, course: v.setup.course.name }); } catch { /* following still works without it */ }
   go("follow-view");
   if (v.status !== "finished") watchTimer = setTimeout(watchPoll, 12000);
-  checkWatch(1);
 }
 
 const actions = {
@@ -1959,15 +1958,14 @@ function watchPlugin() {
   if (!watchLink) watchLink = (Cap.Plugins && Cap.Plugins.WatchLink) || (Cap.registerPlugin ? Cap.registerPlugin("WatchLink") : null);
   return watchLink;
 }
-async function checkWatch(again = 2) {
-  const W = watchPlugin();
-  if (!W) return;
-  let st = null;
-  try { st = await W.status(); } catch { st = null; }
-  const was = !!S.watchSupported;
-  S.watchSupported = !!(st && st.supported && st.paired);
-  if (st && st.supported && !st.ready && again > 0) setTimeout(() => checkWatch(again - 1), 1500);   /* the link starts in the background */
-  if (["follow-view", "caddie", "follow-share"].includes(S.screen) && was !== S.watchSupported) render();
+/* Shown on every iPhone app (an iPad or Android cannot pair with an Apple
+   Watch); whether a watch is paired is checked when the button is tapped,
+   and anything missing is said plainly (0.9.3: the background check could
+   answer too late and hide the button). */
+function checkWatch() {
+  const Cap = (typeof window !== "undefined" && window.Capacitor) || null;
+  S.watchSupported = !!(Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.getPlatform && Cap.getPlatform() === "ios"
+    && /iPhone/.test(navigator.userAgent || ""));
 }
 /* The card's follow code, made now if it has none. Returns the saved card, or null (message shown). */
 async function ensureFollow(busy) {
@@ -1987,13 +1985,13 @@ async function ensureFollow(busy) {
 }
 async function sendToWatch(code, course) {
   const W = watchPlugin();
-  if (!W) return;
+  if (!W) { S.error = "This version of The Marker cannot reach the watch: its watch link is missing. Please send a screenshot of this message."; render(); return; }
   S.busy = "watch"; S.error = ""; render();
   try {
     const info = await db.watchInfo();
     for (let tries = 0; ; tries++) {
       try { await W.send({ code, course: course || "", ...info }); break; }
-      catch (e) { if (/NOT_READY/.test(String((e && e.message) || e)) && tries < 3) { await new Promise((r) => setTimeout(r, 1000)); continue; } throw e; }
+      catch (e) { if (/NOT_READY/.test(String((e && e.message) || e)) && tries < 6) { await new Promise((r) => setTimeout(r, 1000)); continue; } throw e; }
     }
     S.busy = ""; S.flash = "Sent. Open The Marker on your watch."; render();
   } catch (e) { S.busy = ""; S.error = watchWhy(e); render(); }
@@ -2007,6 +2005,7 @@ function watchWhy(e) {
   if (/NOT_INSTALLED/.test(m)) return "The Marker is not on your watch yet. On this iPhone, open the Watch app, scroll down to The Marker and tap Install. Then tap Send to my watch again.";
   if (/NOT_READY/.test(m)) return "The link to your watch is still starting. Try again in a moment.";
   if (/NOT_SUPPORTED/.test(m)) return "This device cannot send to an Apple Watch.";
+  if (/not implemented|UNIMPLEMENTED/i.test(m)) return "This version of The Marker cannot reach the watch: its watch link is missing. Please send a screenshot of this message.";
   if (/NOT_SET_UP|UNREACHABLE|OFFLINE/.test(m)) return joinWhy(e);
   return "The card could not be sent to your watch. Try again.";
 }
