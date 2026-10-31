@@ -374,6 +374,8 @@ io.github.willyros01.marker.watchkitapp.widgets ("The Marker watch face").
 
 ## Open
 
+- Next Marker release (code frozen since 31 Oct until Willy lifts it): the list is the Claude doc "The Marker — next release", https://claude.ai/artifact/8q4PpSVDLk4d7XzQhLyaHA. Step 1: follow the other golfers in the same Scorecard game (option B, live leaderboard).
+
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").
 - Optional cleanup: remote branch marker-counter in Cuberoot.
 - After the freeze: The Scorecard fixes in the document above, then build 25 to the App Store.
