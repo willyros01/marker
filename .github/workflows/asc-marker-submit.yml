@@ -35,6 +35,7 @@ jobs:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
           STAGE: ${{ inputs.stage }}
           ASSETS: assets-branch/marker-1.0.0
+          BUILD: "36"
         run: |
           set -o pipefail
           node build/asc/marker-submit.mjs 2>&1 | tee out.txt

@@ -81,8 +81,11 @@ async function main() {
 
   if (STAGE === "prepare") {
     /* 1. version 1.0.0, automatic release, build */
-    const build = builds.data.find((b) => pre[b.relationships.preReleaseVersion.data.id] === VERSION && b.attributes.processingState === "VALID");
-    if (!build) throw new Error("no processed 1.0.0 build yet");
+    const newest = builds.data.filter((b) => pre[b.relationships.preReleaseVersion.data.id] === VERSION).sort((x, y) => Number(y.attributes.version) - Number(x.attributes.version))[0];
+    const want = Number(e.BUILD || 0);
+    if (!newest || Number(newest.attributes.version) < want) throw new Error(`build ${want} is not in App Store Connect yet`);
+    if (newest.attributes.processingState !== "VALID") throw new Error(`build ${newest.attributes.version} is still ${newest.attributes.processingState}`);
+    const build = newest;
     must(await api("PATCH", `appStoreVersions/${ver.id}`, { data: { type: "appStoreVersions", id: ver.id, attributes: { versionString: VERSION, releaseType: "AFTER_APPROVAL", copyright: T.copyright } } }), "version");
     must(await api("PATCH", `appStoreVersions/${ver.id}/relationships/build`, { data: { type: "builds", id: build.id } }), "attach build");
     say(`version ${VERSION}, release after approval, build ${build.attributes.version} attached`);
