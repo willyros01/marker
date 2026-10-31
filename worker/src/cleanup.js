@@ -103,3 +103,48 @@ export async function cleanupStatus(fs, { now = Date.now() } = {}) {
     ...(hoursAgo < STALE_HOURS ? {} : { why: `the daily clean-up last ran ${hoursAgo} hours ago` }),
   };
 }
+
+/* Old live cards (Willy, 30 Oct 2026, "do 2"): the copy of a card made for
+ * followers or a caddie (markerLive/{id}) stops working after 12 hours but was
+ * kept for ever. Once a day, every live card whose codes stopped working more
+ * than LIVE_DAYS ago is deleted together with its follow and caddie codes, in
+ * ONE commit per card, guarded by each document's updateTime: if anything of
+ * it changed since it was read, nothing of it is deleted and the next run
+ * looks again. Posted rounds never depend on live cards. */
+export const LIVE_DAYS = 30;
+export const LIVE_STATE = "maintenance/liveCardCleanup";
+
+export async function cleanLiveCards(fs, { now = Date.now(), max = 200, log = () => {} } = {}) {
+  const cards = await fs.query("", "markerLive", [], 5000);
+  const ended = (d) => Number(d.expiresAt) || Number(d.createdAt) || 0;
+  const due = cards.filter((c) => {
+    const t = ended(c.data || {});
+    return t > 0 && now - t >= LIVE_DAYS * DAY;
+  });
+
+  let deleted = 0, kept = 0;
+  for (const c of due.slice(0, max)) {
+    try {
+      const codes = [];
+      if (c.data.code) codes.push(`markerCaddieCodes/${c.data.code}`);
+      if (c.data.followCode) codes.push(`markerFollowCodes/${c.data.followCode}`);
+      const found = (await Promise.all(codes.map((p) => fs.get(p))))
+        .filter((x) => x && x.data && x.data.liveId === c.id);        /* only codes pointing at this card */
+      await fs.commit([c, ...found].map((x) => deleteWrite(fs, x.path, { updateTime: x.updateTime })));
+      deleted++;
+    } catch (e) {
+      kept++;                                   /* changed since it was read: next run looks again */
+      log(`kept live card ${c.id}: ${e && e.message}`);
+    }
+  }
+
+  const record = {
+    lastRun: new Date(now).toISOString(),
+    checked: cards.length,
+    deleted,
+    keptBecauseChanged: kept,
+    waitingForNextRun: Math.max(due.length - max, 0),
+  };
+  await fs.commit([setWrite(fs, LIVE_STATE, record)]);
+  return record;
+}

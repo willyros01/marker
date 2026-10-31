@@ -26,7 +26,8 @@
  *   every 5 minutes          -> posts a card still waiting (one per run)
  *   GET  /cleanup-status     -> { ok, lastRun, hoursAgo, ... }  no sign-in; 503 when the
  *                               daily clean-up has not run for 48 hours (cron-job.org watchdog)
- *   once a day (07:00 UTC)   -> deletes golfers unused for 7 days (cleanup.js)
+ *   once a day (07:00 UTC)   -> deletes golfers unused for 7 days, and live cards
+ *                               (follow / caddie) 30 days after they stopped working (cleanup.js)
  *
  * Secrets: SA_KEY (marker-worker service-account key, JSON), GOLF_KEY.
  * Binding: AI (Cloudflare Workers AI, free allowance) for /scan.
@@ -39,7 +40,7 @@ import { processSubmission, sweep } from "./post.js";
 import * as search from "./search.js";
 import * as fix from "./correct.js";
 import { Refusal } from "./post.js";
-import { cleanGolfers, cleanupStatus } from "./cleanup.js";
+import { cleanGolfers, cleanLiveCards, cleanupStatus } from "./cleanup.js";
 import * as caddie from "./caddie.js";
 import * as follow from "./follow.js";
 
@@ -168,6 +169,9 @@ export default {
       ctx.waitUntil(cleanGolfers(fsFor(env), { log: (m) => console.log(m) })
         .then((r) => console.log("golfer clean-up", JSON.stringify({ ...r, pending: undefined })))
         .catch((e) => console.log("golfer clean-up failed, nothing deleted:", e && e.message)));
+      ctx.waitUntil(cleanLiveCards(fsFor(env), { log: (m) => console.log(m) })
+        .then((r) => console.log("live card clean-up", JSON.stringify(r)))
+        .catch((e) => console.log("live card clean-up failed, nothing deleted:", e && e.message)));
       return;
     }
     ctx.waitUntil(sweep(fsFor(env), { log: (m) => console.log(m) }).then((r) => console.log("sweep", JSON.stringify(r))));

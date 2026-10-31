@@ -347,6 +347,14 @@ Apple setup done by Willy on 30 Oct: App Group group.io.github.willyros01.marker
 ("The Marker watch"), on the watchkitapp App ID and on a new App ID
 io.github.willyros01.marker.watchkitapp.widgets ("The Marker watch face").
 
+## Old live cards deleted after 30 days (Willy, 30 Oct 2026, "do 2") — worker only
+
+- A live card (markerLive/{id}) is the copy made for followers or a caddie. Its codes stop after 12 hours, but the copy was kept for ever, including guests' names.
+- The daily job (07:00 UTC, worker/src/cleanup.js cleanLiveCards) now deletes every live card 30 days after its codes stopped (expiresAt; createdAt if missing), with its own follow and caddie code documents, one commit per card guarded by updateTime. A card changed since it was read is kept for the next run; at most 200 a day.
+- Each run writes maintenance/liveCardCleanup (lastRun, checked, deleted, keptBecauseChanged, waitingForNextRun). No names.
+- Posted rounds, markerSubmissions and corrections never read live cards. Tests: test/unit/livecleanup.test.mjs (LC1-LC5).
+- The Marker's privacy page (still to be written) must say: follow and caddie copies are deleted 30 days after the round.
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").
