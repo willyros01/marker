@@ -1,0 +1,5 @@
+Scorecard 2.30.0 (WAITING_FOR_REVIEW): sign-in name yes, password yes
+The Marker: found (The Marker)
+Marker 1.0: PREPARE_FOR_SUBMISSION
+copy into Marker 1.0: done
+RESULT: sign-in name matches true, password matches true, required true
