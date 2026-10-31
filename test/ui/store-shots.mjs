@@ -118,12 +118,8 @@ for (const [dev, ctx] of Object.entries(sizes)) {
   await shot(member, "07-caddie-live");
 
   /* 7. reading a club scorecard from a picture */
-  const solo = await page();
-  await solo.goto(APP); await solo.waitForSelector('[data-act="go-signin"]', { timeout: 30000 });
-  await act(solo, "go-signin");
-  await solo.fill("#email", "member@example.com"); await solo.fill("#password", "pass-M-123");
-  await act(solo, "sign-in");
-  await solo.waitForSelector('[data-act="new-round"]', { timeout: 30000 });
+  const solo = member;                       /* the signed-in member's own phone */
+  await solo.goto(APP); await solo.waitForSelector('[data-act="new-round"]', { timeout: 30000 });
   await act(solo, "new-round"); await act(solo, "go-course");
   await solo.waitForSelector('[data-act="manual"]', { timeout: 30000 });
   await act(solo, "manual");
