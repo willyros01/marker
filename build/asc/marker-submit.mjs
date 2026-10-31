@@ -104,11 +104,11 @@ async function main() {
     say("categories: Sports, Utilities");
     /* 4. age rating: nothing objectionable */
     if (age) {
-      const BOOL = ["advertising", "ageAssurance", "gambling", "healthOrWellnessTopics", "lootBox", "messagingAndChat", "parentalControls", "unrestrictedWebAccess", "userGeneratedContent"];
+      const BOOL = ["advertising", "ageAssurance", "gambling", "healthOrWellnessTopics", "lootBox", "messagingAndChat", "parentalControls", "socialMedia", "socialMediaAgeRestricted", "unrestrictedWebAccess", "userGeneratedContent"];
       const a = {};
       for (const k of Object.keys(age.attributes)) {
         if (BOOL.includes(k)) a[k] = false;
-        else if (/kidsAgeBand|Override|Url|ageRatingOverride/.test(k)) continue;
+        else if (/kidsAgeBand|Override|Url|gracRating/.test(k)) continue;
         else a[k] = "NONE";
       }
       const r = await api("PATCH", `ageRatingDeclarations/${age.id}`, { data: { type: "ageRatingDeclarations", id: age.id, attributes: a } });
