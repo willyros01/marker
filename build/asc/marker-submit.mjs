@@ -75,7 +75,7 @@ async function main() {
   const rd = (await api("GET", `appStoreVersions/${ver.id}/appStoreReviewDetail`)).json.data;
   if (rd) { const a = rd.attributes; say(`review: contact ${a.contactFirstName ? "yes" : "no"}, phone ${a.contactPhone ? "yes" : "no"}, email ${a.contactEmail ? "yes" : "no"}, sign-in ${a.demoAccountName ? "yes" : "no"}, notes ${(a.notes || "").length} chars`); }
   const age = (await api("GET", `appInfos/${info.id}/ageRatingDeclaration`)).json.data;
-  say(`age rating: ${age ? JSON.stringify(age.attributes).slice(0, 300) : "none"}`);
+  say(`age rating: ${age ? JSON.stringify(age.attributes) : "none"}`);
 
   if (STAGE === "inspect") return;
 
@@ -104,11 +104,12 @@ async function main() {
     say("categories: Sports, Utilities");
     /* 4. age rating: nothing objectionable */
     if (age) {
+      const BOOL = ["advertising", "ageAssurance", "gambling", "healthOrWellnessTopics", "lootBox", "messagingAndChat", "parentalControls", "unrestrictedWebAccess", "userGeneratedContent"];
       const a = {};
-      for (const [k, v] of Object.entries(age.attributes)) {
-        if (typeof v === "boolean") a[k] = false;
-        else if (typeof v === "string" && /^(NONE|INFREQUENT_OR_MILD|FREQUENT_OR_INTENSE|INFREQUENT|FREQUENT)$/.test(v)) a[k] = "NONE";
-        else if (v === null && !/ageRatingOverride|koreaAgeRatingOverride|developerAgeRatingInfoUrl|ageAssurance/.test(k)) a[k] = k.startsWith("is") || k.startsWith("has") || k.endsWith("Provided") ? false : "NONE";
+      for (const k of Object.keys(age.attributes)) {
+        if (BOOL.includes(k)) a[k] = false;
+        else if (/kidsAgeBand|Override|Url|ageRatingOverride/.test(k)) continue;
+        else a[k] = "NONE";
       }
       const r = await api("PATCH", `ageRatingDeclarations/${age.id}`, { data: { type: "ageRatingDeclarations", id: age.id, attributes: a } });
       say("age rating: " + (r.ok ? "set, nothing objectionable" : `REFUSED ${r.status} ${errs(r)}`));
