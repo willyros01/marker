@@ -359,9 +359,13 @@ io.github.willyros01.marker.watchkitapp.widgets ("The Marker watch face").
 
 - Watch demo data (FollowNet.swift sample) uses fictional golfers Sam Carter, Lee Park, Jordan Diaz, Pat Kelly, for App Store pictures. No TestFlight build (version.js unchanged).
 - App Review sign-in for The Marker 1.0 = The Scorecard's Apple group test user, copied by .github/workflows/asc-marker-signin.yml (never printed).
-- NEXT BUILD (approved, not yet done): point the app's Privacy link (app.js, start screen) to https://www.cuberoot-systems.com/marker/privacy/ instead of the Scorecard page.
-- NEXT BUILD (approved 30 Oct 2026, 10:36 pm, not yet done): before the first scorecard photo is sent for reading, show a one-time notice per device (App Review 5.1.2(i), third-party AI): "The picture is sent to Cloudflare's AI to read the course figures. It is not kept." with Continue and Cancel.
+- DONE in 1.0.0: point the app's Privacy link (app.js, start screen) to https://www.cuberoot-systems.com/marker/privacy/ instead of the Scorecard page.
+- DONE in 1.0.0 (app.js aiPhotoAgreed, AI_NOTICE; also shown under the photo buttons): before the first scorecard photo is sent for reading, show a one-time notice per device (App Review 5.1.2(i), third-party AI): "The picture is sent to Cloudflare's AI to read the course figures. It is not kept." with Continue and Cancel.
 - Field testing: Willy has fully field tested The Marker several times already (stated 30 Oct 2026); no separate field-test stage.
+
+## Version 1.0.0 (Willy, 30 Oct 2026, 11:00 pm: "build the latest version, iOS, Android and web")
+
+- The release candidate for the App Store. Privacy link to the Marker page; one-time AI photo notice (window.confirm; declining sends nothing; the yes is kept in prefs.aiPhotoOk). App Store Connect's version is "1.0": rename it to "1.0.0" at submission so the build matches.
 
 ## Open
 

@@ -164,7 +164,7 @@ function screenStart() {
         <span>Follow</span></button></div>${signedIn ? `<div class="who">Signed in as ${esc(u.email)}</div><button class="btn" data-act="sign-out">Sign out</button>` : ""}
       <div class="links">
       <a href="https://www.cuberoot-systems.com/marker/guide/" target="_blank" rel="noopener">Support</a>
-      <a href="https://www.cuberoot-systems.com/scorecard/privacy/" target="_blank" rel="noopener">Privacy</a>
+      <a href="https://www.cuberoot-systems.com/marker/privacy/" target="_blank" rel="noopener">Privacy</a>
       <span class="muted">v${esc(VERSION)}</span></div></footer>`;
 }
 
@@ -301,7 +301,19 @@ function photoButtons(label = "") {
         <label class="btn dashed" style="position:relative">🖼 Photos or Files
           <input type="file" id="scanpick" accept="image/*" ${S.busy ? "disabled" : ""}
             style="position:absolute;inset:0;opacity:0;width:100%;height:100%"></label>
-      </div>`;
+      </div>
+      <p class="muted" style="margin-top:6px">${esc(AI_NOTICE)}</p>`;
+}
+
+/* Apple App Review rule 5.1.2(i), third-party AI (Willy, 30 Oct 2026): say
+   where the picture goes, and ask once on this device before the first one is
+   sent. Nothing is sent unless the golfer says yes. */
+const AI_NOTICE = "Pictures are sent to Cloudflare's AI to read the course figures. They are not kept.";
+function aiPhotoAgreed() {
+  if (local.prefs().aiPhotoOk === true) return true;
+  if (!window.confirm(`${AI_NOTICE}\n\nSend this picture to be read?`)) return false;
+  try { local.savePrefs({ aiPhotoOk: true }); } catch { /* not saved: simply asked again next time */ }
+  return true;
 }
 
 /* ---------------- checking a card read from pictures ---------------- */
@@ -1803,6 +1815,7 @@ function shrink(file) {
 
 async function readPhoto(file) {
   if (!file || !S.cs.manual) return;
+  if (!aiPhotoAgreed()) return;                 /* declined: nothing is sent */
   S.cs.error = ""; S.error = ""; S.cs.scan = null; S.busy = "scan"; render();
   try {
     const image = await shrink(file);
