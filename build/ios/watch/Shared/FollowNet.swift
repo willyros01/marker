@@ -143,7 +143,7 @@ extension FollowCard {
         "course": ["name": "Lakeview Golf Course"],
         "tee": ["name": "White", "par": 71, "holes": holes],
         "holes": "18", "start": 1, "order": Array(1...18),
-        "players": [["name": "Raul Rosales", "ch": 14], ["name": "Willy Rosales", "ch": 18], ["name": "Raul", "ch": 20], ["name": "Golfer 4", "ch": 10]],
+        "players": [["name": "Sam Carter", "ch": 14], ["name": "Lee Park", "ch": 18], ["name": "Jordan Diaz", "ch": 20], ["name": "Pat Kelly", "ch": 10]],
       ],
       "scores": [
         "0": ["1": 5, "2": 4, "3": 4, "4": 5, "5": 5, "6": 4, "7": 6],

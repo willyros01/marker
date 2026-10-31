@@ -353,7 +353,13 @@ io.github.willyros01.marker.watchkitapp.widgets ("The Marker watch face").
 - The daily job (07:00 UTC, worker/src/cleanup.js cleanLiveCards) now deletes every live card 30 days after its codes stopped (expiresAt; createdAt if missing), with its own follow and caddie code documents, one commit per card guarded by updateTime. A card changed since it was read is kept for the next run; at most 200 a day.
 - Each run writes maintenance/liveCardCleanup (lastRun, checked, deleted, keptBecauseChanged, waitingForNextRun). No names.
 - Posted rounds, markerSubmissions and corrections never read live cards. Tests: test/unit/livecleanup.test.mjs (LC1-LC5).
-- The Marker's privacy page (still to be written) must say: follow and caddie copies are deleted 30 days after the round.
+- The Marker's privacy page (cuberoot-systems.com/marker/privacy/, published 30 Oct 2026) says so.
+
+## App Store preparation (Willy, 30 Oct 2026)
+
+- Watch demo data (FollowNet.swift sample) uses fictional golfers Sam Carter, Lee Park, Jordan Diaz, Pat Kelly, for App Store pictures. No TestFlight build (version.js unchanged).
+- App Review sign-in for The Marker 1.0 = The Scorecard's Apple group test user, copied by .github/workflows/asc-marker-signin.yml (never printed).
+- NEXT BUILD (approved, not yet done): point the app's Privacy link (app.js, start screen) to https://www.cuberoot-systems.com/marker/privacy/ instead of the Scorecard page.
 
 ## Open
 
