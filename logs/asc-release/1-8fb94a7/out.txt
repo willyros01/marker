@@ -1,0 +1,3 @@
+2.30.0 is PENDING_DEVELOPER_RELEASE, build 27
+release request: accepted
+RESULT: 2.30.0 is now READY_FOR_SALE
