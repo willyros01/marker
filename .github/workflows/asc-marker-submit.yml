@@ -1,0 +1,55 @@
+name: Marker App Store submission
+
+# Willy, 31 Oct 2026, 11:48 am ("Go ahead"): The Marker 1.0.0 to App Review.
+# build/asc/marker-submit.mjs, stage inspect | prepare | submit. Assets
+# (pictures, review video, listing text) come from the appstore-assets branch.
+# Never prints the key or the review sign-in.
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: inspect, prepare or submit
+        required: true
+        default: inspect
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  asc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: appstore-assets
+          path: assets-branch
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: App Store Connect (${{ inputs.stage }})
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          STAGE: ${{ inputs.stage }}
+          ASSETS: assets-branch/marker-1.0.0
+        run: |
+          set -o pipefail
+          node build/asc/marker-submit.mjs 2>&1 | tee out.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        env:
+          STAGE: ${{ inputs.stage }}
+        run: |
+          set -e
+          dir="logs/asc-marker-submit/${GITHUB_RUN_NUMBER}-${STAGE}"
+          mkdir -p "/tmp/$dir"; cp out.txt "/tmp/$dir/" 2>/dev/null || true
+          rm -rf assets-branch
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "asc marker submit ${GITHUB_RUN_NUMBER} ${STAGE}" && git push -q origin ci-logs
