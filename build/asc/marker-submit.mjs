@@ -32,7 +32,7 @@ async function api(method, p, data) {
   const json = await r.json().catch(() => ({}));
   return { status: r.status, json, ok: r.status >= 200 && r.status < 300 };
 }
-const errs = (r) => JSON.stringify((r.json.errors || []).map((x) => `${x.code || ""} ${x.detail || x.title}`)).slice(0, 600);
+const errs = (r) => JSON.stringify((r.json.errors || []).map((x) => `${x.code || ""} ${x.detail || x.title} ${x.meta ? JSON.stringify(x.meta) : ""}`)).slice(0, 3000);
 const must = (r, what) => { if (!r.ok) throw new Error(`${what}: ${r.status} ${errs(r)}`); return r.json; };
 
 /* ---------- text ---------- */
@@ -155,7 +155,12 @@ async function main() {
   }
 
   if (STAGE === "submit") {
-    const sub = must(await api("POST", "reviewSubmissions", { data: { type: "reviewSubmissions", attributes: { platform: "IOS" }, relationships: { app: { data: { type: "apps", id: app.id } } } } }), "review submission").data;
+    const open = must(await api("GET", `reviewSubmissions?filter[app]=${app.id}&filter[state]=READY_FOR_REVIEW&limit=5`), "open submissions").data;
+    const sub = open[0] || must(await api("POST", "reviewSubmissions", { data: { type: "reviewSubmissions", attributes: { platform: "IOS" }, relationships: { app: { data: { type: "apps", id: app.id } } } } }), "review submission").data;
+    const pr = await api("GET", `apps/${app.id}/appPriceSchedule?include=manualPrices`);
+    say(`price schedule: ${pr.ok ? (pr.json.included || []).length + " price(s)" : "none (" + pr.status + ")"}`);
+    const av = await api("GET", `apps/${app.id}/appAvailabilityV2`);
+    say(`availability: ${av.ok ? "set" : "none (" + av.status + ")"}`);
     must(await api("POST", "reviewSubmissionItems", { data: { type: "reviewSubmissionItems", relationships: { reviewSubmission: { data: { type: "reviewSubmissions", id: sub.id } }, appStoreVersion: { data: { type: "appStoreVersions", id: ver.id } } } } }), "submission item");
     must(await api("PATCH", `reviewSubmissions/${sub.id}`, { data: { type: "reviewSubmissions", id: sub.id, attributes: { submitted: true } } }), "submit");
     const after = must(await api("GET", `appStoreVersions/${ver.id}`), "after").data;
