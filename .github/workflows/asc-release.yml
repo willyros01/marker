@@ -1,0 +1,76 @@
+name: Scorecard release 2.30.0 (one time)
+
+# Willy, 31 Oct 2026, 11:42 am: "Can you release the Scorecard to the App
+# Store?" Releases The Scorecard 2.30.0 (build 27), approved by Apple and
+# waiting for a manual release. It acts only when that version is in the
+# PENDING_DEVELOPER_RELEASE state with build 27 attached; otherwise it changes
+# nothing. Records only states (never the key).
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/asc-release.yml]
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Release 2.30.0
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          node > out.txt 2>&1 <<'JS' || true
+          const crypto = require("crypto"); const e = process.env;
+          const say = (s) => console.log(s);
+          (async () => {
+            let key;
+            try { key = crypto.createPrivateKey((e.ASC_KEY_P8 || "").trim()); } catch (x) { say("the key does not open; nothing done"); return; }
+            const b = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+            const now = Math.floor(Date.now() / 1000);
+            const head = b({ alg: "ES256", kid: e.ASC_KEY_ID.trim(), typ: "JWT" });
+            const body = b({ iss: e.ASC_ISSUER_ID.trim(), iat: now, exp: now + 600, aud: "appstoreconnect-v1" });
+            const sig = crypto.sign("sha256", Buffer.from(head + "." + body), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+            const jwt = `${head}.${body}.${sig}`;
+            const call = async (method, p, data) => {
+              const r = await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { method, headers: { Authorization: "Bearer " + jwt, "Content-Type": "application/json" }, body: data ? JSON.stringify(data) : undefined });
+              return { status: r.status, json: await r.json().catch(() => ({})) };
+            };
+            const errs = (r) => JSON.stringify((r.json.errors || []).map((x) => x.detail || x.title)).slice(0, 400);
+            const app = ((await call("GET", "apps?filter[bundleId]=io.github.willyros01.scorecard&limit=5")).json.data || [])[0];
+            if (!app) { say("RESULT: The Scorecard not found; nothing done"); return; }
+            const vs = (await call("GET", `apps/${app.id}/appStoreVersions?limit=5&include=build`)).json;
+            const ver = (vs.data || []).find((v) => v.attributes.versionString === "2.30.0" && v.attributes.platform === "IOS");
+            if (!ver) { say("RESULT: 2.30.0 not found; nothing done"); return; }
+            const bid = ver.relationships && ver.relationships.build && ver.relationships.build.data && ver.relationships.build.data.id;
+            const build = (vs.included || []).find((x) => x.type === "builds" && x.id === bid);
+            say(`2.30.0 is ${ver.attributes.appStoreState}, build ${build ? build.attributes.version : "?"}`);
+            if (ver.attributes.appStoreState !== "PENDING_DEVELOPER_RELEASE" || !build || build.attributes.version !== "27") { say("RESULT: not the approved 2.30.0 with build 27 waiting for release; nothing done"); return; }
+            const r = await call("POST", "appStoreVersionReleaseRequests", { data: { type: "appStoreVersionReleaseRequests", relationships: { appStoreVersion: { data: { type: "appStoreVersions", id: ver.id } } } } });
+            say("release request: " + (r.status === 201 ? "accepted" : `REFUSED ${r.status} ${errs(r)}`));
+            await new Promise((res) => setTimeout(res, 15000));
+            const after = (await call("GET", `appStoreVersions/${ver.id}`)).json.data;
+            say(`RESULT: 2.30.0 is now ${after ? after.attributes.appStoreState : "?"}`);
+          })().catch((x) => say("error: " + x.message));
+          JS
+          cat out.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/asc-release/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp out.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "asc release ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
