@@ -1,0 +1,35 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  emulators:[22m[39m Detected demo project ID "demo-marker", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+[33m[1m⚠ [22m[39m It appears you are running in a CI environment. You can avoid downloading the Firestore Emulator repeatedly by caching the /home/runner/.cache/firebase/emulators directory.
+[36m[1mi  firestore:[22m[39m downloading cloud-firestore-emulator-v1.22.0.jar...
+
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m✔  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m✔  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnode test/ui/caddie-ui.mjs[22m
+ok - a signed-in member's first screen has no Caddie icon
+ok - the member gets a code (9G7ZNM) and a QR square
+ok - the QR square is shown
+ok - the caddie joins and sees the first hole
+ok - the caddie's phone says the scores reached the golfer
+ok - the member sees the caddie connected and the first scores
+ok - the caddie has no Post button
+ok - the caddie's phone confirms the card went back, and clears it
+ok - the member's card has every score (Ana: 73 with a 5 on hole 7)
+ok - the member takes over and scores on their own phone
+ok - the caddie's phone says the golfer has taken the card back
+ok - the QR link opens the Join screen with the code filled in
+ok - the code stops working after the take-over
+ok - the member gets a follow code (BKS8WN)
+ok - the follower sees the card read-only
+ok - the member's scores reach the follower by themselves (hole 1: 1 4 300 7 3 6)
+ok - the follow link opens the card directly
+ok - a failed follow link leaves the code filled in on the Follow screen
+ok - and says why
+ALL PASSED
+[32m[1m✔ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
