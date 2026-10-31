@@ -1,0 +1,15 @@
+app: The Marker, primary locale en-CA, content rights DOES_NOT_USE_THIRD_PARTY_CONTENT
+version 1.0.0 IOS: PREPARE_FOR_SUBMISSION, release AFTER_APPROVAL
+build 36 (1.0.0) VALID, uploaded 2026-10-31T08:57:22-07:00
+build 34 (1.0.0) VALID, uploaded 2026-10-30T20:07:27-07:00
+build 33 (0.9.8) VALID, uploaded 2026-10-30T13:41:43-07:00
+build 32 (0.9.7) VALID, uploaded 2026-10-30T13:04:41-07:00
+build 28 (0.9.6) VALID, uploaded 2026-10-30T11:04:01-07:00
+app info bd0d6c87-dcdf-4bd2-b20f-56e77bbc1436: PREPARE_FOR_SUBMISSION, categories {"type":"appCategories","id":"SPORTS"} / {"type":"appCategories","id":"UTILITIES"}
+version text en-CA: description 1690 chars, keywords 93, support https://www.cuberoot-systems.com/marker/guide/
+app text en-CA: name The Marker, subtitle Caddie scores. Gang follows., privacy https://www.cuberoot-systems.com/marker/privacy/
+review: contact yes, phone yes, email yes, sign-in yes, notes 1690 chars
+age rating: {"advertising":false,"alcoholTobaccoOrDrugUseOrReferences":"NONE","contests":"NONE","gambling":false,"gamblingSimulated":"NONE","gunsOrOtherWeapons":"NONE","healthOrWellnessTopics":false,"kidsAgeBand":null,"lootBox":false,"medicalOrTreatmentInformation":"NONE","messagingAndChat":false,"parentalControls":false,"profanityOrCrudeHumor":"NONE","ageAssurance":false,"sexualContentGraphicAndNudity":"NONE","sexualContentOrNudity":"NONE","socialMedia":false,"socialMediaAgeRestricted":false,"horrorOrFearThemes":"NONE","matureOrSuggestiveThemes":"NONE","unrestrictedWebAccess":false,"userGeneratedContent":false,"violenceCartoonOrFantasy":"NONE","violenceRealisticProlongedGraphicOrSadistic":"NONE","violenceRealistic":"NONE","ageRatingOverride":"NONE","ageRatingOverrideV2":"NONE","koreaAgeRatingOverride":"NONE","gracRatingClassificationNumber":null,"developerAgeRatingInfoUrl":null}
+price schedule: none (404)
+availability: none (404)
+STOPPED: submission item: 409 ["STATE_ERROR.ENTITY_STATE_INVALID This resource cannot be reviewed, please check associated errors to see why. {\"associatedErrors\":{\"/v2/appPrices/\":[{\"id\":\"0af9a754-2829-4e84-9d41-9c8fac933de5\",\"status\":\"409\",\"code\":\"STATE_ERROR.APP_PRICING_REQUIRED\",\"title\":\"App is missing required pricing.\",\"detail\":\"App is not eligible for submission until pricing has been set.\"}]}}"]
