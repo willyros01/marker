@@ -84,7 +84,7 @@ for (const [dev, ctx] of Object.entries(sizes)) {
   await fan.goto(`${APP}&follow=${code}`);
   await fan.waitForFunction(() => document.body.innerText.includes("Following"), null, { timeout: 30000 });
   await scoreOne(member, 1, 4);
-  await fan.waitForFunction(() => /Thru 6\b/.test(document.body.innerText), null, { timeout: 45000 });
+  await fan.waitForFunction(() => /Thru 7\b/.test(document.body.innerText), null, { timeout: 45000 });
   await shot(fan, "04-follower-live");
 
   /* 4. all four together */
