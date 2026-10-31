@@ -367,6 +367,11 @@ io.github.willyros01.marker.watchkitapp.widgets ("The Marker watch face").
 
 - The release candidate for the App Store. Privacy link to the Marker page; one-time AI photo notice (window.confirm; declining sends nothing; the yes is kept in prefs.aiPhotoOk). App Store Connect's version is "1.0": rename it to "1.0.0" at submission so the build matches.
 
+## 1.0.0, second build (Willy, 31 Oct 2026, option 1 for the iPad, "keep the version no 1.0.0")
+
+- Wide screens: styles.css zooms #app 1.35x from 760px wide and 1.6x from 1000px, instead of a 560px phone column; min-height divided by the zoom. Version stays 1.0.0; APP_BUILD 2026-10-31.1 (TestFlight build number comes from the run number).
+- App Store pictures: test/ui/store-shots.mjs (workflow store-shots.yml), iPhone 1320x2868 and iPad 2064x2752, fictional golfers, emulators.
+
 ## Open
 
 - Willy's ChatGPT daily APK email should now expect seven rows ("ALL SEVEN").

@@ -112,6 +112,7 @@ for (const [dev, ctx] of Object.entries(sizes)) {
   }
   await scoreOne(cad, 0, 4);
   await act(cad, "who", 1);
+  await cad.waitForFunction(() => document.body.innerText.includes("Sent to the golfer"), null, { timeout: 30000 });
   await shot(cad, "01-caddie-scoring");
   await member.waitForFunction(() => document.body.innerText.includes("last score at"), null, { timeout: 30000 });
   await shot(member, "07-caddie-live");
