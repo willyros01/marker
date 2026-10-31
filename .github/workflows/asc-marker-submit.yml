@@ -49,8 +49,11 @@ jobs:
           mkdir -p "/tmp/$dir"; cp out.txt "/tmp/$dir/" 2>/dev/null || true
           rm -rf assets-branch
           git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
-          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
-          git rm -rq --cached . 2>/dev/null || true
-          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
-          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
-          git add logs && git commit -qm "asc marker submit ${GITHUB_RUN_NUMBER} ${STAGE}" && git push -q origin ci-logs
+          for try in 1 2 3 4; do
+            git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+            mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+            git add logs && git commit -qm "asc marker submit ${GITHUB_RUN_NUMBER} ${STAGE}" && git push -q origin ci-logs && break
+            sleep 5
+          done
