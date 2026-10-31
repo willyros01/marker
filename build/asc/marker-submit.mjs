@@ -154,6 +154,26 @@ async function main() {
     return;
   }
 
+  if (STAGE === "price") {
+    /* free, in every country and region (Willy: free apps, EU included) */
+    const pts = must(await api("GET", `apps/${app.id}/appPricePoints?filter[territory]=CAN&limit=200`), "price points").data;
+    const free = pts.find((x) => Number(x.attributes.customerPrice) === 0);
+    if (!free) throw new Error("no free price point");
+    const r1 = await api("POST", "appPriceSchedules", { data: { type: "appPriceSchedules", relationships: {
+      app: { data: { type: "apps", id: app.id } }, baseTerritory: { data: { type: "territories", id: "CAN" } },
+      manualPrices: { data: [{ type: "appPrices", id: "${p0}" }] } } },
+      included: [{ type: "appPrices", id: "${p0}", attributes: { startDate: null }, relationships: { appPricePoint: { data: { type: "appPricePoints", id: free.id } } } }] });
+    say("price: " + (r1.ok ? "free (base Canada)" : `REFUSED ${r1.status} ${errs(r1)}`));
+    let terr = [], next = "territories?limit=200";
+    while (next) { const t = must(await api("GET", next), "territories"); terr = terr.concat(t.data); next = t.links && t.links.next; }
+    const r2 = await api("POST", "https://api.appstoreconnect.apple.com/v2/appAvailabilities", { data: { type: "appAvailabilities", attributes: { availableInNewTerritories: true }, relationships: {
+      app: { data: { type: "apps", id: app.id } },
+      territoryAvailabilities: { data: terr.map((t) => ({ type: "territoryAvailabilities", id: "${" + t.id + "}" })) } } },
+      included: terr.map((t) => ({ type: "territoryAvailabilities", id: "${" + t.id + "}", attributes: { available: true }, relationships: { territory: { data: { type: "territories", id: t.id } } } })) });
+    say(`availability: ` + (r2.ok ? `all ${terr.length} countries and regions, new ones too` : `REFUSED ${r2.status} ${errs(r2)}`));
+    return;
+  }
+
   if (STAGE === "submit") {
     const open = must(await api("GET", `reviewSubmissions?filter[app]=${app.id}&filter[state]=READY_FOR_REVIEW&limit=5`), "open submissions").data;
     const sub = open[0] || must(await api("POST", "reviewSubmissions", { data: { type: "reviewSubmissions", attributes: { platform: "IOS" }, relationships: { app: { data: { type: "apps", id: app.id } } } } }), "review submission").data;
