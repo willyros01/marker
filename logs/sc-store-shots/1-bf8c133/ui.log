@@ -1,0 +1,31 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  emulators:[22m[39m Detected demo project ID "demo-scorecard", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+[33m[1m⚠ [22m[39m It appears you are running in a CI environment. You can avoid downloading the Firestore Emulator repeatedly by caching the /home/runner/.cache/firebase/emulators directory.
+[36m[1mi  firestore:[22m[39m downloading cloud-firestore-emulator-v1.22.0.jar...
+
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m✔  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m✔  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnode test/ui/sc-store-shots.mjs[22m
+(node:3204) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/runner/work/marker/marker/sc/model.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/runner/work/marker/marker/sc/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+seeded: 8 golfers, 6 courses, 125 rounds, 4 games
+ok - iphone-1-enter
+ok - iphone-2-history
+ok - iphone-3-summary
+ok - iphone-4-golfers
+ok - iphone-5-courses
+ok - ipad-1-enter
+ok - ipad-2-history
+ok - ipad-3-summary
+ok - ipad-4-trend
+ok - ipad-5-games
+ALL PICTURES TAKEN
+[32m[1m✔ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
