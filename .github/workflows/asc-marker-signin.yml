@@ -1,0 +1,100 @@
+name: Marker review sign-in (copy from The Scorecard)
+
+# Willy, 30 Oct 2026, 10:06 pm ("go ahead"): The Marker's App Review sign-in is
+# the same test user as The Scorecard's (the Apple group member). This copies
+# The Scorecard's App Review sign-in (demo account name and password) into The
+# Marker's App Review information, on The Marker version that is still being
+# prepared. It changes nothing else, creates no version, submits nothing, and
+# never prints the sign-in: only yes/no, lengths and states are recorded.
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/asc-marker-signin.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  copy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Copy the review sign-in (never printed)
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          node > out.txt 2>&1 <<'JS' || true
+          const crypto = require("crypto"); const e = process.env;
+          const say = (s) => console.log(s);
+          (async () => {
+            let key;
+            try { key = crypto.createPrivateKey((e.ASC_KEY_P8 || "").trim()); } catch (x) { say("the App Store Connect key does not open; nothing done"); return; }
+            const b = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+            const now = Math.floor(Date.now() / 1000);
+            const head = b({ alg: "ES256", kid: e.ASC_KEY_ID.trim(), typ: "JWT" });
+            const body = b({ iss: e.ASC_ISSUER_ID.trim(), iat: now, exp: now + 600, aud: "appstoreconnect-v1" });
+            const sig = crypto.sign("sha256", Buffer.from(head + "." + body), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+            const jwt = `${head}.${body}.${sig}`;
+            const call = async (method, p, data) => {
+              const r = await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { method, headers: { Authorization: "Bearer " + jwt, "Content-Type": "application/json" }, body: data ? JSON.stringify(data) : undefined });
+              return { status: r.status, json: await r.json().catch(() => ({})) };
+            };
+            const get = (p) => call("GET", p);
+            const errs = (r) => JSON.stringify((r.json.errors || []).map((x) => x.detail || x.title)).slice(0, 400);
+            const appOf = async (bundle) => ((await get(`apps?filter[bundleId]=${bundle}&limit=5`)).json.data || [])[0];
+            const versions = async (app) => ((await get(`apps/${app.id}/appStoreVersions?limit=10`)).json.data || []).filter((v) => v.attributes.platform === "IOS");
+
+            /* 1. The Scorecard's review sign-in (read only) */
+            const sc = await appOf("io.github.willyros01.scorecard");
+            if (!sc) { say("The Scorecard: NOT FOUND; nothing done"); return; }
+            let src = null;
+            for (const v of await versions(sc)) {
+              const d = (await get(`appStoreVersions/${v.id}/appStoreReviewDetail`)).json.data;
+              const a = d && d.attributes;
+              say(`Scorecard ${v.attributes.versionString} (${v.attributes.appStoreState}): sign-in name ${a && a.demoAccountName ? "yes" : "no"}, password ${a && a.demoAccountPassword ? "yes" : "no"}`);
+              if (!src && a && a.demoAccountName && a.demoAccountPassword) src = a;
+            }
+            if (!src) { say("RESULT: no Scorecard version has a review sign-in in its sign-in boxes; nothing done"); return; }
+
+            /* 2. The Marker's version being prepared */
+            const mk = await appOf("io.github.willyros01.marker");
+            if (!mk) { say("RESULT: The Marker is not in App Store Connect; nothing done"); return; }
+            say(`The Marker: found (${mk.attributes.name})`);
+            const mv = await versions(mk);
+            for (const v of mv) say(`Marker ${v.attributes.versionString}: ${v.attributes.appStoreState}`);
+            const ver = mv.find((v) => ["PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED"].includes(v.attributes.appStoreState));
+            if (!ver) { say("RESULT: The Marker has no version being prepared, so there is nowhere to put the sign-in yet; nothing done"); return; }
+
+            /* 3. Copy: name, password, required. Nothing else. */
+            const attrs = { demoAccountName: src.demoAccountName, demoAccountPassword: src.demoAccountPassword, demoAccountRequired: true };
+            const cur = (await get(`appStoreVersions/${ver.id}/appStoreReviewDetail`)).json.data;
+            let r;
+            if (cur) r = await call("PATCH", `appStoreReviewDetails/${cur.id}`, { data: { type: "appStoreReviewDetails", id: cur.id, attributes: attrs } });
+            else r = await call("POST", "appStoreReviewDetails", { data: { type: "appStoreReviewDetails", attributes: attrs, relationships: { appStoreVersion: { data: { type: "appStoreVersions", id: ver.id } } } } });
+            say(`copy into Marker ${ver.attributes.versionString}: ` + ([200, 201].includes(r.status) ? "done" : `REFUSED ${r.status} ${errs(r)}`));
+
+            /* 4. Check, without printing */
+            const after = ((await get(`appStoreVersions/${ver.id}/appStoreReviewDetail`)).json.data || { attributes: {} }).attributes;
+            say(`RESULT: sign-in name matches ${after.demoAccountName === src.demoAccountName}, password matches ${after.demoAccountPassword === src.demoAccountPassword}, required ${after.demoAccountRequired === true}`);
+          })().catch((x) => say("error: " + x.message));
+          JS
+          cat out.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/asc-marker-signin/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp out.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
+          git rm -rq --cached . 2>/dev/null || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+          mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+          git add logs && git commit -qm "asc marker sign-in ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs
