@@ -1,0 +1,31 @@
+APP INFO READY_FOR_SALE en-US: name="The Scorecard: Golf Handicaps" subtitle="Golf handicaps for your group"
+VERSION 2.30.0 en-US:
+keywords="golf,handicap,scorecard,WHS,index,group,league,rounds,scores,tournament,course,tees"
+promo="Track golf scores, follow your handicap and share games with your golf group — simple, clear and ready for your next round."
+description=
+The Scorecard helps golfers and golf groups record rounds, track handicaps and organise games — all in one easy-to-use iPhone and iPad app.
+
+YOUR GOLF, CLEARLY RECORDED
+• Record a round by choosing your course, tees and score.
+• Review your own rounds and follow how your handicap changes.
+• Browse group handicap indexes, rankings and game results.
+• Keep playing when connectivity is limited; saved changes sync when a connection returns.
+
+BUILT FOR GROUPS
+• Join the public golf community or accept an invitation to a private group.
+• Group administrators can maintain golfers and courses, send personal invitations and correct group scores.
+• Create single-day or multi-day golf games, with leaderboards and shared results.
+• Keep group history organised with a roster and filters.
+
+HANDICAP TRACKING
+• Handicap calculations use the World Handicap System approach.
+• Golf course rating, slope and tee selection are used in round calculations.
+• Administrators can give a golfer a starting index until enough rounds have been entered.
+
+YOUR ACCOUNT AND PRIVACY
+• Email-and-password sign-in.
+• No advertising or advertising tracking.
+• Delete your account in the app using the "Delete my account" link. Shared golf history is retained as explained in the privacy policy.
+
+The Scorecard is for people who enjoy golf together, from casual groups to organised outings.
+
