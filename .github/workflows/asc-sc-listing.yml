@@ -1,0 +1,63 @@
+name: Scorecard listing text (read-only)
+
+# READ-ONLY (Willy, 31 Oct 2026, 9:28 pm): The Scorecard's App Store name,
+# subtitle, keywords and description as they stand, to improve them for the
+# next update. Changes nothing. Public text only.
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/asc-sc-listing.yml]
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Read the listing
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          node > out.txt 2>&1 <<'JS' || true
+          const crypto = require("crypto"); const e = process.env;
+          (async () => {
+            const key = crypto.createPrivateKey((e.ASC_KEY_P8 || "").trim());
+            const b = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+            const now = Math.floor(Date.now() / 1000);
+            const head = b({ alg: "ES256", kid: e.ASC_KEY_ID.trim(), typ: "JWT" });
+            const body = b({ iss: e.ASC_ISSUER_ID.trim(), iat: now, exp: now + 600, aud: "appstoreconnect-v1" });
+            const jwt = `${head}.${body}.` + crypto.sign("sha256", Buffer.from(head + "." + body), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+            const get = async (p) => (await fetch("https://api.appstoreconnect.apple.com/v1/" + p, { headers: { Authorization: "Bearer " + jwt } })).json();
+            const app = (await get("apps?filter[bundleId]=io.github.willyros01.scorecard&limit=2")).data[0];
+            for (const i of (await get(`apps/${app.id}/appInfos`)).data)
+              for (const l of (await get(`appInfos/${i.id}/appInfoLocalizations`)).data)
+                console.log(`APP INFO ${i.attributes.appStoreState || i.attributes.state} ${l.attributes.locale}: name="${l.attributes.name}" subtitle="${l.attributes.subtitle || ""}"`);
+            for (const v of (await get(`apps/${app.id}/appStoreVersions?limit=3`)).data)
+              for (const l of (await get(`appStoreVersions/${v.id}/appStoreVersionLocalizations`)).data)
+                console.log(`VERSION ${v.attributes.versionString} ${l.attributes.locale}:\nkeywords="${l.attributes.keywords || ""}"\npromo="${l.attributes.promotionalText || ""}"\ndescription=\n${l.attributes.description || ""}\n`);
+          })().catch((x) => console.log("error: " + x.message));
+          JS
+          cat out.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/asc-sc-listing/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp out.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          for i in 1 2 3 4; do
+            git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+            mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+            git add logs && git commit -qm "asc sc listing ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs && break
+            sleep 5
+          done
