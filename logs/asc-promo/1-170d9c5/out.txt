@@ -1,0 +1,12 @@
+
+The Scorecard: Golf Handicaps 2.30.0 en-US
+BEFORE: "Track golf scores, follow your handicap and share games with your golf group — simple, clear and ready for your next round."
+AFTER:  "Pair it with The Marker: score your foursome hole by hole, let your caddie keep the card, and every round posts straight to your handicap here."
+OK, saved
+
+The Marker 1.0.0 en-CA
+BEFORE: "Playing with your caddie? Let them do the scoring and let the gang follow their score. Caddie scoring, live following and Apple Watch, all in one scorecard."
+AFTER:  "Better with The Scorecard: every card you post updates each golfer's handicap, your group's games and rankings. Let your caddie score and your buddies follow live."
+OK, saved
+
+Done: 2 changed.
