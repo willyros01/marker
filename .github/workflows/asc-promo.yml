@@ -2,7 +2,8 @@ name: Promotional Text for both apps
 
 # Willy, 1 Nov 2026, 8:19 pm: post the approved Promotional Text on the live
 # App Store versions of The Scorecard and The Marker, so each app promotes the
-# other. Promotional Text needs no new version and no App Review. Changes only
+# other. Revised 8:29 pm: The Marker keeps the caddie line first, The
+# Scorecard at the end (Willy). Promotional Text needs no new version and no App Review. Changes only
 # that one field; prints it before and after. Public text only.
 on:
   push:
@@ -31,7 +32,7 @@ jobs:
           const crypto = require("crypto"); const e = process.env;
           const TEXT = {
             "io.github.willyros01.scorecard": "Pair it with The Marker: score your foursome hole by hole, let your caddie keep the card, and every round posts straight to your handicap here.",
-            "io.github.willyros01.marker": "Better with The Scorecard: every card you post updates each golfer's handicap, your group's games and rankings. Let your caddie score and your buddies follow live.",
+            "io.github.willyros01.marker": "Playing with your caddie? Let them do the scoring and let the gang follow live. Every card posts straight to The Scorecard: handicaps, games and rankings.",
           };
           const LIVE = ["READY_FOR_SALE", "READY_FOR_DISTRIBUTION"];
           (async () => {
