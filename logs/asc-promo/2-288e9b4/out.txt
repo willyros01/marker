@@ -1,0 +1,11 @@
+
+The Scorecard: Golf Handicaps 2.30.0 en-US
+BEFORE: "Pair it with The Marker: score your foursome hole by hole, let your caddie keep the card, and every round posts straight to your handicap here."
+ALREADY SET, nothing to change
+
+The Marker 1.0.0 en-CA
+BEFORE: "Better with The Scorecard: every card you post updates each golfer's handicap, your group's games and rankings. Let your caddie score and your buddies follow live."
+AFTER:  "Playing with your caddie? Let them do the scoring and let the gang follow live. Every card posts straight to The Scorecard: handicaps, games and rankings."
+OK, saved
+
+Done: 1 changed.
