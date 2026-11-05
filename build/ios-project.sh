@@ -56,7 +56,7 @@ cp -R build/ios/watch/Shared ios/App/Shared
 
 echo "--- App icons (before the project is finished, so the watch target gets its icon) from icon.svg (square, no transparency, as Apple requires)"
 command -v rsvg-convert >/dev/null || HOMEBREW_NO_AUTO_UPDATE=1 brew install librsvg >/dev/null
-rsvg-convert -w 1024 -h 1024 -b "#2E5541" icon.svg -o "$TMP/icon-a.png"
+rsvg-convert -w 1024 -h 1024 -b "#2F7BC4" icon.svg -o "$TMP/icon-a.png"
 sips -s format jpeg -s formatOptions 100 "$TMP/icon-a.png" --out "$TMP/icon.jpg" >/dev/null
 sips -s format png "$TMP/icon.jpg" --out "$TMP/icon.png" >/dev/null
 sips -g hasAlpha "$TMP/icon.png" | grep -q "hasAlpha: no" || { echo "RESULT: the icon still has transparency"; exit 1; }

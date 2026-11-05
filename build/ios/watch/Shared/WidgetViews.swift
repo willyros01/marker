@@ -4,7 +4,9 @@
  *   GroupBox: HOLE n · updated time / all golfers, two per line */
 import SwiftUI
 
-let markerGreen = Color(red: 0.56, green: 0.83, blue: 0.66)
+/* The accent on the watch: a light Lake blue since 1.1.0 (Willy, 31 Oct 2026);
+   the name stays. Scores under par keep their green (underColor). */
+let markerGreen = Color(red: 0.55, green: 0.77, blue: 0.96)
 let overColor = Color(red: 1.0, green: 0.77, blue: 0.54)
 let underColor = Color(red: 0.56, green: 0.83, blue: 0.66)
 

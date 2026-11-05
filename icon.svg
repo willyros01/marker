@@ -1,9 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#2E5541"/>
-<rect x="120" y="80" width="272" height="352" rx="22" fill="#F7F4EC"/>
-<ellipse cx="256" cy="196" rx="92" ry="26" fill="#7FA36A"/>
-<path d="M240 196V96" stroke="#24463A" stroke-width="10" stroke-linecap="round"/>
-<path d="M240 100l72 22-72 22z" fill="#B4402F"/>
-<circle cx="240" cy="196" r="9" fill="#24463A"/>
-<g stroke="#2E5541" stroke-width="10" stroke-linecap="round"><path d="M160 268h192M160 318h192M160 368h120"/></g>
-<g fill="#E0B341"><rect x="300" y="352" width="52" height="32" rx="6"/></g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5297D6"/><stop offset="1" stop-color="#2F7BC4"/></linearGradient></defs>
+<rect width="512" height="512" rx="96" fill="url(#lake)"/>
+<ellipse cx="220" cy="410" rx="130" ry="34" fill="#6DAE5B"/>
+<ellipse cx="220" cy="412" rx="22" ry="8" fill="#1E3A26"/>
+<path d="M220 410V110" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+<path d="M226 114 L320 150 L226 186 Z" fill="#D9463A"/>
+<path d="M352 104 A70 70 0 0 1 352 196" fill="none" stroke="#FFD45C" stroke-width="16" stroke-linecap="round"/>
+<path d="M388 76 A110 110 0 0 1 388 224" fill="none" stroke="#FFD45C" stroke-width="16" stroke-linecap="round"/>
 </svg>

@@ -1,9 +1,13 @@
 /* The Marker — large, plain, high-contrast. Built for a phone in bright sun,
    held by someone who has just putted out. Touch targets 56px and up. */
 :root {
-  --green: #2E5541; --green-dark: #24463A; --green-soft: #E6EFE9;
-  --ground: #F7F4EC; --card: #FFFFFF; --line: #D9D0BA; --line-strong: #B9B09A;
-  --ink: #1C2420; --ink-2: #3F4A44; --ink-3: #4A5650;
+  /* 1.1.0 (Willy, 31 Oct 2026): the Lake blue look, with a fairway-green trim
+     line under the header, chosen together with The Scorecard. The names stay
+     ("--green" is the main colour) so every screen follows without change. */
+  --lake: #2F7BC4; --trim: #5DB36A;
+  --green: #1F5C99; --green-dark: #174A7E; --green-soft: #E3EEF8;
+  --ground: #EDF3F9; --card: #FFFFFF; --line: #CBD6E2; --line-strong: #9FB2C6;
+  --ink: #18293A; --ink-2: #34485C; --ink-3: #46586A;
   --under: #1F6B45; --over: #A2412F; --warn-bg: #FBEFD5; --warn-ink: #6B4A0E;
   --serif: "Source Serif 4", Georgia, serif;
   --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -18,7 +22,7 @@ a { color: var(--green); }
 
 #app { max-width: 560px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
 
-.top { background: var(--green); color: #fff; padding: calc(14px + env(safe-area-inset-top)) 18px 14px; display: flex; flex-direction: column; gap: 6px; }
+.top { background: var(--lake); color: #fff; padding: calc(14px + env(safe-area-inset-top)) 18px 14px; display: flex; flex-direction: column; gap: 6px; border-bottom: 4px solid var(--trim); }
 .top .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .top .title { font-family: var(--serif); font-size: 28px; font-weight: 600; line-height: 1.1; }
 .top .sub { font-size: 13px; letter-spacing: 2px; font-weight: 700; text-transform: uppercase; }
@@ -134,7 +138,7 @@ p { margin: 0; line-height: 1.45; }
 
 /* Reading a picture: the spinning wheel. */
 .reading { display: flex; gap: 16px; align-items: center; padding: 16px; border-radius: 14px; background: var(--green-soft); color: var(--green-dark); font-size: 18px; line-height: 1.4; }
-.wheel { width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; border: 5px solid rgba(46,85,65,.2); border-top-color: var(--green); animation: turn .9s linear infinite; }
+.wheel { width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; border: 5px solid rgba(31,92,153,.2); border-top-color: var(--green); animation: turn .9s linear infinite; }
 @keyframes turn { to { transform: rotate(360deg); } }
 
 /* Checking a card read from pictures: laid out like the club's card. */
@@ -176,7 +180,7 @@ details.retake summary { font-size: 17px; font-weight: 700; color: var(--green-d
 
 /* The group chooser on the players screen. */
 .groupsel { height: 60px; font-size: 20px; font-weight: 700; appearance: none; -webkit-appearance: none;
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='12'%3E%3Cpath d='M1 1l8 9 8-9' fill='none' stroke='%232E5541' stroke-width='3'/%3E%3C/svg%3E") no-repeat right 16px center; padding-right: 48px; }
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='12'%3E%3Cpath d='M1 1l8 9 8-9' fill='none' stroke='%231F5C99' stroke-width='3'/%3E%3C/svg%3E") no-repeat right 16px center; padding-right: 48px; }
 
 /* The Scorecard's calendar */
 .datebtn { width: 100%; min-height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); font-size: 24px; font-weight: 800; }
