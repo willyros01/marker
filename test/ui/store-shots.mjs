@@ -66,6 +66,7 @@ for (const [dev, ctx] of Object.entries(sizes)) {
     await p.locator('[data-act="pick-saved"]').first().click();
     await p.waitForSelector('[data-act="tee"]'); await act(p, "tee", 0);
     await act(p, "go-players");
+    await p.waitForFunction(() => !document.body.innerText.includes("Loading golfers") && !!document.querySelector("#guest"), null, { timeout: 20000 });   /* the golfer list redraws the screen when it arrives */
     for (const n of guests) { await p.fill("#guest", n); await act(p, "add-guest"); }
   };
 

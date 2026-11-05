@@ -51,6 +51,7 @@ async function memberToCode() {
   await member.waitForSelector('[data-act="tee"]');
   await act(member, "tee", 0);
   await act(member, "go-players");
+  await member.waitForFunction(() => !document.body.innerText.includes("Loading golfers") && !!document.querySelector("#guest"), null, { timeout: 20000 });   /* the golfer list redraws the screen when it arrives */
   for (const n of ["Ana Cruz", "Ben Reyes"]) { await member.fill("#guest", n); await act(member, "add-guest"); }
   await act(member, "caddie-start");
   await member.waitForSelector(".bigcode", { timeout: 20000 });
@@ -150,6 +151,7 @@ await member.waitForSelector('[data-act="pick-saved"]', { timeout: 20000 });
 await member.locator('[data-act="pick-saved"]').first().click();
 await member.waitForSelector('[data-act="tee"]'); await act(member, "tee", 0);
 await act(member, "go-players");
+await member.waitForFunction(() => !document.body.innerText.includes("Loading golfers") && !!document.querySelector("#guest"), null, { timeout: 20000 });   /* the golfer list redraws the screen when it arrives */
 for (const n of ["Ana Cruz", "Ben Reyes"]) { await member.fill("#guest", n); await act(member, "add-guest"); }
 await act(member, "tee-off");
 await member.waitForSelector('[data-act="menu"]');
@@ -197,6 +199,7 @@ await member.waitForSelector('[data-act="pick-saved"]', { timeout: 20000 });
 await member.locator('[data-act="pick-saved"]').first().click();
 await member.waitForSelector('[data-act="tee"]'); await act(member, "tee", 0);
 await act(member, "go-players");
+await member.waitForFunction(() => !document.body.innerText.includes("Loading golfers") && !!document.querySelector("#guest"), null, { timeout: 20000 });   /* the golfer list redraws the screen when it arrives */
 ok(await member.locator("main .caddie-choice").count() === 1, "Let my caddie score is on the Who's playing screen itself, not under Tee off");
 await shot(member, "14-whos-playing-caddie");
 for (const n of ["Cora Diaz", "Dan Kim"]) { await member.fill("#guest", n); await act(member, "add-guest"); }
@@ -248,6 +251,7 @@ const startRound = async (p, guests) => {
   await p.locator('[data-act="pick-saved"]').first().click();
   await p.waitForSelector('[data-act="tee"]'); await act(p, "tee", 0);
   await act(p, "go-players");
+  await p.waitForFunction(() => !document.body.innerText.includes("Loading golfers") && !!document.querySelector("#guest"), null, { timeout: 20000 });   /* the golfer list redraws the screen when it arrives */
   for (const n of guests) { await p.fill("#guest", n); await act(p, "add-guest"); }
 };
 await startRound(member, ["Eve Lim", "Fay Ong"]);
