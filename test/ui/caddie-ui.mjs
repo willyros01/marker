@@ -339,7 +339,7 @@ await shot(third, "27-add-a-golfer");
 await third.fill("#lateguest", "Lou Tan"); await act(third, "late-guest");   /* the test group has no other golfers */
 await third.waitForSelector('[data-act="score"], [data-act="plus"]');
 ok(/from hole 3/.test(await text(third)) && (await third.locator('[data-act="who"]').count() === 2 || await third.locator(".player").count() === 2), "a golfer is added on hole 3");
-await scoreHere(third, 1, 5);
+await scoreHere(third, 0, 4); await scoreHere(third, 1, 5);
 ok(!/to go/.test(await third.locator("footer").innerText()), "hole 3 is complete with both golfers' scores");
 await act(third, "prev");
 ok(/no score needed here|–/.test(await text(third)) && !/to go/.test(await third.locator("footer").innerText()), "hole 2 needs no score from the late golfer");
