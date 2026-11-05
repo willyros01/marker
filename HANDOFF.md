@@ -372,6 +372,43 @@ io.github.willyros01.marker.watchkitapp.widgets ("The Marker watch face").
 - Wide screens: styles.css zooms #app 1.35x from 760px wide and 1.6x from 1000px, instead of a 560px phone column; min-height divided by the zoom. Version stays 1.0.0; APP_BUILD 2026-10-31.1 (TestFlight build number comes from the run number).
 - App Store pictures: test/ui/store-shots.mjs (workflow store-shots.yml), iPhone 1320x2868 and iPad 2064x2752, fictional golfers, emulators.
 
+## Version 1.1.0 (Willy, 5 Nov 2026: "start the build for The Marker as per our plan") — branch release-1.1.0
+
+The list is the Claude doc "The Marker — next release" (steps 1-7). Built on the branch release-1.1.0 so
+nothing goes live (web, Android APK) before Willy has tested it; the server part went to main on 5 Nov
+(Willy said go), TestFlight builds from the branch (ios-testflight.yml lists it).
+
+- Follow a whole game (step 1, option B): worker/src/game.js. A card that is part of a Scorecard game
+  has its live copy (markerLive) tagged gameKey = "<group>_<game>_<date>" (follow.start, caddie.start,
+  only when the game exists, is not archived, covers the date and the scorer is a member). The phone
+  makes the live copy by itself at tee-off (app.js autoLive, silent, retried online/at start). Menu >
+  "Let others follow this game" (POST /follow/game) gives the one code of the day:
+  markerFollowCodes/{code} { kind: "game", gameKey, game{name}, date, expiresAt } and
+  markerGameFollow/{gameKey} { code, expiresAt } (12 hours). /follow/view with a game code returns
+  { kind: "game", game, date, cards[], lastAt, finished } plus the first card in the old shape for 1.0.0
+  phones and watches. A card with two live copies shows once (newest). Leaderboard: card.js gameBoard
+  (live gross to par with ties "T2"; final gross and net when every card is finished; net = gross -
+  course handicap, only for complete rounds with a handicap). Old game codes: deleted by the daily job
+  30 days after they stop. Tests G1-G7, LC6, U30, browser steps 11-12.
+- Six-number follow codes (step 2): game.newDigits (never starting with 0); a device gets about 10
+  wrong follow codes an hour (markerLimits/follow-{uid}). Caddie codes stay six letters/numbers.
+  Watch: "Type a follow code" number pad (PadScreen); with no link from the iPhone yet, the watch signs
+  in with the public web key (FollowNet.webKey) and reads markerConfig/public for the worker address.
+- Lake blue look and icon E (step 3): styles.css :root (--lake header, --trim green line, --green is now
+  the deep blue for buttons/links), icon.svg, theme colours, watch accent light blue.
+- Let my caddie score (step 4): on Who's playing? in the body (not under Tee off), and in the Menu
+  mid-round (caddie-mid): caddie.start with liveId hands the card's existing live copy to the caddie
+  (status self/taken -> open, new caddie code, scores so far), so followers and the game keep their code.
+  Test K11.
+- Copy and continue (step 6): on a fresh install only (nothing kept on the phone before), the app reads
+  the clipboard once (@capacitor/clipboard 8.0.1, added to the iOS and Android builds with a check) and
+  uses a cuberoot-systems.com caddie/follow link. The website half (download buttons copy the link) is
+  build/cuberoot-copy-and-continue.patch, applied to the Cuberoot repo at release.
+- Steps 5 and 7 (App Store text): "Better together" at the end of the description; name "The Marker:
+  Golf Scorecard", subtitle "Companion to The Scorecard". Set with the 1.1.0 App Store version.
+- Still to do at release: merge release-1.1.0 into main (web + Android APK), apply the Cuberoot patch,
+  update the user guide, App Store pictures (store-shots.yml, now with the game leaderboard), submit.
+
 ## Open
 
 - Next Marker release (code frozen since 31 Oct until Willy lifts it): the list is the Claude doc "The Marker — next release", https://claude.ai/artifact/8q4PpSVDLk4d7XzQhLyaHA. Step 1: follow the other golfers in the same Scorecard game (option B, live leaderboard).
