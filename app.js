@@ -178,7 +178,7 @@ async function refreshMine(force = false) {
   if (!force && Date.now() - mineAt < 60000) return;
   mineAt = Date.now();
   try { S.mine = await db.myCards(); } catch { /* the last list stays */ }
-  if (["start", "history"].includes(S.screen)) render();
+  if (["start", "history", "view"].includes(S.screen)) render();
 }
 
 /* ---------------- sign in ---------------- */
@@ -1010,8 +1010,12 @@ function screenView(c) {
             ? `<button class="btn" data-act="repost-card" data-v="${esc(c.id)}">✎ Edit and re-post</button>
                <button class="btn" data-act="hide-editable" data-v="${esc(c.id)}" data-h="${x.hidden ? "0" : "1"}" ${S.busy ? "disabled" : ""}>${x.hidden ? "Unhide (show it under Deleted in The Scorecard)" : "Hide (take it off the Deleted list)"}</button>
                <button class="btn" data-act="discard-editable" data-v="${esc(c.id)}" style="color:var(--over)" ${S.busy ? "disabled" : ""}>Delete this card</button>`
-            : `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>
-               <button class="btn" data-act="delete-rounds" data-v="${esc(c.id)}" style="color:var(--over)" ${S.busy ? "disabled" : ""}>🗑 Delete its rounds from The Scorecard</button>`;
+            /* Correct and delete only when The Scorecard says this card can be:
+               not for a card whose rounds are already deleted (Willy, 5 Nov 2026). */
+            : S.mine && S.mine.correctable.some((k) => k.cardId === c.id)
+            ? `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>
+               <button class="btn" data-act="delete-rounds" data-v="${esc(c.id)}" style="color:var(--over)" ${S.busy ? "disabled" : ""}>🗑 Delete its rounds from The Scorecard</button>`
+            : "";
         })() : ""}
       ${c.state === "posted" && !(S.mine && S.mine.editable.some((k) => k.cardId === c.id)) ? `<button class="btn" data-act="remove-from-phone" data-v="${esc(c.id)}">Remove from this phone</button>` : ""}
       ${card.canDelete(c) ? `<button class="btn" data-act="delete-card" style="color:var(--over)">Delete this card</button>` : ""}
