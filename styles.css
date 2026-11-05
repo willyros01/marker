@@ -238,13 +238,13 @@ h3.sec { font-family: var(--serif); font-size: 23px; font-weight: 600; margin: 4
 
 /* 1.1.0: the game's live leaderboard (option B) — big type, one row per golfer, tap for the card. */
 .board { display: flex; flex-direction: column; gap: 6px; }
-.board-row { display: grid; grid-template-columns: 3.2em minmax(0, 1fr) 4.2em 2.6em; align-items: center; gap: 8px; min-height: 60px; padding: 8px 12px;
+.board-row { display: grid; grid-template-columns: 3.2em minmax(0, 1fr) 5em 2.8em; align-items: center; gap: 8px; min-height: 60px; padding: 8px 12px;
   border-radius: 12px; border: 1.5px solid var(--line); background: var(--card); text-align: left; font-size: 20px; color: var(--ink); }
 .board-row.hd { min-height: 0; border: none; background: none; padding: 0 12px; font-size: 14px; font-weight: 800; letter-spacing: 1px; color: var(--ink-3); text-transform: uppercase; }
 .board-row .pl { font-weight: 800; color: var(--ink-3); }
 .board-row .nm { font-weight: 800; overflow-wrap: anywhere; }
 .board-row .sc { font-weight: 800; font-size: 24px; text-align: right; }
 .board-row .th { text-align: right; color: var(--ink-3); font-weight: 700; }
-.board-row.hd .sc { font-size: 14px; }
+.board-row.hd .sc, .board-row.hd .th { font-size: 14px; white-space: nowrap; }
 /* 1.1.0: "Let my caddie score" on Who's playing?, no longer tucked under Tee off. */
 .btn.caddie-choice { border: 2px solid var(--green); }
