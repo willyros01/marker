@@ -291,5 +291,39 @@ await until(sfan, () => document.querySelectorAll(".board-row:not(.hd)").length 
 ok(true, "both foursomes are on the game's leaderboard");
 await shot(sfan, "22-started-game-leaderboard");
 
+/* 14. joining a game from the Menu, mid-round (Willy, 5 Nov 2026: "from the menu wherever I am") */
+const third = await (await browser.newContext(phone)).newPage();
+third.on("dialog", (d) => d.accept());
+await third.goto(APP); await third.waitForSelector('[data-act="go-signin"]', { timeout: 20000 });
+await act(third, "go-signin");
+await third.fill("#email", "willy@example.com"); await third.fill("#password", "pass-W-123");
+await act(third, "sign-in");
+await third.waitForSelector('[data-act="new-round"]', { timeout: 20000 });
+await startRound(third, ["Ivy Wu"]);
+await act(third, "tee-off");
+await third.waitForSelector('[data-act="menu"]');
+await act(third, "menu");
+ok(await third.locator('[data-act="game-here"]').count() === 1 && await third.locator('[data-act="follow-game"]').count() === 0, "the Menu offers Start or join a game for a card not in a game");
+await shot(third, "23-menu-no-game");
+await act(third, "game-here");
+await third.fill("#gamecode", "999999");
+await act(third, "game-join");
+await until(third, () => { const b = document.querySelector('[data-act="game-join"]'); const m = b && b.nextElementSibling; return !!m && m.classList.contains("bad") && /not a game code/i.test(m.textContent); }, "the refusal right under the Join button");
+ok(true, "a wrong code is answered right under the Join button");
+await shot(third, "24-join-refused");
+await third.fill("#gamecode", scode);
+await act(third, "game-join");
+await third.waitForSelector(".bigcode", { timeout: 20000 });
+ok((await third.locator(".bigcode").innerText()).replace(/\s/g, "") === scode && /Joined Saturday Medal/.test(await text(third)), "joined mid-round from the Menu: the game code shows");
+await shot(third, "25-joined-mid-round");
+await act(third, "game-board");
+await until(third, () => document.querySelectorAll(".board-row:not(.hd)").length === 5 && /Ivy Wu/.test(document.body.innerText), "the mid-round card on the leaderboard");
+ok(true, "the card that joined mid-round is on the game's leaderboard (five golfers)");
+await shot(third, "26-own-leaderboard");
+await act(third, "game-own-back");
+await third.waitForSelector('[data-act="menu"]');
+await act(third, "menu");
+ok(await third.locator('[data-act="follow-game"]').count() === 1 && await third.locator('[data-act="follow-start"]').count() === 0, "in a game, the Menu shows The game code and no separate card code");
+
 await browser.close();
 console.log("ALL PASSED");

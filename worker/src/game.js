@@ -152,9 +152,15 @@ export async function join(fs, who, codeIn, { now = Date.now() } = {}) {
   if (!who || who.anonymous) refuse("Sign in with your Scorecard account to join a game.");
   const code = String(codeIn || "").replace(/[^0-9]/g, "");
   const c = code.length === 6 ? await fs.get(`markerFollowCodes/${code}`) : null;
-  if (!c || c.data.kind !== "game" || !c.data.game || !c.data.game.id) refuse("This is not a game code. Check it, or ask the scorer who started the game.");
+  if (!c || c.data.kind !== "game") refuse("This is not a game code. Check it, or ask the scorer who started the game.");
   if (now >= c.data.expiresAt) refuse("This game code has stopped working (12 hours have passed).");
-  const { id, assocId, name } = c.data.game;
+  /* Codes made before 5 Nov 2026, 9:15 am hold only the game's name: the game
+     is read from its key "<group>_<game>_<date>" (ids have no "_"). */
+  const k = /^([A-Za-z0-9-]{1,80})_([A-Za-z0-9-]{1,80})_(\d{4}-\d{2}-\d{2})$/.exec(String(c.data.gameKey || ""));
+  const id = (c.data.game && c.data.game.id) || (k && k[2]);
+  const assocId = (c.data.game && c.data.game.assocId) || (k && k[1]);
+  const name = c.data.game && c.data.game.name;
+  if (!id || !assocId || !ID.test(id) || !ID.test(assocId)) refuse("This is not a game code. Check it, or ask the scorer who started the game.");
   const gd = await fs.get(`associations/${assocId}/games/${id}`);
   if (!gd || gd.data.archived) refuse("This game no longer exists in The Scorecard.");
   const group = await fs.get(`associations/${assocId}`);

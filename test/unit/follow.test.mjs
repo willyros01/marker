@@ -265,3 +265,16 @@ test("GS3 joining: a card code is not a game code; a member of another group is 
   await assert.rejects(game.join(fs, OTHER, g.code, { now: NOW + 12 * 3600_000 + 1 }), refused(/stopped working/));
   await assert.rejects(game.join(fs, GUEST, g.code, { now: NOW }), refused(/Sign in/));
 });
+
+test("GS4 a game code made before 5 Nov (name only, no game id) still joins: the game is read from its key", async () => {
+  const fs = fakeFs(startSeed());
+  const g = await game.create(fs, MEMBER, { assocId: "G1", name: "Thursday Skins", date: "2026-10-29", course: { name: "Royal Ontario" }, tee }, { now: NOW, rand });
+  const doc = fs.docs.get(`markerFollowCodes/${g.code}`);
+  doc.data = { ...doc.data, game: { name: "Thursday Skins" } };   /* the old shape */
+  const j = await game.join(fs, OTHER, g.code, { now: NOW + 1000 });
+  assert.equal(j.game.id, g.game.id);
+  assert.equal(j.game.assocId, "G1");
+  assert.equal(j.game.name, "Thursday Skins");
+  doc.data = { ...doc.data, gameKey: "G1_nogame_2026-10-29" };
+  await assert.rejects(game.join(fs, OTHER, g.code, { now: NOW + 1000 }), refused(/no longer exists/));
+});
