@@ -43,6 +43,7 @@ import { Refusal } from "./post.js";
 import { cleanGolfers, cleanLiveCards, cleanupStatus } from "./cleanup.js";
 import * as caddie from "./caddie.js";
 import * as follow from "./follow.js";
+import * as game from "./game.js";
 
 /* Must match the daily line in wrangler.toml. 07:00 UTC = 3 am Toronto (summer), 2 am (winter). */
 const DAILY = "0 7 * * *";
@@ -153,6 +154,8 @@ export default {
           if (url.pathname === "/follow/scores") return reply(await follow.scores(fs, who, body), 200, h);
           if (url.pathname === "/follow/view") return reply(await follow.view(fs, who, body.code), 200, h);
           if (url.pathname === "/follow/game") return reply(await follow.gameStart(fs, who, { card: body.card, liveId: body.liveId || null }), 200, h);
+          if (url.pathname === "/follow/game-create") return reply(await game.create(fs, who, body), 200, h);
+          if (url.pathname === "/follow/game-join") return reply(await game.join(fs, who, body.code), 200, h);
         } catch (e) {
           if (e instanceof Refusal) return reply({ error: "REFUSED", reason: e.message }, 200, h);
           throw e;

@@ -17,7 +17,7 @@
  * Every write is one commit with a precondition (Willy's rule). */
 import * as model from "../../model.js";
 import { setWrite } from "./firestore.js";
-import { Refusal } from "./post.js";
+import { Refusal, checkTee, teeFor, matchCourse } from "./post.js";
 
 export const HOURS = 12;
 const refuse = (why) => { throw new Refusal(why); };
@@ -40,7 +40,7 @@ export async function gameOf(fs, uid, cardIn) {
   const gd = await fs.get(`associations/${g.assocId}/games/${g.id}`);
   if (!gd || gd.data.archived || !model.gameCovers(gd.data, cardIn.date)) return null;
   if (!(await fs.get(`associations/${g.assocId}/members/${uid}`))) return null;
-  return { key: `${g.assocId}_${g.id}_${cardIn.date}`, name: String(gd.data.name || "").slice(0, 80), date: cardIn.date };
+  return { key: `${g.assocId}_${g.id}_${cardIn.date}`, name: String(gd.data.name || "").slice(0, 80), date: cardIn.date, assocId: g.assocId, id: g.id };
 }
 
 /* The game's follow code of the day: the existing one while it works, else a
@@ -53,7 +53,7 @@ export async function code(fs, game, { now = Date.now(), rand = Math.random } = 
     const expiresAt = now + HOURS * 3600_000;
     try {
       await fs.commit([
-        setWrite(fs, `markerFollowCodes/${c}`, { kind: "game", gameKey: game.key, game: { name: game.name }, date: game.date, expiresAt }, { exists: false }),
+        setWrite(fs, `markerFollowCodes/${c}`, { kind: "game", gameKey: game.key, game: { name: game.name, id: game.id, assocId: game.assocId }, date: game.date, expiresAt }, { exists: false }),
         setWrite(fs, `markerGameFollow/${game.key}`, { code: c, expiresAt, createdAt: now }, ptr ? { updateTime: ptr.updateTime } : { exists: false }),
       ]);
       return { code: c, expiresAt };
@@ -90,4 +90,76 @@ export async function view(fs, codeDoc, { now = Date.now() } = {}) {
     kind: "game", game: { name: (d.game && d.game.name) || "" }, date: d.date || "",
     cards, lastAt, expiresAt: d.expiresAt, finished,
   };
+}
+
+/* ---------------- starting and joining a game in The Marker (Willy, 5 Nov 2026, option A) ----------------
+ *
+ * "This is cumbersome": a scorer starts the game from The Marker. It is a real
+ * Scorecard game (associations/{group}/games/{id}, the same fields The
+ * Scorecard writes: id, assocId, date, endDate, courseId, name, createdBy), so
+ * the posted rounds land in it with its gross and net results. The course is
+ * The Scorecard's own one matched by name and rating/slope, as posting does;
+ * a course The Scorecard does not have yet is added in the same commit. The
+ * scorer gets the game's six-number code at once; the other scorers join with
+ * it, and followers use the same code. Only a member of the group may start or
+ * join (The Scorecard counts a game's rounds in its own group only). */
+export async function create(fs, who, { assocId, name, date, course, tee } = {}, { now = Date.now(), rand = Math.random } = {}) {
+  if (!who || who.anonymous) refuse("Sign in with your Scorecard account to start a game.");
+  if (!ID.test(String(assocId || ""))) refuse("Choose the group the game is for.");
+  if (!isDate(date)) refuse("The round has no proper date.");
+  const title = String(name || "").trim().replace(/\s+/g, " ").slice(0, 60);
+  if (title.length < 2) refuse("Give the game a name, for example Saturday Medal.");
+  if (!(await fs.get(`associations/${assocId}/members/${who.uid}`))) refuse("You are not a member of that group, so you cannot start a game for it.");
+  const group = await fs.get(`associations/${assocId}`);
+  if (!group) refuse("That group no longer exists.");
+  if (!course || !String(course.name || "").trim()) refuse("Choose the course first.");
+  const t = await teeFor(fs, { course, tee });   /* the library's tee when there is one; refuses a withdrawn course */
+  checkTee(t);
+  const courses = await fs.query("", "courses", [], 1000);
+  const matched = matchCourse(courses, String(course.name).trim(), t);
+  const writes = [];
+  let courseId;
+  if (matched) courseId = matched.course.id;
+  else {
+    const made = model.buildCourse({ name: String(course.name).trim().slice(0, 120), location: String(course.where || "").slice(0, 160),
+      tees: [{ name: t.name, rating: t.rating, slope: t.slope, par: t.par }], createdBy: who.uid });
+    courseId = made.id;
+    const { id, ...data } = made;
+    writes.push(setWrite(fs, `courses/${id}`, { id, ...data, createdVia: "marker" }, { exists: false }));
+  }
+  const gameId = model.newId();
+  const game = { id: gameId, assocId, date, endDate: null, courseId, name: title, createdBy: who.uid, createdVia: "marker" };
+  writes.push(setWrite(fs, `associations/${assocId}/games/${gameId}`, game, { exists: false }));
+  const key = `${assocId}_${gameId}_${date}`;
+  const expiresAt = now + HOURS * 3600_000;
+  for (let i = 0; i < 6; i++) {
+    const c = newDigits(rand);
+    try {
+      await fs.commit([...writes,
+        setWrite(fs, `markerFollowCodes/${c}`, { kind: "game", gameKey: key, game: { name: title, id: gameId, assocId }, date, expiresAt }, { exists: false }),
+        setWrite(fs, `markerGameFollow/${key}`, { code: c, expiresAt, createdAt: now }, { exists: false }),
+      ]);
+      return { game: { id: gameId, assocId, name: title, groupName: String(group.data.name || "") }, date, code: c, expiresAt };
+    } catch (e) {
+      if (!e.conflict) throw e;   /* the code is taken: try another (nothing was written) */
+    }
+  }
+  refuse("The game could not be started just now. Try again.");
+}
+
+/* Another scorer joins with the six-number code (the same one followers use). */
+export async function join(fs, who, codeIn, { now = Date.now() } = {}) {
+  if (!who || who.anonymous) refuse("Sign in with your Scorecard account to join a game.");
+  const code = String(codeIn || "").replace(/[^0-9]/g, "");
+  const c = code.length === 6 ? await fs.get(`markerFollowCodes/${code}`) : null;
+  if (!c || c.data.kind !== "game" || !c.data.game || !c.data.game.id) refuse("This is not a game code. Check it, or ask the scorer who started the game.");
+  if (now >= c.data.expiresAt) refuse("This game code has stopped working (12 hours have passed).");
+  const { id, assocId, name } = c.data.game;
+  const gd = await fs.get(`associations/${assocId}/games/${id}`);
+  if (!gd || gd.data.archived) refuse("This game no longer exists in The Scorecard.");
+  const group = await fs.get(`associations/${assocId}`);
+  if (!(await fs.get(`associations/${assocId}/members/${who.uid}`))) {
+    refuse(`This game is for ${(group && group.data.name) || "another group"}, and you are not a member of it, so your card cannot join it. Your golfers can still be followed with their own card's code.`);
+  }
+  return { game: { id, assocId, name: name || gd.data.name || "", groupName: String((group && group.data.name) || "") }, date: c.data.date, code, expiresAt: c.data.expiresAt };
 }
