@@ -1,0 +1,24 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild archive -project ios/App/App.xcodeproj -scheme App -configuration Release -destination generic/platform=iOS -archivePath /Users/runner/work/_temp/App.xcarchive -allowProvisioningUpdates -authenticationKeyPath /Users/runner/work/_temp/keys/AuthKey_48475DA2L4.p8 -authenticationKeyID 48475DA2L4 -authenticationKeyIssuerID 6f5d8bf7-437f-4729-b96a-036729b03ee8 DEVELOPMENT_TEAM=VXMLKHF72B CODE_SIGN_STYLE=Automatic CODE_SIGN_IDENTITY=- AD_HOC_CODE_SIGNING_ALLOWED=YES MARKETING_VERSION=1.1.0 CURRENT_PROJECT_VERSION=39
+
+Build settings from command line:
+    AD_HOC_CODE_SIGNING_ALLOWED = YES
+    CODE_SIGN_IDENTITY = -
+    CODE_SIGN_STYLE = Automatic
+    CURRENT_PROJECT_VERSION = 39
+    DEVELOPMENT_TEAM = VXMLKHF72B
+    MARKETING_VERSION = 1.1.0
+
+Resolve Package Graph
+
+Fetching from https://github.com/ionic-team/capacitor-swift-pm.git
+
+Creating working copy of package ‘capacitor-swift-pm’
+
+Checking out 8.5.2 of package ‘capacitor-swift-pm’
+
+failed downloading 'https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.5.2/Capacitor.xcframework.zip' which is required by binary target 'Capacitor': badResponseStatusCode(504)fatalError2026-11-05 14:13:00.081 xcodebuild[2193:10096] Writing error result bundle to /var/folders/n6/hn37q6pj7sj_9dmqqc2113800000gn/T/ResultBundle_2026-05-11_14-13-0000.xcresult
+xcodebuild: error: Could not resolve package dependencies:
+  failed downloading 'https://github.com/ionic-team/capacitor-swift-pm/releases/download/8.5.2/Capacitor.xcframework.zip' which is required by binary target 'Capacitor': badResponseStatusCode(504)
+  fatalError
+
