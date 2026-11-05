@@ -26,7 +26,7 @@ import * as model from "../model.js";
 import * as card from "../card.js";
 import { checkCard, checkTee, teeFor } from "../worker/src/post.js";
 
-const GO = true;   /* Willy said go, 4 Nov 2026, 9:13 pm */
+const GO = false;  /* done 4 Nov 2026, 9:15 pm; back to look-only so a re-run writes nothing */
 const DATE = "2026-11-04";
 const WRONG = "willyros01@gmail.com";
 const RIGHT = "Willy Rosales";
