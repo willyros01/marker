@@ -120,3 +120,29 @@ test("K10 a code that is already taken is not reused: another is made", async ()
   assert.notEqual(a.code, b.code);
   assert.equal(fs.data(`markerCaddieCodes/${a.code}`).liveId, a.liveId);
 });
+
+test("K11 handing the card to a caddie mid-round: followers keep their code and see the caddie's scores; the game shows it once (1.1.0)", async () => {
+  const { fakeFs } = await import("./fakefs.mjs");
+  const follow = await import("../../worker/src/follow.js");
+  const fs = fakeFs({
+    "associations/G1/members/u-member": { role: "member" },
+    "associations/G1/games/gm1": { name: "Thursday Skins", date: "2026-10-29" },
+  });
+  const c = { ...theCard(), game: { id: "gm1", assocId: "G1" } };
+  const f = await follow.start(fs, MEMBER, { card: c }, { now: NOW, rand });
+  await follow.scores(fs, MEMBER, { liveId: f.liveId, scores: { 0: { 1: 5 }, 1: { 1: 4 } } }, { now: NOW + 1000 });
+  const g = await follow.gameStart(fs, MEMBER, { card: c, liveId: f.liveId }, { now: NOW + 1500, rand });
+  const played = { ...c, players: c.players.map((p, i) => ({ ...p, scores: i === 0 ? { 1: 5, 2: 4 } : { 1: 4, 2: 4 } })) };
+  const k = await caddie.start(fs, MEMBER, played, { now: NOW + 2000, rand, liveId: f.liveId });
+  assert.equal(k.liveId, f.liveId);
+  await assert.rejects(follow.scores(fs, MEMBER, { liveId: f.liveId, scores: {} }, { now: NOW + 2500 }), (e) => /^CADDIE_SCORING$/.test(e.message));
+  const j = await caddie.join(fs, CADDIE, k.code, { now: NOW + 3000 });
+  assert.deepEqual(j.scores, { 0: { 1: 5, 2: 4 }, 1: { 1: 4, 2: 4 } });
+  await caddie.scores(fs, CADDIE, { liveId: k.liveId, scores: { 0: { 1: 5, 2: 4, 3: 3 }, 1: { 1: 4, 2: 4, 3: 4 } } }, { now: NOW + 4000 });
+  const v = await follow.view(fs, { uid: "u-guest", anonymous: true }, f.code, { now: NOW + 5000 });
+  assert.equal(v.scores["0"]["3"], 3);
+  assert.equal(v.byCaddie, true);
+  const gv = await follow.view(fs, { uid: "u-guest", anonymous: true }, g.gameCode, { now: NOW + 5000 });
+  assert.equal(gv.cards.length, 1);
+  await assert.rejects(caddie.start(fs, MEMBER, played, { now: NOW + 6000, rand, liveId: f.liveId }), (e) => /already scoring/.test(e.message));
+});

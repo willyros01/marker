@@ -452,10 +452,17 @@ export async function saveCorrection(cardId, scores) {
 /* ---------------- a caddie scores the card (Willy, 29 Oct 2026) ---------------- */
 
 /* The member: a code for the caddie. Only what a caddie needs is sent. */
-export async function caddieStart(c) {
-  const payload = { id: c.id, date: c.date, holes: c.holes, start: c.start, order: c.order, course: { name: c.course.name }, tee: c.tee,
-    players: c.players.map((p) => ({ name: p.name, ch: p.ch, scores: p.scores })) };
-  return callWorker("/caddie/start", { method: "POST", body: { card: payload } });
+/* Only what a caddie or a follower needs, plus the game the card is part of
+   (its ids only), so the game's followers see it too (1.1.0). */
+function livePayload(c) {
+  return { id: c.id, date: c.date, holes: c.holes, start: c.start, order: c.order, course: { name: c.course.name }, tee: c.tee,
+    players: c.players.map((p) => ({ name: p.name, ch: p.ch, scores: p.scores })),
+    ...(c.game && c.game.id && c.game.assocId ? { game: { id: c.game.id, assocId: c.game.assocId } } : {}) };
+}
+/* With `liveId`, the card's live copy (already followed) is handed to the
+   caddie in the middle of the round (1.1.0). */
+export async function caddieStart(c, liveId = null) {
+  return callWorker("/caddie/start", { method: "POST", body: { card: livePayload(c), ...(liveId ? { liveId } : {}) } });
 }
 export const caddieStatus = (liveId) => callWorker("/caddie/status", { method: "POST", body: { liveId } });
 export const caddieStop = (liveId) => callWorker("/caddie/stop", { method: "POST", body: { liveId } });
@@ -472,10 +479,13 @@ export const caddieSend = (liveId, scores, done = false) => callWorker("/caddie/
 /* The member: a follow code. A card a caddie is scoring already has a live
    copy (its liveId); otherwise the card itself is sent. */
 export async function followStart(c) {
-  const body = c.caddie && c.caddie.liveId ? { liveId: c.caddie.liveId }
-    : { card: { id: c.id, date: c.date, holes: c.holes, start: c.start, order: c.order, course: { name: c.course.name }, tee: c.tee,
-        players: c.players.map((p) => ({ name: p.name, ch: p.ch, scores: p.scores })) } };
+  const body = { card: livePayload(c), ...(c.caddie && c.caddie.liveId ? { liveId: c.caddie.liveId } : {}) };
   return callWorker("/follow/start", { method: "POST", body });
+}
+/* The game's one follow code of the day (option B, Willy 31 Oct 2026). */
+export async function followGame(c) {
+  const body = { card: livePayload(c), ...(c.caddie && c.caddie.liveId ? { liveId: c.caddie.liveId } : {}) };
+  return callWorker("/follow/game", { method: "POST", body });
 }
 export const followSend = (liveId, scores, done = false, posted = false) => callWorker("/follow/scores", { method: "POST", body: { liveId, scores, done, ...(posted ? { posted: true } : {}) } });
 /* A follower needs no account: an anonymous sign-in is made if nobody is signed in. */

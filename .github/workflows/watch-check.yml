@@ -5,7 +5,7 @@ name: Apple Watch check (simulator)
 # saves a picture of each screen to the ci-logs branch.
 on:
   push:
-    branches: [main]
+    branches: [main, release-1.1.0]
     paths: [build/ios/**, build/ios-project.sh, build/watch-check.sh, .github/workflows/watch-check.yml]
   workflow_dispatch:
 

@@ -10,14 +10,19 @@ const fs = client({ project: "demo-marker", base: "http://127.0.0.1:8080/v1", to
 const ok = (c, m) => { if (!c) throw new Error("FAILED: " + m); console.log("ok -", m); };
 
 /* seed: a member account, a course with 18 holes, the worker's address */
-await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key", {
+const signup = await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key", {
   method: "POST", headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ email: "willy@example.com", password: "pass-W-123", returnSecureToken: true }),
 });
+const memberUid = (await signup.json()).localId;
 const holes = [4, 5, 3, 4, 4, 5, 3, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5, 4].map((par, i) => ({ par, yards: 300 + i * 10, si: [7, 1, 17, 3, 11, 5, 15, 9, 13, 8, 18, 2, 10, 4, 16, 12, 6, 14][i] }));
 await fs.commit([
   setWrite(fs, "markerCourses/123", { providerId: "123", name: "Royal Ontario Golf Club", where: "Milton, ON", tees: [{ name: "White (M)", rating: 70.1, slope: 125, par: 72, holes }] }),
   setWrite(fs, "markerConfig/public", { workerUrl: "http://127.0.0.1:8788", version: "test" }),
+  /* 1.1.0: a Scorecard group with a game today, for following a whole game */
+  setWrite(fs, "associations/G1", { name: "Golfing Buddies", ownerUid: memberUid }),
+  setWrite(fs, `associations/G1/members/${memberUid}`, { uid: memberUid, role: "owner" }),
+  setWrite(fs, "associations/G1/games/gm1", { name: "Thursday Skins", date: new Date().toISOString().slice(0, 10), createdBy: memberUid }),
 ]);
 
 const browser = await chromium.launch();
@@ -143,7 +148,7 @@ await act(member, "menu");
 await act(member, "follow-start");
 await member.waitForSelector(".bigcode", { timeout: 20000 });
 const fcode = (await member.locator(".bigcode").innerText()).replace(/\s/g, "");
-ok(/^[A-Z2-9]{6}$/.test(fcode), `the member gets a follow code (${fcode})`);
+ok(/^[1-9]\d{5}$/.test(fcode), `the member gets a six-number follow code (${fcode})`);
 await shot(member, "11-member-follow-code");
 await member.click('[data-act="follow-back"]');
 await member.waitForSelector('[data-act="score"], [data-act="plus"]');
@@ -172,6 +177,58 @@ await fan3.goto(`${APP}&follow=ZZZZ22`);
 await fan3.waitForSelector('[role="alert"]', { timeout: 20000 });
 ok((await fan3.inputValue("#followcode")) === "ZZZZ22", "a failed follow link leaves the code filled in on the Follow screen");
 ok(/doesn't work/.test(await fan3.locator('[role="alert"]').innerText()), "and says why");
+
+/* 11. following a whole game (1.1.0): the card goes live by itself at tee-off; one code for the game */
+await member.goto(APP); await member.waitForSelector('[data-act="new-round"]', { timeout: 20000 });
+await act(member, "new-round");
+await member.waitForSelector('[data-act="game"][data-v="gm1"]', { timeout: 20000 });
+await act(member, "game", "gm1");
+await act(member, "go-course");
+await member.waitForSelector('[data-act="pick-saved"]', { timeout: 20000 });
+await member.locator('[data-act="pick-saved"]').first().click();
+await member.waitForSelector('[data-act="tee"]'); await act(member, "tee", 0);
+await act(member, "go-players");
+ok(await member.locator("main .caddie-choice").count() === 1, "Let my caddie score is on the Who's playing screen itself, not under Tee off");
+await shot(member, "14-whos-playing-caddie");
+for (const n of ["Cora Diaz", "Dan Kim"]) { await member.fill("#guest", n); await act(member, "add-guest"); }
+await act(member, "tee-off");
+await member.waitForSelector('[data-act="menu"]');
+await act(member, "menu");
+await member.waitForSelector('[data-act="follow-game"]');
+await shot(member, "15-menu-game-and-caddie");
+await act(member, "follow-game");
+await member.waitForSelector(".bigcode", { timeout: 20000 });
+const gcode = (await member.locator(".bigcode").innerText()).replace(/\s/g, "");
+ok(/^[1-9]\d{5}$/.test(gcode) && (await text(member)).includes("Thursday Skins"), `the member gets the game's code (${gcode})`);
+await shot(member, "16-game-code");
+await member.click('[data-act="follow-back"]');
+await member.waitForSelector('[data-act="score"], [data-act="plus"]');
+for (let i = 0; i < 2; i++) { if (await member.locator('[data-act="who"]').count()) { await act(member, "who", i); await act(member, "score", i === 0 ? 3 : 5); } else { await member.locator(`[data-act="plus"][data-v="${i}"]`).click(); } }
+const gfan = await (await browser.newContext(phone)).newPage();
+await gfan.goto(`${APP}&follow=${gcode}`);
+await gfan.waitForFunction(() => document.body.innerText.includes("Following the game"), null, { timeout: 20000 });
+await gfan.waitForFunction(() => document.querySelectorAll(".board-row:not(.hd)").length === 2 && /Cora Diaz/.test(document.body.innerText), null, { timeout: 45000 });
+ok(true, "the game's follower sees the leaderboard with the card's golfers");
+await gfan.waitForFunction(() => /−1|\+1/.test(document.querySelector(".board").innerText), null, { timeout: 45000 });
+ok(true, "the scores reach the game's leaderboard by themselves");
+await shot(gfan, "17-game-leaderboard");
+await gfan.locator(".board-row:not(.hd)").first().click();
+await gfan.waitForSelector('[data-act="game-back"]');
+await shot(gfan, "18-game-card");
+await act(gfan, "game-back");
+
+/* 12. handing the card to a caddie in the middle of the round (1.1.0) */
+await act(member, "menu");
+await act(member, "caddie-mid");
+await member.waitForSelector(".bigcode", { timeout: 20000 });
+const mid = (await member.locator(".bigcode").innerText()).replace(/\s/g, "");
+ok(/^[A-Z2-9]{6}$/.test(mid), `the member gets a caddie code mid-round (${mid})`);
+await caddieJoins(mid);
+ok(/hole 2|Hole 2/i.test(await text(cad)), "the caddie joins on hole 2, after the scores so far");
+await scoreHole(4);
+await gfan.waitForFunction(() => [...document.querySelectorAll(".board-row:not(.hd) .th")].some((e) => e.textContent.trim() === "2"), null, { timeout: 45000 });
+ok(true, "the caddie's scores reach the game's leaderboard, on the same card (still two golfers)");
+await shot(gfan, "19-game-after-caddie");
 
 await browser.close();
 console.log("ALL PASSED");

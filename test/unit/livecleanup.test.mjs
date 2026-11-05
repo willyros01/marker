@@ -66,3 +66,19 @@ test("LC5 at most `max` cards a run; the rest wait for the next day", async () =
   assert.equal(r.deleted, 1);
   assert.equal(r.waitingForNextRun, 1);
 });
+
+test("LC6 a game's follow code and its pointer go 30 days after the code stopped; a recent one stays (1.1.0)", async () => {
+  const { fakeFs } = await import("./fakefs.mjs");
+  const { cleanLiveCards } = await import("../../worker/src/cleanup.js");
+  const DAYMS = 86400_000, NOW = Date.UTC(2026, 11, 15);
+  const fs = fakeFs({
+    "markerGameFollow/G1_gm1_2026-11-01": { code: "123456", expiresAt: NOW - 31 * DAYMS },
+    "markerFollowCodes/123456": { kind: "game", gameKey: "G1_gm1_2026-11-01", expiresAt: NOW - 31 * DAYMS },
+    "markerGameFollow/G1_gm1_2026-12-10": { code: "654321", expiresAt: NOW - 5 * DAYMS },
+    "markerFollowCodes/654321": { kind: "game", gameKey: "G1_gm1_2026-12-10", expiresAt: NOW - 5 * DAYMS },
+  });
+  const r = await cleanLiveCards(fs, { now: NOW });
+  assert.equal(r.gameCodesDeleted, 1);
+  assert.ok(!fs.docs.has("markerGameFollow/G1_gm1_2026-11-01") && !fs.docs.has("markerFollowCodes/123456"));
+  assert.ok(fs.docs.has("markerGameFollow/G1_gm1_2026-12-10") && fs.docs.has("markerFollowCodes/654321"));
+});

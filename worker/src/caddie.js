@@ -17,6 +17,7 @@ import * as model from "../../model.js";
 import * as card from "../../card.js";
 import { setWrite, updateWrite } from "./firestore.js";
 import { Refusal } from "./post.js";
+import { gameOf } from "./game.js";
 
 export const HOURS = 12;
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   /* no 0/O, 1/I */
@@ -73,11 +74,14 @@ const view = (d, now) => ({
 });
 
 /* The member asks for a code. */
-export async function start(fs, who, cardIn, { now = Date.now(), rand = Math.random } = {}) {
+export async function start(fs, who, cardIn, { now = Date.now(), rand = Math.random, liveId: from = null } = {}) {
   if (!who || who.anonymous) refuse("Sign in with your Scorecard account to let a caddie score.");
+  if (from) return handOver(fs, who, cardIn, from, { now, rand });
   const setup = setupFrom(cardIn);
   const liveId = model.newId();
   const expiresAt = now + HOURS * 3600_000;
+  /* Part of a Scorecard game: the game's followers see this card too. */
+  const g = await gameOf(fs, who.uid, cardIn);
   for (let i = 0; i < 6; i++) {
     const code = newCode(rand);
     try {
@@ -86,6 +90,7 @@ export async function start(fs, who, cardIn, { now = Date.now(), rand = Math.ran
         setWrite(fs, `markerLive/${liveId}`, {
           owner: who.uid, cardId: String((cardIn && cardIn.id) || ""), setup, scores: cleanScores(Object.fromEntries((cardIn.players || []).map((p, i) => [i, (p && p.scores) || {}])), setup),
           status: "open", caddieUid: null, code, createdAt: now, expiresAt, lastAt: null,
+          ...(g ? { gameKey: g.key } : {}),
         }, { exists: false }),
       ]);
       return { liveId, code, expiresAt };
@@ -163,4 +168,29 @@ export async function scores(fs, who, { liveId, scores: raw, done = false } = {}
     }
   }
   refuse("TRY_LATER");
+}
+
+/* Handing the card to a caddie in the middle of the round (Willy, 1 Nov 2026,
+   1.1.0): the card's live copy, which followers (and the game's leaderboard)
+   already read, becomes the caddie's card. Followers keep their code and see
+   the caddie's scores from then on; the scores so far go with it. One commit. */
+async function handOver(fs, who, cardIn, liveId, { now, rand }) {
+  for (let i = 0; i < 6; i++) {
+    const d = await liveFor(fs, liveId);
+    if (d.data.owner !== who.uid) refuse("This is not your card.");
+    if (now >= d.data.expiresAt) refuse("This card is past its 12 hours. Carry on scoring yourself.");
+    if (!["self", "taken"].includes(d.data.status)) refuse("A caddie is already scoring this card.");
+    const code = newCode(rand);
+    const scores = cleanScores(Object.fromEntries(((cardIn && cardIn.players) || []).map((p, k) => [k, (p && p.scores) || {}])), d.data.setup);
+    try {
+      await fs.commit([
+        setWrite(fs, `markerCaddieCodes/${code}`, { liveId: d.id, expiresAt: d.data.expiresAt }, { exists: false }),
+        updateWrite(fs, d.path, { status: "open", code, caddieUid: null, scores, lastAt: now, handedOverAt: now }, { updateTime: d.updateTime }),
+      ]);
+      return { liveId: d.id, code, expiresAt: d.data.expiresAt };
+    } catch (e) {
+      if (!e.conflict) throw e;   /* the code is taken, or a score arrived meanwhile: try again */
+    }
+  }
+  refuse("No code could be made just now. Try again.");
 }

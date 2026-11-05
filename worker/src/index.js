@@ -136,7 +136,7 @@ export default {
       if (url.pathname.startsWith("/caddie/") && req.method === "POST") {
         const body = await req.json().catch(() => ({}));
         try {
-          if (url.pathname === "/caddie/start") return reply(await caddie.start(fs, who, body.card), 200, h);
+          if (url.pathname === "/caddie/start") return reply(await caddie.start(fs, who, body.card, { liveId: body.liveId || null }), 200, h);
           if (url.pathname === "/caddie/status") return reply(await caddie.status(fs, who, body.liveId), 200, h);
           if (url.pathname === "/caddie/stop") return reply(await caddie.stop(fs, who, body.liveId), 200, h);
           if (url.pathname === "/caddie/join") return reply(await caddie.join(fs, who, body.code), 200, h);
@@ -152,6 +152,7 @@ export default {
           if (url.pathname === "/follow/start") return reply(await follow.start(fs, who, { card: body.card, liveId: body.liveId || null }), 200, h);
           if (url.pathname === "/follow/scores") return reply(await follow.scores(fs, who, body), 200, h);
           if (url.pathname === "/follow/view") return reply(await follow.view(fs, who, body.code), 200, h);
+          if (url.pathname === "/follow/game") return reply(await follow.gameStart(fs, who, { card: body.card, liveId: body.liveId || null }), 200, h);
         } catch (e) {
           if (e instanceof Refusal) return reply({ error: "REFUSED", reason: e.message }, 200, h);
           throw e;

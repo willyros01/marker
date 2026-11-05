@@ -224,3 +224,57 @@ export function frozenHoles(tee) {
   });
   return { holePar, holeSi };
 }
+
+/* ---------------- following (1.1.0) ---------------- */
+
+/* A followed card as the worker sends it ({ setup, scores }), as a card. */
+export function liveCard(v) {
+  const k = v.setup;
+  const base = { course: k.course, tee: k.tee, order: k.order.map(Number), pos: 0,
+    players: k.players.map((p) => ({ name: p.name, ch: p.ch, scores: {} })) };
+  const scores = v.scores || {};
+  return { ...base, players: base.players.map((p, i) => ({ ...p,
+    scores: Object.fromEntries(Object.entries(scores[String(i)] || {}).map(([n, s]) => [Number(n), s])) })) };
+}
+
+/* Places with ties ("T2"), for a list already sorted by `key`. */
+function placed(list, key) {
+  let shown = 0, last = null, at = 0;
+  return list.map((r, i) => {
+    const v = key(r);
+    if (i === 0 || v !== last) { at = i + 1; last = v; }
+    shown = at;
+    const tied = list.filter((x) => key(x) === v).length > 1;
+    return { ...r, place: `${tied ? "T" : ""}${shown}` };
+  });
+}
+
+/* The game's leaderboard (option B, Willy 31 Oct 2026), from /follow/view of
+ * a game code. Live: everyone in gross, best to par first (more holes played
+ * first on a tie); golfers with no score yet last. Final (every card
+ * finished): gross and net, like a Game in The Scorecard; net only for
+ * golfers with a handicap who finished every hole. Each row says which card
+ * and golfer it is, so a tap can open that card. */
+export function gameBoard(view) {
+  const rows = [];
+  (view.cards || []).forEach((v, ci) => {
+    let c;
+    try { c = liveCard(v); } catch { return; }
+    c.players.forEach((p, pi) => {
+      const t = totals(c, pi);
+      rows.push({ name: p.name, card: ci, player: pi, thru: t.done, holes: c.order.length,
+        gross: t.gross, toPar: t.toPar, complete: t.complete, net: t.net, ch: p.ch == null ? null : p.ch,
+        finished: v.status === "finished", posted: !!v.posted });
+    });
+  });
+  const byName = (a, b) => a.name.localeCompare(b.name);
+  const started = rows.filter((r) => r.thru > 0).sort((a, b) => a.toPar - b.toPar || b.thru - a.thru || byName(a, b));
+  const waiting = rows.filter((r) => r.thru === 0).sort(byName).map((r) => ({ ...r, place: "" }));
+  const live = [...placed(started, (r) => r.toPar), ...waiting];
+  const done = rows.filter((r) => r.complete);
+  const gross = placed(done.slice().sort((a, b) => a.gross - b.gross || byName(a, b)), (r) => r.gross);
+  const netted = done.filter((r) => r.net != null);
+  const net = placed(netted.slice().sort((a, b) => a.net - b.net || byName(a, b)), (r) => r.net);
+  const unfinished = rows.filter((r) => !r.complete).sort(byName);
+  return { live, gross, net, unfinished, final: !!view.finished && rows.length > 0 };
+}

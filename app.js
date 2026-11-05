@@ -462,9 +462,10 @@ function screenPlayers() {
       <span class="label">${member() ? "Guests · scored and shared, not posted" : "Players"}</span>
       ${guests.map((g) => `<div class="item on"><span class="box">✓</span><span class="txt"><span class="name">${esc(g.name)}</span><span class="meta">${member() ? "Guest" : "Player"}</span></span><button class="btn" style="min-height:44px" data-act="unguest" data-v="${esc(g.name)}">Remove</button></div>`).join("")}
       ${full ? "" : `<div class="row2" style="grid-template-columns: minmax(0,1fr) auto"><input class="input" id="guest" placeholder="${member() ? "Guest's name" : "Player's name"}" value="${esc(S.guestName)}" autocomplete="off"><button class="btn" data-act="add-guest">Add</button></div>`}
+      ${member() ? `<span class="label">Playing with a caddie?</span>
+      <button class="btn tall caddie-choice" data-act="caddie-start" ${count && !S.busy ? "" : "disabled"}><span>${S.busy === "caddie" ? "Getting a code…" : "Let my caddie score"}</span><small>Your caddie enters the scores on their own phone. You can also hand the card over later, from the Menu.</small></button>` : ""}
     </main>
     <footer class="foot"><button class="btn primary" data-act="tee-off" ${count ? "" : "disabled"}>Tee off on hole ${esc(s.start)} →</button>
-      ${member() ? `<button class="btn outline" data-act="caddie-start" ${count && !S.busy ? "" : "disabled"}>${S.busy === "caddie" ? "Getting a code…" : "Let my caddie score"}</button>` : ""}
       <button class="btn" data-act="back-setup">← Back</button></footer>`;
 }
 
@@ -569,7 +570,9 @@ function screenMenu(c) {
       <button class="btn tall" data-act="switch-entry"><span>${other === "all" ? "Switch to all four together" : "Switch to one golfer at a time"}</span><small>The scores already entered stay as they are.</small></button>
       <button class="btn tall" data-act="card"><span>See the whole card</span><small>Every hole, with par, yards and handicap number. Tap a hole to go to it.</small></button>
       <button class="btn tall" data-act="share-card"><span>Share the card</span><small>WhatsApp, email or text message.</small></button>
+      ${!c.caddieOf && !c.correcting && !c.repostOf && member() && (!c.caddie || c.caddie.ended) ? `<button class="btn tall" data-act="caddie-mid"><span>${S.busy === "caddie" ? "Getting a code…" : "Let my caddie score"}</span><small>Hand the card to your caddie from this hole on. The scores so far stay; you can take it back at any time.</small></button>` : ""}
       ${!c.caddieOf && !c.correcting && !c.repostOf && member() ? `<button class="btn tall" data-act="follow-start"><span>${c.follow ? "Show the follow code" : "Let others follow this card"}</span><small>The other golfers see the scores live on their phones, signal permitting. Read-only.</small></button>` : ""}
+      ${c.game && !c.caddieOf && !c.correcting && !c.repostOf && member() ? `<button class="btn tall" data-act="follow-game"><span>${S.busy === "game" ? "Getting the game's code…" : c.gameFollow ? "Show the game's follow code" : "Let others follow this game"}</span><small>Every card in ${esc(c.game.name || "the game")} on one live leaderboard. One code for the whole game.</small></button>` : ""}
       <button class="btn tall" data-act="to-start"><span>Go to the start screen</span><small>The round stays on this phone. "Continue your round" brings you back to this hole.</small></button>
       ${c.caddieOf ? `<button class="btn tall" data-act="caddie-quit" style="color:var(--over)"><span>Stop scoring this card</span><small>The scores already sent stay with the golfer.</small></button>`
         : c.correcting ? `<button class="btn tall" data-act="cancel-correction" style="color:var(--over)"><span>Cancel the correction</span><small>Nothing is changed in The Scorecard.</small></button>`
@@ -757,6 +760,7 @@ function screenCaddieMember(c) {
     </main>
     <footer class="foot">${watchBtn("watch-mine")}
       <button class="btn" data-act="follow-start">${c.follow ? "Show the follow code" : "Let others follow this card"}</button>
+      ${c.game ? `<button class="btn" data-act="follow-game">${S.busy === "game" ? "Getting the game's code…" : c.gameFollow ? "Show the game's follow code" : "Let others follow this game"}</button>` : ""}
       <button class="btn" data-act="caddie-takeover">Take over scoring myself</button>
       <button class="btn" data-act="to-start">Go to the start screen</button></footer>`;
 }
@@ -811,14 +815,14 @@ function screenFollowShare(c) {
 }
 
 function screenFollowJoin() {
-  return `${top("Follow a card", "Watch the scores live")}
+  return `${top("Follow", "A card or a whole game, live")}
     <main class="body">${banner()}
-      <p style="font-size:20px">Type the follow code the golfer shows you.</p>
+      <p style="font-size:20px">Type the six-number follow code the golfer shows you. It can be for one card or for a whole game.</p>
       <label class="field"><span class="label">Follow code</span>
-        <input class="input bigcode-in" id="followcode" value="${esc(S.followCode || "")}" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7P 4QX"></label>
+        <input class="input bigcode-in" id="followcode" value="${esc(S.followCode || "")}" autocomplete="off" inputmode="numeric" autocapitalize="characters" spellcheck="false" placeholder="123 456"></label>
       <p class="muted">No account is needed. You only look; nothing can be changed from your phone.</p>
     </main>
-    <footer class="foot"><button class="btn primary" data-act="follow-join" ${S.busy ? "disabled" : ""}>${S.busy === "follow" ? "Opening…" : "Follow the card"}</button>
+    <footer class="foot"><button class="btn primary" data-act="follow-join" ${S.busy ? "disabled" : ""}>${S.busy === "follow" ? "Opening…" : "Follow"}</button>
       <button class="btn" data-act="home">← Back</button></footer>`;
 }
 
@@ -833,6 +837,58 @@ function screenFollowView() {
   return `${top("Following", `${c.course.name} · ${c.tee.name}`)}
     <main class="body" style="padding:10px">${banner()}${line}${cardGrid(c, false)}</main>
     <footer class="foot">${w.posted ? "" : watchBtn("watch-send")}
+      <button class="btn" data-act="follow-stop">Stop following</button></footer>`;
+}
+
+/* ---------------- following a whole game (option B, Willy 31 Oct 2026) ---------------- */
+
+function screenGameShare(c) {
+  const g = c.gameFollow;
+  const back = c.caddie && !c.caddie.ended ? "caddie" : c.state === "finished" ? "finish" : "play";
+  return `${top("Follow the game", `${g.name || (c.game && c.game.name) || "The game"} · ${niceDate(c.date)}`)}
+    <main class="body">${banner()}
+      <p style="font-size:20px">Anyone with this code sees <b>every card of the game</b> on one live leaderboard. They open <b>The Marker</b>, tap <b>Follow</b> at the bottom and type it, or point their phone's camera at the square.</p>
+      <div class="qrbox">${qrSvg(`${FOLLOW_WEB}?follow=${g.code}`)}</div>
+      <div class="bigcode" aria-label="Code ${esc(g.code.split("").join(" "))}">${esc(spaced(g.code))}</div>
+      <p class="muted">The same code for every card of the game today. Cards show up as their scorers tee off with The Marker, signal permitting. The code stops working after 12 hours.</p>
+    </main>
+    <footer class="foot"><button class="btn primary" data-act="follow-back" data-v="${back}">${back === "caddie" ? "Back to your caddie's card" : back === "finish" ? "Back to the totals" : `Back to hole ${esc(c.order[c.pos])} →`}</button>
+      ${watchBtn("watch-game")}</footer>`;
+}
+
+/* Each row of the leaderboard: place, full name, score, holes played. Tap for that golfer's card. */
+function boardRow(r, value) {
+  return `<button class="board-row" data-act="game-card" data-v="${r.card}" aria-label="${esc(r.name)}: ${esc(value)}, ${r.thru ? `thru ${r.thru}` : "not started"}. Open the card.">
+    <span class="pl">${esc(r.place)}</span><span class="nm">${esc(r.name)}</span><span class="sc">${esc(value)}</span><span class="th">${r.complete ? "F" : r.thru ? r.thru : "–"}</span></button>`;
+}
+function screenGameView() {
+  const w = S.watch;
+  const name = (w.game && w.game.name) || "The game";
+  if (S.gameCard != null && w.cards && w.cards[S.gameCard]) {
+    const v = w.cards[S.gameCard];
+    const c = card.liveCard(v);
+    return `${top(name, `${c.course.name} · ${c.tee.name}`)}
+    <main class="body" style="padding:10px">${banner()}
+      <div class="banner">${v.posted ? "Posted." : v.status === "finished" ? "This card is finished." : "Live"}${v.byCaddie ? " · scored by a caddie" : ""}</div>
+      ${cardGrid(c, false)}</main>
+    <footer class="foot"><button class="btn primary" data-act="game-back">← Back to the leaderboard</button></footer>`;
+  }
+  const b = card.gameBoard(w);
+  const when = w.lastAt ? new Date(w.lastAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "";
+  const line = b.final ? `<div class="banner ok">Every card is finished. Final results.</div>`
+    : w.stale ? `<div class="banner warn">No connection right now. Showing the scores from ${esc(when || "earlier")}.</div>`
+    : `<div class="banner">${when ? `Updated at ${esc(when)}` : "No scores yet"} · refreshes by itself</div>`;
+  const head = (a, b2) => `<div class="board-row hd"><span class="pl">#</span><span class="nm">Golfer</span><span class="sc">${a}</span><span class="th">${b2}</span></div>`;
+  const body = !b.live.length ? `<p>No card of this game is live yet. Cards show up as their scorers tee off with The Marker.</p>`
+    : b.final ? `<h3 class="sec">Gross</h3><div class="board">${head("Gross", "")}${b.gross.map((r) => boardRow(r, String(r.gross))).join("")}</div>
+      ${b.net.length ? `<h3 class="sec">Net</h3><div class="board">${head("Net", "")}${b.net.map((r) => boardRow(r, String(r.net))).join("")}</div>` : ""}
+      ${b.unfinished.length ? `<p class="muted">Not every hole entered, so not in the results: ${esc(b.unfinished.map((r) => r.name).join(", "))}.</p>` : ""}
+      <p class="muted">Net is the gross minus the course handicap, for golfers with a handicap.</p>`
+    : `<div class="board">${head("To par", "Thru")}${b.live.map((r) => boardRow(r, r.thru ? card.formatToPar(r.toPar) : "–")).join("")}</div>
+      <p class="muted">Gross, to par. Tap a golfer to see their card.</p>`;
+  return `${top("Following the game", `${name}${w.date ? ` · ${niceDate(w.date)}` : ""}`)}
+    <main class="body">${banner()}${line}${body}</main>
+    <footer class="foot">${watchBtn("watch-send")}
       <button class="btn" data-act="follow-stop">Stop following</button></footer>`;
 }
 
@@ -934,7 +990,8 @@ function render() {
     case "caddie-join": html = screenCaddieJoin(); break;
     case "follow-share": html = c && c.follow ? screenFollowShare(c) : screenStart(); break;
     case "follow-join": html = screenFollowJoin(); break;
-    case "follow-view": html = S.watch ? screenFollowView() : screenFollowJoin(); break;
+    case "follow-view": html = S.watch ? (S.watch.kind === "game" ? screenGameView() : screenFollowView()) : screenFollowJoin(); break;
+    case "game-share": html = c && c.gameFollow ? screenGameShare(c) : screenStart(); break;
     default: html = screenStart();
   }
   app.innerHTML = html;
@@ -1118,12 +1175,7 @@ async function followNow(done = false, posted = false) {
 }
 
 /* A follower's phone: the card as it stands, every 12 seconds while open. */
-function watchCard(w) {
-  const k = w.setup;
-  const base = { course: k.course, tee: k.tee, order: k.order.map(Number), pos: 0,
-    players: k.players.map((p) => ({ name: p.name, ch: p.ch, scores: {} })) };
-  return withScores(base, w.scores);
-}
+function watchCard(w) { return card.liveCard(w); }
 let watchTimer = null;
 async function watchPoll() {
   clearTimeout(watchTimer);
@@ -1136,9 +1188,10 @@ async function watchPoll() {
     if (/stopped working|doesn't work/.test(m)) { local.remove("following"); S.watch = null; S.error = m; go("follow-join"); return; }
     S.watch = { ...S.watch, stale: true };
   }
-  if (S.watch && S.watch.posted) { try { local.remove("following"); } catch {} }
+  const over = S.watch && (S.watch.kind === "game" ? false : S.watch.posted);   /* a game keeps going until every card is in, then its code runs out */
+  if (over) { try { local.remove("following"); } catch {} }
   if (S.screen === "follow-view") render();
-  if (S.watch && !S.watch.posted) watchTimer = setTimeout(watchPoll, 12000);
+  if (S.watch && !over) watchTimer = setTimeout(watchPoll, S.watch.kind === "game" && S.watch.finished ? 60000 : 12000);
 }
 /* A first try right as the phone hands a link to the app can fail: the app
    has only just woken up. Those failures are tried once more (Willy, 29 Oct 2026). */
@@ -1156,12 +1209,13 @@ async function openFollow(code, { retry = false } = {}) {
     if (S.screen !== "follow-join") go("follow-join");
     S.error = joinWhy(e); render(); return;
   }
-  S.busy = ""; S.followCode = "";
+  S.busy = ""; S.followCode = ""; S.gameCard = null;
   S.watch = { code, ...v, stale: false };
-  if (v.posted) { try { local.remove("following"); } catch {} }   /* posted: following has ended */
-  else { try { local.save("following", { code, course: v.setup.course.name, expiresAt: v.expiresAt || null }); } catch { /* following still works without it */ } }
+  const label = v.kind === "game" ? `${(v.game && v.game.name) || "A game"} (game)` : v.setup.course.name;
+  if (v.posted && v.kind !== "game") { try { local.remove("following"); } catch {} }   /* posted: following has ended */
+  else { try { local.save("following", { code, course: label, expiresAt: v.expiresAt || null }); } catch { /* following still works without it */ } }
   go("follow-view");
-  if (!v.posted) watchTimer = setTimeout(watchPoll, 12000);
+  if (!v.posted || v.kind === "game") watchTimer = setTimeout(watchPoll, 12000);
 }
 
 const actions = {
@@ -1420,12 +1474,52 @@ const actions = {
     await sendToWatch(c.follow.code, c.course.name, "watch");
   },
   "follow-back"(el) { const v = el.dataset.v; go(v); if (v === "caddie") startPolling(); },
+  /* The game's one code of the day (option B): this card goes live first if it is not yet. */
+  async "follow-game"() {
+    const c = local.currentCard();
+    if (!c || S.busy) return;
+    if (c.gameFollow && Date.now() < c.gameFollow.expiresAt) { go("game-share"); return; }
+    S.busy = "game"; S.error = ""; render();
+    let r;
+    try { r = await db.followGame(c); }
+    catch (e) { S.busy = ""; S.error = `No code for the game could be made. ${joinWhy(e)}`; render(); return; }
+    S.busy = "";
+    const now = local.currentCard();
+    const saved = { ...now, follow: now.follow || { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt },
+      gameFollow: { code: r.gameCode, expiresAt: r.gameExpiresAt, name: r.gameName || (now.game && now.game.name) || "" } };
+    try { saveCard(saved); } catch (e) { fail(e); return; }
+    if (ownerSends(saved)) followNow(false);
+    go("game-share");
+  },
+  async "watch-game"() {
+    const c = local.currentCard();
+    if (!c || !c.gameFollow || S.busy) return;
+    await sendToWatch(c.gameFollow.code, `${c.gameFollow.name || "The game"} (game)`);
+  },
+  "game-card"(el) { S.gameCard = Number(el.dataset.v); render(); window.scrollTo(0, 0); },
+  "game-back"() { S.gameCard = null; render(); },
+  /* Hand the card to a caddie in the middle of the round (Willy, 1 Nov 2026). */
+  async "caddie-mid"() {
+    const c = local.currentCard();
+    if (!c || S.busy || c.caddieOf || (c.caddie && !c.caddie.ended)) return;
+    S.busy = "caddie"; S.error = ""; render();
+    let r;
+    try { r = await db.caddieStart(c, c.follow && !c.follow.stopped ? c.follow.liveId : null); }
+    catch (e) { S.busy = ""; S.error = `${joinWhy(e)} You can carry on scoring yourself.`; render(); return; }
+    S.busy = "";
+    clearTimeout(followTimer);
+    const now = local.currentCard();
+    try { saveCard({ ...now, caddie: { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt, joined: false } }); }
+    catch (e) { fail(e); return; }
+    go("caddie");
+    startPolling();
+  },
   "follow-open"() { S.error = ""; go("follow-join"); },
   async "follow-join"() {
     if (S.busy) return;
     const code = ((document.getElementById("followcode") || {}).value || "").trim();
     S.followCode = code;
-    if (code.replace(/[^A-Za-z0-9]/g, "").length !== 6) { S.error = "The follow code has six letters and numbers."; render(); return; }
+    if (code.replace(/[^A-Za-z0-9]/g, "").length !== 6) { S.error = "The follow code has six numbers."; render(); return; }
     await openFollow(code);
   },
   async "follow-resume"() {
@@ -1435,7 +1529,8 @@ const actions = {
   },
   async "watch-send"() {
     if (!S.watch || S.busy) return;
-    await sendToWatch(S.watch.code, (S.watch.setup && S.watch.setup.course && S.watch.setup.course.name) || "");
+    const label = S.watch.kind === "game" ? `${(S.watch.game && S.watch.game.name) || "The game"} (game)` : (S.watch.setup && S.watch.setup.course && S.watch.setup.course.name) || "";
+    await sendToWatch(S.watch.code, label);
   },
   "follow-remove"() { clearTimeout(watchTimer); local.remove("following"); S.watch = null; render(); },
   "follow-stop"() { clearTimeout(watchTimer); local.remove("following"); S.watch = null; go("start"); },
@@ -1508,6 +1603,7 @@ const actions = {
     S.typing = false;
     go("play");
     keepAwake();
+    autoLive();
   },
   who(el) { S.typing = false; updateCard((c) => ({ ...c, who: Number(el.dataset.v) })); },
   score(el) {
@@ -1991,6 +2087,26 @@ function checkWatch() {
   S.watchSupported = !!(Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.getPlatform && Cap.getPlatform() === "ios"
     && /iPhone/.test(navigator.userAgent || ""));
 }
+/* A card that is part of a game goes live by itself at tee-off (1.1.0), so
+   the game's followers see it without anyone tapping anything. No signal:
+   tried again when the signal returns and when the app opens. Silent. */
+let autoLiveBusy = false;
+async function autoLive() {
+  const c = local.currentCard();
+  if (!c || autoLiveBusy || c.follow || !c.game || !member() || c.caddie || c.caddieOf || c.correcting || c.repostOf || c.state !== "playing") return;
+  autoLiveBusy = true;
+  try {
+    const r = await db.followStart(c);
+    const now = local.currentCard();
+    if (now && now.id === c.id && !now.follow) {
+      const saved = { ...now, follow: { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt } };
+      saveCard(saved);
+      if (ownerSends(saved)) followNow(false);
+    }
+  } catch { /* tried again later */ }
+  finally { autoLiveBusy = false; }
+}
+
 /* The card's follow code, made now if it has none. Returns the saved card, or null (message shown). */
 async function ensureFollow(busy) {
   const c = local.currentCard();
@@ -2041,6 +2157,30 @@ function useLink(url) {
   try { used = openCaddieLink(url); } catch { used = false; }
   if (!used) { go("start"); S.error = `The Marker was opened with a link it could not use: ${String(url).slice(0, 300)}`; render(); }
 }
+/* Copy and continue (Willy, 2 Nov 2026): a caddie or follower without the
+   app taps the download button on the Cuberoot page, which also copies their
+   link. On its very first start the app looks at the clipboard once, and if
+   it holds such a link, opens the Join or Follow screen with the code filled
+   in. iPhone asks once ("Allow Paste"); Android does not ask. Only a caddie
+   or follow link of cuberoot-systems.com is used; anything else is ignored. */
+async function pickUpCopiedLink() {
+  const Cap = (typeof window !== "undefined" && window.Capacitor) || null;
+  if (!Cap || !Cap.isNativePlatform || !Cap.isNativePlatform()) return false;
+  if (local.load("clipboardChecked", false)) return false;
+  try { local.save("clipboardChecked", true); } catch { return false; }   /* never asked twice */
+  const Clip = (Cap.Plugins && Cap.Plugins.Clipboard) || (Cap.registerPlugin ? Cap.registerPlugin("Clipboard") : null);
+  if (!Clip) return false;
+  let text = "";
+  try { const r = await Clip.read(); text = String((r && r.value) || "").trim(); }
+  catch {
+    S.flash = "Came from a caddie or follow link? Tap Caddie or Follow at the bottom and type the code from the page, or scan the golfer's square again.";
+    render(); return false;
+  }
+  if (!/^https:\/\/(www\.)?cuberoot-systems\.com\/marker\/(caddie|follow)\/?\?(caddie|follow)=[A-Za-z0-9]{6}$/.test(text)) return false;
+  useLink(text);
+  return true;
+}
+
 async function listenForCaddieLinks() {
   const Cap = (typeof window !== "undefined" && window.Capacitor) || null;
   const App = Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.Plugins ? Cap.Plugins.App : null;
@@ -2050,6 +2190,14 @@ async function listenForCaddieLinks() {
 }
 
 async function boot() {
+  /* A fresh install (nothing kept on this phone yet), worked out before
+     anything is saved: only then is the clipboard looked at (copy and continue). */
+  let freshInstall = false;
+  try {
+    freshInstall = local.load("started", null) == null && !local.currentCard() && !local.finishedCards().length
+      && !local.load("workerUrl", "") && !local.load("prefs", null) && !local.recentCourses().length;
+    local.save("started", Date.now());
+  } catch { freshInstall = false; }
   render();
   try { await db.init(); }
   catch (e) { S.error = "No connection to The Scorecard right now. You can still play and share; posting waits for the signal."; }
@@ -2071,11 +2219,13 @@ async function boot() {
   } catch {}
   if (c && c.caddieOf && c.caddieOf.done) sendNow();
   await listenForCaddieLinks();
+  if (freshInstall && S.screen === "start") await pickUpCopiedLink();
   checkWatch();
+  autoLive();
   try { db.dropReplaced(); } catch {}
   render();
   refreshMine(true);
 }
-addEventListener("online", () => { render(); const c = local.currentCard(); if (c && c.caddieOf) sendNow(); if (ownerSends(c)) followNow(false); if (S.screen === "caddie") startPolling(); if (S.screen === "follow-view") watchPoll(); });
+addEventListener("online", () => { render(); const c = local.currentCard(); if (c && c.caddieOf) sendNow(); if (ownerSends(c)) followNow(false); autoLive(); if (S.screen === "caddie") startPolling(); if (S.screen === "follow-view") watchPoll(); });
 addEventListener("offline", () => render());
 boot();

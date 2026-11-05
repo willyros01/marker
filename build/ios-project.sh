@@ -8,10 +8,10 @@ CAP=8.5.2
 TMP="${RUNNER_TEMP:-/tmp}"
 
 echo "--- Capacitor $CAP (installed for this build only)"
-npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/ios@$CAP" "@capacitor/app@8.1.1"
+npm install --no-save --package-lock=false --no-audit --no-fund "@capacitor/cli@$CAP" "@capacitor/core@$CAP" "@capacitor/ios@$CAP" "@capacitor/app@8.1.1" "@capacitor/clipboard@8.0.1"
 # The link piece must be listed in package.json, or "cap sync" leaves it out of
 # the app and scanned links never reach it (0.8.3, Willy 29 Oct 2026).
-npm pkg set "dependencies.@capacitor/app=8.1.1"
+npm pkg set "dependencies.@capacitor/app=8.1.1" "dependencies.@capacitor/clipboard=8.0.1"
 
 echo "--- The web files (same list as Android)"
 rm -rf www && mkdir -p www
@@ -27,6 +27,7 @@ rm -rf ios
 npx cap add ios
 npx cap sync ios 2>&1 | tee "$TMP/capsync.log"
 grep -q "@capacitor/app" "$TMP/capsync.log" || { echo "RESULT: the link piece (@capacitor/app) is not in the app; links would not open it"; exit 1; }
+grep -q "@capacitor/clipboard" "$TMP/capsync.log" || { echo "RESULT: the clipboard piece (@capacitor/clipboard) is not in the app; copy and continue would not work"; exit 1; }
 cp build/ios/PrivacyInfo.xcprivacy ios/App/App/PrivacyInfo.xcprivacy
 cp build/ios/App.entitlements ios/App/App/App.entitlements
 
