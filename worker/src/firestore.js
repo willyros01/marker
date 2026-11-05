@@ -72,6 +72,19 @@ export function client({ project, token, base = "https://firestore.googleapis.co
       catch (e) { if (e.notFound) return null; throw e; }
     },
 
+    /* Many documents in one call per 100 (Cloudflare's free plan allows 50
+       calls per request: Willy, 5 Nov 2026). Same order as `paths`; null
+       where a document is not there. */
+    async getMany(paths) {
+      const out = new Map();
+      for (let i = 0; i < paths.length; i += 100) {
+        const part = [...new Set(paths.slice(i, i + 100))];
+        const rows = await call("POST", `${base}/${root}:batchGet`, { documents: part.map(name) });
+        for (const r of Array.isArray(rows) ? rows : []) if (r.found) { const d = asDoc(r.found); out.set(d.path, d); }
+      }
+      return paths.map((p) => out.get(p) || null);
+    },
+
     /* Documents of one collection under `parent` ("" for the top) matching
        every [field, op, value] filter. */
     async query(parent, collectionId, filters = [], limit = 100) {

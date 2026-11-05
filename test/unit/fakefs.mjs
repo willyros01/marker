@@ -22,6 +22,7 @@ export function fakeFs(seed = {}) {
     commits,
     calls: 0,
     async get(path) { this.calls++; const d = docs.get(path); return d ? asDoc(path, d) : null; },
+    async getMany(paths) { this.calls += Math.ceil(paths.length / 100); return paths.map((p) => { const d = docs.get(p); return d ? asDoc(p, d) : null; }); },
     async query(parent, collectionId, filters = [], limit = 100) {
       this.calls++;
       const out = [];
