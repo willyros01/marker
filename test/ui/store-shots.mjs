@@ -13,21 +13,31 @@ const SHOTS = process.env.SHOTS || "/tmp/store-shots";
 const fs = client({ project: "demo-marker", base: "http://127.0.0.1:8080/v1", token: async () => "owner" });
 const log = (m) => console.log("ok -", m);
 
-await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key", {
+const signUp = async (email, password) => (await (await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key", {
   method: "POST", headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email: "member@example.com", password: "pass-M-123", returnSecureToken: true }),
-});
+  body: JSON.stringify({ email, password, returnSecureToken: true }),
+})).json()).localId;
+const uid1 = await signUp("member@example.com", "pass-M-123");
+const uid2 = await signUp("second@example.com", "pass-S-123");   /* 1.1.0: a second foursome in the same game */
+const todayIso = new Date().toISOString().slice(0, 10);
 const pars = [4, 5, 3, 4, 4, 5, 3, 4, 4, 4, 3, 5, 4, 4, 3, 4, 5, 4];
 const si = [7, 1, 17, 3, 11, 5, 15, 9, 13, 8, 18, 2, 10, 4, 16, 12, 6, 14];
 const holes = pars.map((par, i) => ({ par, yards: [365, 512, 168, 402, 377, 534, 152, 418, 390, 371, 181, 497, 355, 428, 143, 386, 541, 404][i], si: si[i] }));
 await fs.commit([
   setWrite(fs, "markerCourses/900", { providerId: "900", name: "Cedar Brook Golf Club", where: "Example Town", tees: [{ name: "White", rating: 70.6, slope: 126, par: 72, holes }] }),
   setWrite(fs, "markerConfig/public", { workerUrl: "http://127.0.0.1:8788", version: "test" }),
+  setWrite(fs, "associations/CB", { name: "Cedar Brook Golfers", ownerUid: uid1 }),
+  setWrite(fs, `associations/CB/members/${uid1}`, { uid: uid1, role: "owner" }),
+  setWrite(fs, `associations/CB/members/${uid2}`, { uid: uid2, role: "admin" }),
+  setWrite(fs, "associations/CB/games/gm-iphone", { name: "Saturday Medal", date: todayIso, createdBy: uid1 }),
+  setWrite(fs, "associations/CB/games/gm-ipad", { name: "Saturday Medal", date: todayIso, createdBy: uid1 }),
 ]);
 
 const GOLFERS = ["Sam Carter", "Lee Park", "Jordan Diaz", "Pat Kelly"];
 /* strokes per golfer for holes 1-6 */
 const PLAY = [[5, 5, 3, 4, 5, 6], [4, 6, 4, 5, 4, 5], [5, 5, 3, 5, 4, 6], [4, 5, 3, 4, 4, 5]];
+const GOLFERS2 = ["Chris Lane", "Robin Shaw", "Alex Moore", "Jamie Fox"];
+const PLAY2 = [[4, 6, 3, 5, 4], [5, 5, 4, 4, 5], [4, 5, 2, 4, 4], [6, 6, 4, 5, 5]];
 
 const browser = await chromium.launch();
 const sizes = {
@@ -48,8 +58,9 @@ for (const [dev, ctx] of Object.entries(sizes)) {
   await act(member, "sign-in");
   await member.waitForSelector('[data-act="new-round"]', { timeout: 30000 });
 
-  const newRound = async (p, guests) => {
+  const newRound = async (p, guests, game = null) => {
     await act(p, "new-round");
+    if (game) { await p.waitForSelector(`[data-act="game"][data-v="${game}"]`, { timeout: 30000 }); await act(p, "game", game); }
     await act(p, "go-course");
     await p.waitForSelector('[data-act="pick-saved"]', { timeout: 30000 });
     await p.locator('[data-act="pick-saved"]').first().click();
@@ -58,8 +69,8 @@ for (const [dev, ctx] of Object.entries(sizes)) {
     for (const n of guests) { await p.fill("#guest", n); await act(p, "add-guest"); }
   };
 
-  /* 1. a round scored one golfer at a time, six holes in */
-  await newRound(member, GOLFERS);
+  /* 1. a round scored one golfer at a time, six holes in (part of a game, 1.1.0) */
+  await newRound(member, GOLFERS, `gm-${dev}`);
   await act(member, "tee-off");
   await member.waitForSelector('[data-act="who"]', { timeout: 20000 });
   for (let h = 0; h < 6; h++) {
@@ -125,6 +136,29 @@ for (const [dev, ctx] of Object.entries(sizes)) {
   await act(solo, "manual");
   await solo.waitForSelector("#scanfile", { state: "attached", timeout: 20000 });
   await shot(solo, "08-course-from-picture");
+
+  /* 8. 1.1.0: a second foursome in the same game, and the game's live leaderboard */
+  const second = await page();
+  await second.goto(APP); await second.waitForSelector('[data-act="go-signin"]', { timeout: 30000 });
+  await act(second, "go-signin");
+  await second.fill("#email", "second@example.com"); await second.fill("#password", "pass-S-123");
+  await act(second, "sign-in");
+  await second.waitForSelector('[data-act="new-round"]', { timeout: 30000 });
+  await newRound(second, GOLFERS2, `gm-${dev}`);
+  await act(second, "tee-off");
+  await second.waitForSelector('[data-act="who"]', { timeout: 20000 });
+  for (let h = 0; h < 5; h++) {
+    for (let i = 0; i < 4; i++) await scoreOne(second, i, PLAY2[i][h]);
+    if (h < 4) await act(second, "next");
+  }
+  await act(second, "menu"); await act(second, "follow-game");
+  await second.waitForSelector(".bigcode", { timeout: 20000 });
+  await shot(second, "10-game-code");
+  const gcode = (await second.locator(".bigcode").innerText()).replace(/\s/g, "");
+  const gfan = await page();
+  await gfan.goto(`${APP}&follow=${gcode}`);
+  await gfan.waitForFunction(() => document.querySelectorAll(".board-row:not(.hd)").length === 8, null, { timeout: 60000 });
+  await shot(gfan, "09-game-leaderboard");
 }
 
 await browser.close();
