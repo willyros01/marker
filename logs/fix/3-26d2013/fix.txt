@@ -1,0 +1,4 @@
+MODE: LOOK ONLY (nothing is written)
+Posted Carlisle cards dated 2026-11-04: 1
+  card mw2esppp9l56au: Willy Rosales, Hermie Ticsay, Ruben Castillo
+STOPPED, nothing written: expected exactly one Carlisle card with "willyros01@gmail.com" on it, found 0.
