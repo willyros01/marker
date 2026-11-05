@@ -336,9 +336,9 @@ await scoreHere(third, 0, 5); await act(third, "next");
 await act(third, "late-open");
 await third.waitForFunction(() => !document.body.innerText.includes("Loading") && !!document.querySelector("#lateguest"), null, { timeout: 20000 });
 await shot(third, "27-add-a-golfer");
-await third.locator('[data-act="late-pick"]').first().click();
+await third.fill("#lateguest", "Lou Tan"); await act(third, "late-guest");   /* the test group has no other golfers */
 await third.waitForSelector('[data-act="score"], [data-act="plus"]');
-ok(/from hole 3/.test(await text(third)) && (await third.locator('[data-act="who"]').count() === 2 || await third.locator(".player").count() === 2), "a group member is added on hole 3");
+ok(/from hole 3/.test(await text(third)) && (await third.locator('[data-act="who"]').count() === 2 || await third.locator(".player").count() === 2), "a golfer is added on hole 3");
 await scoreHere(third, 1, 5);
 ok(!/to go/.test(await third.locator("footer").innerText()), "hole 3 is complete with both golfers' scores");
 await act(third, "prev");

@@ -83,8 +83,7 @@ for (const [dev, ctx] of Object.entries(sizes)) {
   await shot(member, "02-one-golfer");
 
   /* 2. let others follow: the code */
-  await act(member, "menu");
-  await act(member, "follow-start");
+  await act(member, "game-tap");   /* the card is in a game: one code for the game (5 Nov 2026) */
   await member.waitForSelector(".bigcode", { timeout: 20000 });
   const code = (await member.locator(".bigcode").innerText()).replace(/\s/g, "");
   await shot(member, "03-follow-code");
@@ -95,6 +94,8 @@ for (const [dev, ctx] of Object.entries(sizes)) {
   const fan = await page();
   await fan.goto(`${APP}&follow=${code}`);
   await fan.waitForFunction(() => document.body.innerText.includes("Following"), null, { timeout: 30000 });
+  await fan.waitForSelector(".board-row:not(.hd)", { timeout: 30000 });
+  await fan.locator(".board-row:not(.hd)").first().click();   /* one card of the game */
   await scoreOne(member, 1, 4);
   await fan.waitForFunction(() => /Thru 7\b/.test(document.body.innerText), null, { timeout: 45000 });
   await shot(fan, "04-follower-live");
