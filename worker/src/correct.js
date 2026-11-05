@@ -158,22 +158,36 @@ export async function myCards(fs, who, { now = Date.now(), limit = 40 } = {}) {
   const cache = new Map();
   const correctable = [];
   const editable = [];
+  /* Rights first (a few calls, cached per group), then every round of those
+     cards in one call, then the golfers whose rounds are gone in one call:
+     a few calls in all, however many cards there are (Willy, 5 Nov 2026). */
+  const mine = [];
   for (const s of posted) {
     if (!s.data.card) continue;
     const r = await rights(fs, who, s, now, cache);
     const canRepost = repostable(s) && !!r.as;
-    if (!r.as && !canRepost) continue;
-    const docs = await roundsOf(fs, s);
+    if (r.as || canRepost) mine.push({ s, r, canRepost });
+  }
+  const roundPath = (s, p) => { const rid = (s.data.rounds || {})[p.golferId]; return rid ? `associations/${p.assocId}/rounds/${rid}` : null; };
+  const paths = mine.flatMap(({ s }) => (s.data.card.players || []).map((p) => roundPath(s, p)).filter(Boolean));
+  const found = new Map((await fs.getMany(paths)).filter(Boolean).map((d) => [d.path, d]));
+  const later = [];
+  for (const { s, r, canRepost } of mine) {
+    const docs = (s.data.card.players || []).map((p) => { const path = roundPath(s, p); return path ? found.get(path) || null : null; });
     const gone = docs.map((d, i) => (d ? null : i)).filter((i) => i !== null);
     if (!gone.length) { if (r.as) correctable.push(summary(s, r)); continue; }
     if (!canRepost) continue;
+    later.push({ s, r, gone });
+  }
+  const golferPaths = later.flatMap(({ s, gone }) => gone.map((i) => `golfers/${s.data.card.players[i].golferId}`));
+  const golfers = new Map((await fs.getMany(golferPaths)).filter(Boolean).map((g) => [g.path, g]));
+  for (const { s, r, gone } of later) {
     const c = s.data.card;
-    const players = [];
-    for (const i of gone) {
+    const players = gone.map((i) => {
       const p = c.players[i];
-      const g = await fs.get(`golfers/${p.golferId}`);
-      players.push({ ...p, index: g ? model.effectiveIndex(g.data).index : null });
-    }
+      const g = golfers.get(`golfers/${p.golferId}`);
+      return { ...p, index: g ? model.effectiveIndex(g.data).index : null };
+    });
     /* Hidden ones come too, marked: they are left off the list and the count,
        but opening the card on the phone still offers Edit and re-post. */
     editable.push({ ...summary(s, r), hidden: !!s.data.repostHidden, gone: players.map((p) => p.name || ""), card: { ...c, players } });
