@@ -5,7 +5,7 @@ name: iPhone build to TestFlight
 # Scorecard's. The log is saved to the ci-logs branch with any key text removed.
 on:
   push:
-    branches: [main]
+    branches: [main, release-1.1.0]
     paths: [version.js]
   workflow_dispatch:
 
