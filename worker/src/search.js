@@ -53,6 +53,22 @@ export async function count(fs, who, { now = Date.now(), tries = 4, kind = "sear
   }
 }
 
+/* The GolfCourseAPI key (Willy, 1 Nov 2026, Scorecard step 31): one key,
+   entered once in The Scorecard's Settings by the app owner, kept in
+   secretKeys/golfCourseApi (no app can read it; this server reads it with its
+   service account). The server's own secret is the fallback until then.
+   Read at most every ten minutes per worker instance. */
+let keyCache = null;
+export async function golfKey(fs, env, { now = Date.now() } = {}) {
+  if (keyCache && now - keyCache.at < 600_000) return keyCache.key;
+  let key = "";
+  try { const d = await fs.get("secretKeys/golfCourseApi"); key = d && typeof d.data.key === "string" ? d.data.key.trim() : ""; } catch { key = ""; }
+  key = key || String((env && env.GOLF_KEY) || "");
+  keyCache = { at: now, key };
+  return key;
+}
+export const forgetKey = () => { keyCache = null; };
+
 export async function search(fs, who, query, key) {
   if (String(query || "").trim().length < 3) throw new Error("TOO_SHORT");
   await count(fs, who);

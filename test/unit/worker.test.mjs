@@ -601,3 +601,14 @@ test("W30 a golfer who joined late is posted with the missed holes at net par, n
   assert.match(fs2.data("markerSubmissions/late2").reason, /fewer than 14 holes/);
   assert.equal(roundsIn(fs2, "G1").length, 0);
 });
+
+test("W31 the course search key comes from secretKeys/golfCourseApi (Scorecard step 31); the server secret is only the fallback", async () => {
+  const search = await import("../../worker/src/search.js");
+  search.forgetKey();
+  const fs = fakeFs({});
+  assert.equal(await search.golfKey(fs, { GOLF_KEY: "server-secret" }, { now: 1 }), "server-secret");
+  search.forgetKey();
+  fs.docs.set("secretKeys/golfCourseApi", { data: { key: " db-key-1234 " }, updateTime: "t" });
+  assert.equal(await search.golfKey(fs, { GOLF_KEY: "server-secret" }, { now: 2 }), "db-key-1234");
+  search.forgetKey();
+});

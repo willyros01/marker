@@ -90,11 +90,11 @@ export default {
       const fs = fsFor(env);
 
       if (url.pathname === "/search" && req.method === "GET") {
-        try { return reply({ courses: await search.search(fs, who, url.searchParams.get("q"), env.GOLF_KEY) }, 200, h); }
+        try { return reply({ courses: await search.search(fs, who, url.searchParams.get("q"), await search.golfKey(fs, env)) }, 200, h); }
         catch (e) { return reply({ error: e instanceof search.LimitReached ? "LIMIT" : e.message }, 200, h); }
       }
       if (url.pathname === "/course" && req.method === "GET") {
-        try { return reply({ course: await search.course(fs, who, url.searchParams.get("id"), env.GOLF_KEY) }, 200, h); }
+        try { return reply({ course: await search.course(fs, who, url.searchParams.get("id"), await search.golfKey(fs, env)) }, 200, h); }
         catch (e) { return reply({ error: e instanceof search.LimitReached ? "LIMIT" : e.message }, 200, h); }
       }
       if (url.pathname === "/withdrawn" && req.method === "GET") {
