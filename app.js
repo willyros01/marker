@@ -1023,6 +1023,18 @@ function render() {
   if (S.screen === "play" && S.typing) { const t = document.getElementById("typed"); if (t) t.focus(); }
 }
 
+/* A redraw after something loaded in the background (1.1.0): text being typed
+   survives it. A golfer list that finished loading while a guest's name was
+   typed used to wipe the box, losing the name. */
+function renderKeepingTyped() {
+  const kept = {};
+  app.querySelectorAll("input[id]").forEach((el) => { if (el.value && el.type !== "password" && el.type !== "number") kept[el.id] = el.value; });
+  const focused = document.activeElement && document.activeElement.id;
+  render();
+  for (const [id, v] of Object.entries(kept)) { const el = document.getElementById(id); if (el && !el.value) el.value = v; }
+  if (focused && kept[focused] !== undefined) { const el = document.getElementById(focused); try { if (el) el.focus(); } catch {} }
+}
+
 /* ---------------- actions ---------------- */
 
 async function loadGroupsAndGames() {
@@ -1039,14 +1051,14 @@ async function loadGames() {
   if (!member() || !S.setup) return;
   const date = S.setup.date;
   const lists = await Promise.all(S.groups.map((g) => db.gamesOn(g, date).catch(() => [])));
-  if (S.setup && S.setup.date === date) { S.games = lists.flat(); render(); }
+  if (S.setup && S.setup.date === date) { S.games = lists.flat(); renderKeepingTyped(); }
 }
 
 async function loadGolfers(assocId) {
   if (!assocId || S.golfers[assocId]) return;
   try { S.golfers[assocId] = await db.groupGolfers(assocId); }
   catch (e) { S.golfers[assocId] = []; S.error = e.message; }
-  render();
+  renderKeepingTyped();
 }
 
 function updateCard(fn) {
