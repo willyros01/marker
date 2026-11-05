@@ -138,10 +138,27 @@ export async function cleanLiveCards(fs, { now = Date.now(), max = 200, log = ()
     }
   }
 
+  /* A game's follow code of the day (1.1.0) and its pointer: deleted the same
+     way, LIVE_DAYS after the code stopped, one commit per game day. */
+  let gamesDeleted = 0;
+  const games = await fs.query("", "markerGameFollow", [], 5000);
+  for (const g of games.filter((x) => now - (Number(x.data.expiresAt) || 0) >= LIVE_DAYS * DAY).slice(0, max)) {
+    try {
+      const code = g.data.code ? await fs.get(`markerFollowCodes/${g.data.code}`) : null;
+      const mine = code && code.data && code.data.kind === "game" && code.data.gameKey === g.id ? [code] : [];
+      await fs.commit([g, ...mine].map((x) => deleteWrite(fs, x.path, { updateTime: x.updateTime })));
+      gamesDeleted++;
+    } catch (e) {
+      kept++;
+      log(`kept game code ${g.id}: ${e && e.message}`);
+    }
+  }
+
   const record = {
     lastRun: new Date(now).toISOString(),
     checked: cards.length,
     deleted,
+    gameCodesDeleted: gamesDeleted,
     keptBecauseChanged: kept,
     waitingForNextRun: Math.max(due.length - max, 0),
   };

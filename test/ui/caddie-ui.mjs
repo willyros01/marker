@@ -143,7 +143,7 @@ await act(member, "menu");
 await act(member, "follow-start");
 await member.waitForSelector(".bigcode", { timeout: 20000 });
 const fcode = (await member.locator(".bigcode").innerText()).replace(/\s/g, "");
-ok(/^[A-Z2-9]{6}$/.test(fcode), `the member gets a follow code (${fcode})`);
+ok(/^[1-9]\d{5}$/.test(fcode), `the member gets a six-number follow code (${fcode})`);
 await shot(member, "11-member-follow-code");
 await member.click('[data-act="follow-back"]');
 await member.waitForSelector('[data-act="score"], [data-act="plus"]');
