@@ -1,0 +1,23 @@
+MODE: LOOK ONLY (nothing is written)
+Posted Carlisle cards dated 2026-11-04: 1
+  card mw2esppp9l56au: willyros01@gmail.com, Hermie Ticsay, Ruben Castillo
+
+CARD mw2esppp9l56au, scorer wJ1NLFR4fXTXOFiBfUsckKK2Qjv2, course "Carlisle Golf And Country Club — North/South", tee "White (M)", game none
+  >> willyros01@gmail.com: golfer mss0ir7tagkms5, group mv41i2sx1c9tyw, round mw2nhi0axhc9db
+     Hermie Ticsay: golfer v1-golfer-hermie-ticsay, group mss0iqvqder7g2, round mw2nhi0a238pa8
+     Ruben Castillo: golfer v1-golfer-ruben-castillo, group mss0iqvqder7g2, round mw2nhi0akc9kge
+
+WRONG ROUND associations/mv41i2sx1c9tyw/rounds/mw2nhi0axhc9db: gross 95, adjusted 95, differential 25.5, game -
+
+Golfers named "Willy Rosales": mskprf1hohe4va (linked wJ1NLFR4fXTXOFiBfUsckKK2Qjv2, groups mss0iqvqder7g2/mst71vmrsw4jvv, rounds 26); v1-golfer-willy-rosales (linked DsgGf4UvaJOxHul7ctNmEQjLGm43, groups mslh4vf9rwdx50/mslj7kt8qh2b74, rounds 0, ARCHIVED)
+  group mss0iqvqder7g2 "Golfing Buddies": Willy Rosales on roster true, scorer member true
+  group mst71vmrsw4jvv "?": Willy Rosales on roster false, scorer member false
+New round goes to group mss0iqvqder7g2 "Golfing Buddies"
+
+NEW ROUND associations/mss0iqvqder7g2/rounds/mw2wm7xsg4kmfy: Willy Rosales, gross 95, adjusted 95, differential 25.5, index at entry 24.3, course handicap 22, game -
+
+LEFTOVER GOLFER mss0ir7tagkms5 "willyros01@gmail.com": rounds 1 -> 0, index null -> null
+Willy Rosales mskprf1hohe4va: rounds 26 -> 27, index 24.3 -> 24.2
+
+8 writes planned, in one commit. The other golfers' rounds are not touched.
+LOOK ONLY: nothing written.
