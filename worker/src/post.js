@@ -80,7 +80,12 @@ export function checkCard(c, today) {
     if (ids.has(p.golferId)) refuse(`${full(p.name)} is on the card twice.`);
     ids.add(p.golferId);
     const scores = p.scores && typeof p.scores === "object" ? p.scores : {};
+    /* Holes a golfer who joined late did not play (Willy, 5 Nov 2026): at most 4. */
+    const missed = Array.isArray(p.missed) ? p.missed.map(Number) : [];
+    if (missed.length && (new Set(missed).size !== missed.length || missed.some((n) => !order.includes(n)))) refuse(`${full(p.name)}'s missed holes are not holes of the card.`);
+    if (order.length - missed.length < card.LATE_MIN) refuse(`${full(p.name)} played fewer than ${card.LATE_MIN} holes, so the round cannot be posted.`);
     for (const n of order) {
+      if (missed.includes(n)) continue;
       const s = scores[n];
       if (!(s === card.PICKED_UP || (Number.isInteger(s) && s >= 1 && s <= 20))) refuse(`${full(p.name)} has no score on hole ${n}.`);
     }
@@ -225,9 +230,17 @@ export async function plan(fs, sub, today) {
     if (g.data.archived) refuse(`${g.data.name || who} has been archived in The Scorecard.`);
     if (!(await fs.get(`associations/${p.assocId}/roster/${p.golferId}`))) refuse(`${g.data.name || who} is no longer on the group's roster.`);
     const index = model.effectiveIndex(g.data).index;
+    const ch = card.courseHandicapFor(index, tee);
+    const missed = Array.isArray(p.missed) ? p.missed.map(Number) : [];
+    if (missed.length && !card.frozenHoles(tee)) refuse(`${g.data.name || who} joined late, and the course's par for each hole is not known, so the missed holes cannot be counted.`);
     players.push({
-      name: g.data.name || p.name || "", golferId: p.golferId, assocId: p.assocId, guest: false,
-      index, ch: card.courseHandicapFor(index, tee), scores: Object.fromEntries(order.map((n) => [n, p.scores[n]])),
+      name: g.data.name || p.name || "", golferId: p.golferId, assocId: p.assocId, guest: false, index, ch,
+      scores: Object.fromEntries(order.map((n) => {
+        if (!missed.includes(n)) return [n, p.scores[n]];
+        const h = tee.holes[n - 1];
+        return [n, card.netPar(h.par, ch, h.si ? Number(h.si) : null)];   /* net par for a hole not played */
+      })),
+      ...(missed.length ? { missed } : {}),
     });
     golfers.push(g);
   }

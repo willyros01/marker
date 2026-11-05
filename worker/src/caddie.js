@@ -48,8 +48,19 @@ export function setupFrom(c) {
       holes: (Array.isArray(tee.holes) ? tee.holes : []).slice(0, 18).map((h) => ({ par: Number(h && h.par) || 4, yards: h && h.yards ? Number(h.yards) : null, si: h && h.si ? Number(h.si) : null })),
     },
     holes: c.holes === "9" ? "9" : "18", start: order[0], order,
-    players: players.map((p) => ({ name: String((p && p.name) || "").slice(0, 80), ch: p && Number.isFinite(Number(p.ch)) && p.ch !== null ? Number(p.ch) : null })),
+    players: players.map(setupPlayer),
   };
+}
+const setupPlayer = (p) => ({ name: String((p && p.name) || "").slice(0, 80), ch: p && Number.isFinite(Number(p.ch)) && p.ch !== null ? Number(p.ch) : null,
+  ...(p && Number.isInteger(Number(p.from)) && Number(p.from) > 0 && Number(p.from) < 18 ? { from: Number(p.from) } : {}) });
+
+/* A golfer added after tee-off (Willy, 5 Nov 2026): the live copy takes the
+   longer list, as long as the golfers already on it stay as they were. */
+export function withLate(setup, players) {
+  if (!Array.isArray(players) || players.length <= setup.players.length || players.length > 4) return null;
+  const next = players.map(setupPlayer);
+  if (setup.players.some((p, i) => p.name !== next[i].name)) return null;
+  return { ...setup, players: [...setup.players, ...next.slice(setup.players.length)] };
 }
 
 /* Scores from a phone: { "<player index>": { "<hole>": 1..20 | "X" } } for the card's holes only. */
