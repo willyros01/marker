@@ -207,3 +207,89 @@ test("G7 one card never shows twice on the leaderboard, even with two live copie
   assert.equal(v.cards.length, 2);
   assert.equal(v.cards.filter((c) => c.setup.players[0].name === "Willy Rosales")[0].scores["0"]["1"], 4);
 });
+
+/* ---------------- starting and joining a game in The Marker (Willy, 5 Nov 2026, option A) ---------------- */
+
+const game = await import("../../worker/src/game.js");
+const startSeed = () => ({
+  ...gameSeed(),
+  "associations/G2": { name: "Philippine Golfers" },
+  "courses/c-ro": { id: "c-ro", name: "Royal Ontario", tees: [{ id: "t1", name: "White (M)", rating: 70.1, slope: 125, par: 72 }] },
+});
+const tee = { name: "White (M)", rating: 70.1, slope: 125, par: 72, holes };
+
+test("GS1 a scorer starts a real Scorecard game from The Marker; another joins with the code; followers use it too", async () => {
+  const fs = fakeFs(startSeed());
+  const g = await game.create(fs, MEMBER, { assocId: "G1", name: "  Saturday   Medal ", date: "2026-10-29", course: { name: "Royal Ontario" }, tee }, { now: NOW, rand });
+  assert.match(g.code, /^[1-9]\d{5}$/);
+  assert.equal(g.game.name, "Saturday Medal");
+  assert.equal(g.game.groupName, "Golfing Buddies");
+  const doc = fs.docs.get(`associations/G1/games/${g.game.id}`).data;
+  assert.deepEqual({ ...doc, id: undefined }, { id: undefined, assocId: "G1", date: "2026-10-29", endDate: null, courseId: "c-ro", name: "Saturday Medal", createdBy: "u-member", createdVia: "marker" });
+  const j = await game.join(fs, OTHER, ` ${g.code.slice(0, 3)} ${g.code.slice(3)} `, { now: NOW + 1000 });
+  assert.deepEqual(j.game, g.game);
+  assert.equal(j.date, "2026-10-29");
+  /* both cards carry the game: one leaderboard, one code */
+  const c1 = { ...theCard(), id: "c1", game: { id: g.game.id, assocId: "G1" } };
+  const c2 = { ...secondCard(), id: "c2", game: { id: g.game.id, assocId: "G1" } };
+  await follow.start(fs, MEMBER, { card: c1 }, { now: NOW + 2000, rand });
+  const s2 = await follow.gameStart(fs, OTHER, { card: c2 }, { now: NOW + 3000, rand });
+  assert.equal(s2.gameCode, g.code);
+  const v = await follow.view(fs, GUEST, g.code, { now: NOW + 4000 });
+  assert.equal(v.kind, "game");
+  assert.equal(v.game.name, "Saturday Medal");
+  assert.equal(v.cards.length, 2);
+});
+
+test("GS2 a course The Scorecard does not have yet is added in the same commit; nothing is written when refused", async () => {
+  const fs = fakeFs(startSeed());
+  const g = await game.create(fs, MEMBER, { assocId: "G1", name: "Twilight", date: "2026-10-29", course: { name: "Lakeview Golf Course", where: "Mississauga" }, tee }, { now: NOW, rand });
+  const doc = fs.docs.get(`associations/G1/games/${g.game.id}`).data;
+  const made = fs.docs.get(`courses/${doc.courseId}`).data;
+  assert.equal(made.name, "Lakeview Golf Course");
+  assert.equal(made.id, doc.courseId);
+  const before = fs.docs.size;
+  await assert.rejects(game.create(fs, FRIEND, { assocId: "G1", name: "Nope", date: "2026-10-29", course: { name: "Royal Ontario" }, tee }, { now: NOW }), refused(/not a member/));
+  await assert.rejects(game.create(fs, MEMBER, { assocId: "G1", name: "x", date: "2026-10-29", course: { name: "Royal Ontario" }, tee }, { now: NOW }), refused(/name/));
+  await assert.rejects(game.create(fs, MEMBER, { assocId: "G1", name: "No tee", date: "2026-10-29", course: { name: "Royal Ontario" }, tee: { name: "Red", par: 72 } }, { now: NOW }), Refusal);
+  await assert.rejects(game.create(fs, GUEST, { assocId: "G1", name: "Guest game", date: "2026-10-29", course: { name: "Royal Ontario" }, tee }, { now: NOW }), refused(/Sign in/));
+  assert.equal(fs.docs.size, before);
+});
+
+test("GS3 joining: a card code is not a game code; a member of another group is told plainly; a stopped code refuses", async () => {
+  const fs = fakeFs({ ...startSeed(), "associations/G2/members/u-friend": { role: "member" } });
+  const g = await game.create(fs, MEMBER, { assocId: "G1", name: "Saturday Medal", date: "2026-10-29", course: { name: "Royal Ontario" }, tee }, { now: NOW, rand });
+  const card = await follow.start(fs, MEMBER, { card: theCard() }, { now: NOW, rand });
+  await assert.rejects(game.join(fs, OTHER, card.code, { now: NOW }), refused(/not a game code/));
+  await assert.rejects(game.join(fs, FRIEND, g.code, { now: NOW }), refused(/Golfing Buddies.*not a member/));
+  await assert.rejects(game.join(fs, OTHER, g.code, { now: NOW + 12 * 3600_000 + 1 }), refused(/stopped working/));
+  await assert.rejects(game.join(fs, GUEST, g.code, { now: NOW }), refused(/Sign in/));
+});
+
+test("GS4 a game code made before 5 Nov (name only, no game id) still joins: the game is read from its key", async () => {
+  const fs = fakeFs(startSeed());
+  const g = await game.create(fs, MEMBER, { assocId: "G1", name: "Thursday Skins", date: "2026-10-29", course: { name: "Royal Ontario" }, tee }, { now: NOW, rand });
+  const doc = fs.docs.get(`markerFollowCodes/${g.code}`);
+  doc.data = { ...doc.data, game: { name: "Thursday Skins" } };   /* the old shape */
+  const j = await game.join(fs, OTHER, g.code, { now: NOW + 1000 });
+  assert.equal(j.game.id, g.game.id);
+  assert.equal(j.game.assocId, "G1");
+  assert.equal(j.game.name, "Thursday Skins");
+  doc.data = { ...doc.data, gameKey: "G1_nogame_2026-10-29" };
+  await assert.rejects(game.join(fs, OTHER, g.code, { now: NOW + 1000 }), refused(/no longer exists/));
+});
+
+test("GS5 a golfer added after tee-off reaches the followers; the golfers already on the card cannot be changed that way", async () => {
+  const fs = fakeFs();
+  const r = await follow.start(fs, MEMBER, { card: theCard() }, { now: NOW, rand });
+  const before = (await follow.view(fs, GUEST, r.code, { now: NOW + 1 })).setup.players;
+  const players = [...before, { name: "Late Lou", ch: 10, from: 2 }];
+  await follow.scores(fs, MEMBER, { liveId: r.liveId, scores: { [before.length]: { 3: 5 } }, players }, { now: NOW + 2 });
+  const v = await follow.view(fs, GUEST, r.code, { now: NOW + 3 });
+  assert.equal(v.setup.players.length, before.length + 1);
+  assert.deepEqual(v.setup.players.at(-1), { name: "Late Lou", ch: 10, from: 2 });
+  assert.equal(v.scores[String(before.length)]["3"], 5);
+  const renamed = [{ ...before[0], name: "Someone Else" }, ...players.slice(1), { name: "Fifth", ch: 1 }].slice(0, 4);
+  await follow.scores(fs, MEMBER, { liveId: r.liveId, scores: {}, players: renamed }, { now: NOW + 4 });
+  assert.equal((await follow.view(fs, GUEST, r.code, { now: NOW + 5 })).setup.players[0].name, before[0].name);
+});

@@ -1,0 +1,47 @@
+diff --git a/marker/assets/get-app.js b/marker/assets/get-app.js
+index afcb964..6afa86e 100644
+--- a/marker/assets/get-app.js
++++ b/marker/assets/get-app.js
+@@ -35,6 +35,16 @@
+   var apk = $('[data-apk]');
+   if (android && stores && apk) stores.insertBefore(apk, stores.firstChild);
+ 
++  /* Copy and continue (Willy, 2 Nov 2026; The Marker 1.1.0): tapping a
++     download button also copies this page's link, with its code. When The
++     Marker first opens after installing, it picks the link up by itself
++     (the iPhone asks once: Allow Paste) and opens the right screen. */
++  if (code) {
++    var link = window.location.origin + window.location.pathname + '?' + kind + '=' + code;
++    var copy = function () { try { if (navigator.clipboard) navigator.clipboard.writeText(link).catch(function () {}); } catch (e) { /* nothing copied: the code is still on the page */ } };
++    Array.prototype.forEach.call(document.querySelectorAll('.store-badge, [data-apk]'), function (b) { b.addEventListener('click', copy); });
++  }
++
+   /* The Android download: the current signed build, as on the home page. */
+   fetch('../../downloads/marker-build.json', { cache: 'no-store' })
+     .then(function (r) { return r.ok ? r.json() : null; })
+diff --git a/marker/caddie/index.html b/marker/caddie/index.html
+index 0b0c0d8..49ff987 100644
+--- a/marker/caddie/index.html
++++ b/marker/caddie/index.html
+@@ -20,7 +20,7 @@
+ <div data-with-code hidden>
+ <p class="step">2. Open it, tap <b>Caddie</b> at the bottom, and type this code</p>
+ <div class="code" data-code></div>
+-<p class="note">Or scan the square on the golfer's phone again once the app is installed.</p>
++<p class="note">The download button also copies this code: when The Marker first opens, it picks the code up by itself (on an iPhone, tap <b>Allow Paste</b>). Or scan the square on the golfer's phone again once the app is installed.</p>
+ <p class="note">The code works for this card only, for up to 12 hours.</p>
+ </div>
+ <div data-no-code hidden>
+diff --git a/marker/follow/index.html b/marker/follow/index.html
+index db70ea4..3906860 100644
+--- a/marker/follow/index.html
++++ b/marker/follow/index.html
+@@ -20,7 +20,7 @@
+ <div data-with-code hidden>
+ <p class="step">2. Open it, tap <b>Follow</b> at the bottom, and type this code</p>
+ <div class="code" data-code></div>
+-<p class="note">Or scan the square on the golfer's phone again once the app is installed.</p>
++<p class="note">The download button also copies this code: when The Marker first opens, it picks the code up by itself (on an iPhone, tap <b>Allow Paste</b>). Or scan the square on the golfer's phone again once the app is installed.</p>
+ <p class="note">You only look: nothing can be changed from your phone. No account is needed.</p>
+ </div>
+ <div data-no-code hidden>

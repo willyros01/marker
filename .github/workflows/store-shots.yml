@@ -5,7 +5,7 @@ name: App Store pictures (emulators)
 # golfers. Nothing live is touched. Pictures go to ci-logs under logs/store-shots/.
 on:
   push:
-    branches: [main]
+    branches: [main, release-1.1.0]
     paths:
       - test/ui/store-shots.mjs
       - .github/workflows/store-shots.yml

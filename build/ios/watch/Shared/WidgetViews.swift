@@ -4,7 +4,9 @@
  *   GroupBox: HOLE n · updated time / all golfers, two per line */
 import SwiftUI
 
-let markerGreen = Color(red: 0.56, green: 0.83, blue: 0.66)
+/* The accent on the watch: a light Lake blue since 1.1.0 (Willy, 31 Oct 2026);
+   the name stays. Scores under par keep their green (underColor). */
+let markerGreen = Color(red: 0.55, green: 0.77, blue: 0.96)
 let overColor = Color(red: 1.0, green: 0.77, blue: 0.54)
 let underColor = Color(red: 0.56, green: 0.83, blue: 0.66)
 
@@ -115,6 +117,55 @@ struct MineRound: View {
           Text(t.done > 0 ? toParText(t.toPar) : "–").font(.system(size: 24, weight: .heavy, design: .rounded))
             .foregroundStyle(t.done > 0 ? parColor(t.toPar) : .white)
             .minimumScaleFactor(0.5).lineLimit(1)
+        }
+        .padding(4)
+      } else {
+        Text("MKR").font(.system(size: 13, weight: .bold)).foregroundStyle(markerGreen)
+      }
+    }
+  }
+}
+
+/* A game being followed (1.1.0): the top of the leaderboard (Willy's proposal,
+   31 Oct 2026: your place and the leader). Up to three lines. */
+struct GameBox: View {
+  let game: GameBoard
+  var body: some View {
+    let rows = game.isFinal ? game.gross : game.live
+    VStack(alignment: .leading, spacing: 1) {
+      HStack {
+        Text(game.isFinal ? "FINAL" : (game.name.isEmpty ? "THE GAME" : game.name.uppercased()))
+          .font(.caption2.weight(.bold)).foregroundStyle(markerGreen).lineLimit(1)
+        Spacer()
+        Text(clock(game.lastAt)).font(.caption2).foregroundStyle(.secondary)
+      }
+      ForEach(Array(rows.prefix(3))) { r in
+        HStack(spacing: 4) {
+          Text(r.place).foregroundStyle(.secondary).frame(width: 22, alignment: .leading)
+          Text(firstName(r.name)).lineLimit(1).minimumScaleFactor(0.6)
+          Spacer(minLength: 2)
+          if game.isFinal { Text("\(r.gross)") }
+          else { Text(r.thru > 0 ? toParText(r.toPar) : "–").foregroundStyle(r.thru > 0 ? parColor(r.toPar) : .secondary) }
+        }
+        .font(.system(size: 15, weight: .semibold))
+      }
+      if rows.isEmpty { Text("No card live yet").font(.caption2).foregroundStyle(.secondary) }
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+  }
+}
+
+/* The round box for a game: the leader's score to par. */
+struct GameRound: View {
+  let game: GameBoard
+  var body: some View {
+    ZStack {
+      Circle().fill(Color(white: 0.16))
+      if let r = (game.isFinal ? game.gross : game.live).first, r.thru > 0 {
+        VStack(spacing: -1) {
+          Text(String(firstName(r.name).prefix(5))).font(.system(size: 12, weight: .bold)).foregroundStyle(markerGreen)
+          Text(game.isFinal ? "\(r.gross)" : toParText(r.toPar)).font(.system(size: 22, weight: .heavy, design: .rounded))
+            .foregroundStyle(game.isFinal ? .white : parColor(r.toPar)).minimumScaleFactor(0.5).lineLimit(1)
         }
         .padding(4)
       } else {

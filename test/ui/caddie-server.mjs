@@ -6,6 +6,7 @@ import http from "node:http";
 import { client } from "../../worker/src/firestore.js";
 import * as caddie from "../../worker/src/caddie.js";
 import * as follow from "../../worker/src/follow.js";
+import * as game from "../../worker/src/game.js";
 import { Refusal } from "../../worker/src/post.js";
 
 const fs = client({ project: process.env.PROJECT || "demo-marker", base: "http://127.0.0.1:8080/v1", token: async () => "owner" });
@@ -15,7 +16,7 @@ const who = (req) => {
   return { uid: p.user_id || p.sub, anonymous: (p.firebase || {}).sign_in_provider === "anonymous" };
 };
 const routes = {
-  "/caddie/start": (w, b) => caddie.start(fs, w, b.card),
+  "/caddie/start": (w, b) => caddie.start(fs, w, b.card, { liveId: b.liveId || null }),
   "/caddie/status": (w, b) => caddie.status(fs, w, b.liveId),
   "/caddie/stop": (w, b) => caddie.stop(fs, w, b.liveId),
   "/caddie/join": (w, b) => caddie.join(fs, w, b.code),
@@ -23,6 +24,9 @@ const routes = {
   "/follow/start": (w, b) => follow.start(fs, w, { card: b.card, liveId: b.liveId || null }),
   "/follow/scores": (w, b) => follow.scores(fs, w, b),
   "/follow/view": (w, b) => follow.view(fs, w, b.code),
+  "/follow/game": (w, b) => follow.gameStart(fs, w, { card: b.card, liveId: b.liveId || null }),
+  "/follow/game-create": (w, b) => game.create(fs, w, b),
+  "/follow/game-join": (w, b) => game.join(fs, w, b.code),
 };
 http.createServer(async (req, res) => {
   const h = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Authorization, Content-Type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Content-Type": "application/json" };

@@ -12,6 +12,7 @@ on:
       - styles.css
       - worker/src/caddie.js
       - worker/src/follow.js
+      - worker/src/game.js
       - test/ui/**
       - .github/workflows/ui-caddie.yml
   workflow_dispatch:

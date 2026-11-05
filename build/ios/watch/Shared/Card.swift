@@ -172,3 +172,84 @@ func scoreName(_ s: Score?, par: Int) -> String {
     return "+\(d)"
   }
 }
+
+/* ---------------- following a whole game (1.1.0, Willy 31 Oct 2026) ---------------- */
+
+/* One golfer on the game's leaderboard; `card` and `player` say where. */
+struct GameRow: Identifiable {
+  let id: String
+  let name: String
+  let card: Int
+  let player: Int
+  let thru: Int
+  let gross: Int
+  let toPar: Int
+  let complete: Bool
+  let net: Int?
+  var place: String = ""
+}
+
+/* The worker's answer for a game code: { kind: "game", game, date, cards, lastAt, finished }.
+   The same leaderboard as the iPhone (card.js gameBoard): live in gross,
+   best to par first; final in gross and net. */
+struct GameBoard {
+  var name: String
+  var date: String
+  var cards: [FollowCard]
+  var lastAt: Date?
+  var finished: Bool
+  var expiresAt: Date?
+
+  static func parse(_ obj: [String: Any]) -> GameBoard? {
+    guard (obj["kind"] as? String) == "game" else { return nil }
+    let cards = (obj["cards"] as? [[String: Any]] ?? []).compactMap { FollowCard.parse($0) }
+    let name = (obj["game"] as? [String: Any])?["name"] as? String ?? ""
+    var lastAt: Date? = nil
+    if let ms = obj["lastAt"] as? NSNumber { lastAt = Date(timeIntervalSince1970: ms.doubleValue / 1000) }
+    var expiresAt: Date? = nil
+    if let ms = obj["expiresAt"] as? NSNumber { expiresAt = Date(timeIntervalSince1970: ms.doubleValue / 1000) }
+    return GameBoard(name: name, date: obj["date"] as? String ?? "", cards: cards, lastAt: lastAt,
+                     finished: (obj["finished"] as? Bool) ?? false, expiresAt: expiresAt)
+  }
+
+  var rows: [GameRow] {
+    var out: [GameRow] = []
+    for (ci, c) in cards.enumerated() {
+      for pi in c.players.indices {
+        let t = c.totals(pi)
+        let complete = t.done == c.order.count
+        let ch = c.players[pi].ch
+        let net: Int? = (complete && ch != nil) ? t.gross - (ch ?? 0) : nil
+        out.append(GameRow(id: "\(ci)-\(pi)", name: c.players[pi].name, card: ci, player: pi, thru: t.done,
+                           gross: t.gross, toPar: t.toPar, complete: complete, net: net))
+      }
+    }
+    return out
+  }
+
+  /* Places with ties ("T2") for a list already in order. */
+  static func placed(_ list: [GameRow], _ key: (GameRow) -> Int) -> [GameRow] {
+    var out = list
+    var at = 0
+    for i in out.indices {
+      if i == 0 || key(out[i]) != key(out[i - 1]) { at = i + 1 }
+      let v = key(out[i])
+      let tied = list.filter { key($0) == v }.count > 1
+      out[i].place = (tied ? "T" : "") + "\(at)"
+    }
+    return out
+  }
+
+  var live: [GameRow] {
+    let started = rows.filter { $0.thru > 0 }.sorted { ($0.toPar, -$0.thru, $0.name) < ($1.toPar, -$1.thru, $1.name) }
+    let waiting = rows.filter { $0.thru == 0 }.sorted { $0.name < $1.name }
+    return GameBoard.placed(started) { $0.toPar } + waiting
+  }
+  var gross: [GameRow] {
+    GameBoard.placed(rows.filter { $0.complete }.sorted { ($0.gross, $0.name) < ($1.gross, $1.name) }) { $0.gross }
+  }
+  var net: [GameRow] {
+    GameBoard.placed(rows.filter { $0.net != nil }.sorted { ($0.net ?? 0, $0.name) < ($1.net ?? 0, $1.name) }) { $0.net ?? 0 }
+  }
+  var isFinal: Bool { finished && !cards.isEmpty }
+}

@@ -111,7 +111,7 @@ const first = (name) => String(name || "").split(" ")[0];
 const user = () => db.currentUser();
 const member = () => !!(user() && !user().anonymous);
 
-function go(screen) { S.screen = screen; S.error = ""; render(); window.scrollTo(0, 0); }
+function go(screen) { S.screen = screen; S.error = ""; S.gameError = ""; render(); window.scrollTo(0, 0); }
 function fail(e) { S.busy = ""; S.error = String((e && e.message) || e); render(); }
 
 /* Saving the card being played. Throws if the phone would not keep it. */
@@ -178,7 +178,7 @@ async function refreshMine(force = false) {
   if (!force && Date.now() - mineAt < 60000) return;
   mineAt = Date.now();
   try { S.mine = await db.myCards(); } catch { /* the last list stays */ }
-  if (["start", "history"].includes(S.screen)) render();
+  if (["start", "history", "view"].includes(S.screen)) render();
 }
 
 /* ---------------- sign in ---------------- */
@@ -457,24 +457,54 @@ function screenPlayers() {
       <p class="muted">Only golfers already in your groups can be posted. Anyone else: add them below as a guest.</p>`;
   }
   const guests = S.picked.filter((p) => !p.golferId);
+  /* Part of a game: start one here or join one with its code (Willy, 5 Nov 2026, option A) */
+  let gamePart = "";
+  if (member()) {
+    const g = s.game;
+    gamePart = g
+      ? `<span class="label">Part of a game</span>
+        <div class="item on"><span class="box">✓</span><span class="txt"><span class="name">${esc(g.name)}</span><span class="meta">${esc(g.groupName || "")}${s.gameCode && s.gameCode.gameId === g.id ? ` · game code ${esc(spaced(s.gameCode.code))}` : ""}</span></span>
+          <button class="btn" style="min-height:44px" data-act="game-leave">Leave</button></div>
+        ${s.gameCode && s.gameCode.gameId === g.id ? `<p class="muted">Give this code to the other scorers: they tap <b>Join a game</b> and type it. Followers use the same code.</p>` : ""}`
+      : S.gameForm === "start"
+      ? `<span class="label">Start a game</span>
+        ${startForm(s.date, s.course.name)}
+        <button class="btn" data-act="game-form-close">Cancel</button>`
+      : S.gameForm === "join"
+      ? `<span class="label">Join a game</span>
+        ${joinForm()}
+        <button class="btn" data-act="game-form-close">Cancel</button>`
+      : `<span class="label">Part of a game?</span>
+        <div class="row2"><button class="btn" data-act="game-start-open">Start a game</button><button class="btn" data-act="game-join-open">Join a game</button></div>`;
+  }
   return `${top("Who's playing?", `${s.course.name} · ${s.tee.name}`, `<span class="pill">${count} of 4</span>`)}
     <main class="body">${banner()}${groupPart}
       <span class="label">${member() ? "Guests · scored and shared, not posted" : "Players"}</span>
       ${guests.map((g) => `<div class="item on"><span class="box">✓</span><span class="txt"><span class="name">${esc(g.name)}</span><span class="meta">${member() ? "Guest" : "Player"}</span></span><button class="btn" style="min-height:44px" data-act="unguest" data-v="${esc(g.name)}">Remove</button></div>`).join("")}
       ${full ? "" : `<div class="row2" style="grid-template-columns: minmax(0,1fr) auto"><input class="input" id="guest" placeholder="${member() ? "Guest's name" : "Player's name"}" value="${esc(S.guestName)}" autocomplete="off"><button class="btn" data-act="add-guest">Add</button></div>`}
+      ${gamePart}
+      ${member() ? `<span class="label">Playing with a caddie?</span>
+      <button class="btn tall caddie-choice" data-act="caddie-start" ${count && !S.busy ? "" : "disabled"}><span>${S.busy === "caddie" ? "Getting a code…" : "Let my caddie score"}</span><small>Your caddie enters the scores on their own phone. You can also hand the card over later, from the Menu.</small></button>` : ""}
     </main>
     <footer class="foot"><button class="btn primary" data-act="tee-off" ${count ? "" : "disabled"}>Tee off on hole ${esc(s.start)} →</button>
-      ${member() ? `<button class="btn outline" data-act="caddie-start" ${count && !S.busy ? "" : "disabled"}>${S.busy === "caddie" ? "Getting a code…" : "Let my caddie score"}</button>` : ""}
       <button class="btn" data-act="back-setup">← Back</button></footer>`;
 }
 
 /* ---------------- 3 · playing ---------------- */
 
+/* The Game button (Willy, 5 Nov 2026): on every hole, always in the same
+   place, saying whether the card is in a game. Tap: the game's code and
+   leaderboard, or start or join one. */
+const ownScorer = (c) => !!c && !c.caddieOf && !c.correcting && !c.repostOf && member();
+const gameBtn = (c) => (ownScorer(c) ? `<button class="pill light gamepill" data-act="game-tap" aria-label="${c.game ? `In the game ${esc(c.game.name || "")}. Open the game` : "Not in a game. Start or join a game"}">${c.game ? `⛳ ${esc(c.game.name || "Game")}` : "No game"}</button>` : "");
+/* A golfer may be added after tee-off by the scorer, while nobody else is scoring the card. */
+const canAddLate = (c) => ownScorer(c) && c.state === "playing" && c.players.length < 4 && (!c.caddie || c.caddie.ended);
+
 function holeHeader(c, n) {
   const h = card.holeInfo(c, n);
   const pos = c.order.indexOf(n) + 1;
   return `<header class="top"><div class="row"><div class="sub">${esc(c.course.name)} · ${esc(c.tee.name)} · hole ${pos} of ${c.order.length}</div>
-      <div class="row"><span class="pill">${c.caddieOf ? (c.caddieOf.sentAt && c.caddieOf.sentAt >= (c.caddieOf.changedAt || 0) ? "✓ Sent to the golfer" : "Saved · not sent yet") : "✓ Saved"}</span><button class="pill light" data-act="menu">Menu</button></div></div>
+      <div class="row"><span class="pill">${c.caddieOf ? (c.caddieOf.sentAt && c.caddieOf.sentAt >= (c.caddieOf.changedAt || 0) ? "✓ Sent to the golfer" : "Saved · not sent yet") : "✓ Saved"}</span>${gameBtn(c)}<button class="pill light" data-act="menu">Menu</button></div></div>
     <div class="hole-title"><span class="big">Hole ${n}</span><span class="par">Par ${h.par}</span></div>
     <div class="hole-meta"><span>${h.yards ? `${h.yards} yards` : "Yards not known"}</span><span>${h.si ? `Handicap ${h.si}` : "No handicap number"}</span></div></header>`;
 }
@@ -485,6 +515,7 @@ function playerNote(c, pi, n) {
   const k = card.strokesOn(pl.ch, h.si);
   const cap = card.holeCap(h.par, pl.ch, h.si);
   const guest = pl.guest ? (c.mode === "member" ? "Guest · not posted · " : "") : "";
+  if (card.missedHole(c, pl, n)) return `Joined on hole ${card.joinedOn(c, pl)} · no score needed here`;
   if (pl.ch == null) return `${guest}No index · handicap limit ${cap}`;
   const strokes = !h.si ? `About ${k} stroke${k === 1 ? "" : "s"} a hole (no handicap numbers)` : k === 0 ? "No stroke here" : k > 0 ? `Gets ${k} stroke${k === 1 ? "" : "s"} here` : `Gives ${-k} stroke back here`;
   return `${guest}${strokes} · handicap limit ${cap}`;
@@ -493,7 +524,7 @@ function playerNote(c, pi, n) {
 function footPlay(c, n) {
   const last = c.order.indexOf(n) === c.order.length - 1;
   const done = card.holeComplete(c, n);
-  const left = c.players.filter((p) => !card.isEntered(p.scores[n])).length;
+  const left = c.players.filter((p) => !card.isEntered(p.scores[n]) && !card.missedHole(c, p, n)).length;
   const next = done
     ? (last ? `<button class="btn primary" data-act="finish">Finish</button>` : `<button class="btn primary" data-act="next">Hole ${c.order[c.order.indexOf(n) + 1]} →</button>`)
     : `<div class="btn dashed" style="color:var(--ink-3)">${left} to go</div>`;
@@ -522,9 +553,10 @@ function screenPlayOne(c) {
   }
   const names = c.players.map((p, i) => {
     const e = p.scores[n];
-    const cls = i === who ? "now" : card.isEntered(e) ? "done" : "";
-    return `<button class="${cls}" data-act="who" data-v="${i}">${esc(first(p.name))}${card.isEntered(e) ? ` ${esc(e)}` : ""}</button>`;
-  }).join("");
+    const off = card.missedHole(c, p, n);
+    const cls = i === who ? "now" : card.isEntered(e) || off ? "done" : "";
+    return `<button class="${cls}" data-act="who" data-v="${i}">${esc(first(p.name))}${card.isEntered(e) ? ` ${esc(e)}` : off ? " –" : ""}</button>`;
+  }).join("") + (canAddLate(c) ? `<button class="addlate" data-act="late-open" aria-label="Add a golfer">+ Add</button>` : "");
   const status = has
     ? `<div class="status done">Entered: ${s === card.PICKED_UP ? "picked up" : esc(s)}. Tap another number to change it, or tap the next name above.</div>`
     : `<div class="status empty">No score yet. Tap the number of strokes.</div>`;
@@ -557,19 +589,22 @@ function screenPlayAll(c) {
       <div class="note">${esc(playerNote(c, i, n))}</div></div>`;
   }).join("");
   return `${holeHeader(c, n)}<main class="body">${banner()}${rows}
+    ${canAddLate(c) ? `<button class="btn" data-act="late-open">+ Add a golfer</button>` : ""}
     <p class="muted">Tap + to start at par. Tap a number to type it; X means picked up.</p></main>${footPlay(c, n)}`;
 }
 
 /* ---------------- the round's menu ---------------- */
 
 function screenMenu(c) {
+  const scorer = !c.caddieOf && !c.correcting && !c.repostOf && member();
   const other = c.entry === "all" ? "one" : "all";
   return `${top("Menu", `${c.course.name} · ${c.tee.name} · hole ${c.order[c.pos]}`)}
     <main class="body">${banner()}
       <button class="btn tall" data-act="switch-entry"><span>${other === "all" ? "Switch to all four together" : "Switch to one golfer at a time"}</span><small>The scores already entered stay as they are.</small></button>
-      <button class="btn tall" data-act="card"><span>See the whole card</span><small>Every hole, with par, yards and handicap number. Tap a hole to go to it.</small></button>
+      <button class="btn tall" data-act="card"><span>See the whole card</span><small>Tap a hole to go to it.</small></button>
       <button class="btn tall" data-act="share-card"><span>Share the card</span><small>WhatsApp, email or text message.</small></button>
-      ${!c.caddieOf && !c.correcting && !c.repostOf && member() ? `<button class="btn tall" data-act="follow-start"><span>${c.follow ? "Show the follow code" : "Let others follow this card"}</span><small>The other golfers see the scores live on their phones, signal permitting. Read-only.</small></button>` : ""}
+      ${!c.caddieOf && !c.correcting && !c.repostOf && member() && (!c.caddie || c.caddie.ended) ? `<button class="btn tall" data-act="caddie-mid"><span>${S.busy === "caddie" ? "Getting a code…" : "Let my caddie score"}</span><small>Your caddie scores from this hole on. You can take it back at any time.</small></button>` : ""}
+      ${scorer && !c.game ? `<button class="btn tall" data-act="follow-start"><span>${c.follow ? "Show the follow code" : "Let others follow this card"}</span><small>They see the scores live on their phones.</small></button>` : ""}
       <button class="btn tall" data-act="to-start"><span>Go to the start screen</span><small>The round stays on this phone. "Continue your round" brings you back to this hole.</small></button>
       ${c.caddieOf ? `<button class="btn tall" data-act="caddie-quit" style="color:var(--over)"><span>Stop scoring this card</span><small>The scores already sent stay with the golfer.</small></button>`
         : c.correcting ? `<button class="btn tall" data-act="cancel-correction" style="color:var(--over)"><span>Cancel the correction</span><small>Nothing is changed in The Scorecard.</small></button>`
@@ -605,7 +640,7 @@ function cardGrid(c, interactive) {
     const cls = interactive && n === cur ? "now-row" : k % 2 ? "zebra" : "plain";
     const cells = c.players.map((p) => {
       const s = p.scores[n];
-      const t = s === card.PICKED_UP ? "X" : card.isEntered(s) ? s : "·";
+      const t = s === card.PICKED_UP ? "X" : card.isEntered(s) ? s : card.missedHole(c, p, n) ? "–" : "·";
       const col = card.isEntered(s) && s !== card.PICKED_UP ? (s < h.par ? "under" : s > h.par ? "over" : "") : "";
       return `<div class="${col}" style="font-weight:700">${esc(t)}</div>`;
     }).join("");
@@ -631,10 +666,13 @@ function screenCard(c) {
 function summaries(c) {
   return c.players.map((p, i) => {
     const t = card.totals(c, i);
-    const where = p.guest ? (c.mode === "member" ? "Guest · shared only, not posted" : "") : p.groupName;
+    const late = card.joinedOn(c, p);
+    const where = [p.guest ? (c.mode === "member" ? "Guest · shared only, not posted" : "") : p.groupName,
+      late ? `Joined on hole ${late}` : "",
+      late && !p.guest && c.mode === "member" ? (t.missed > 18 - card.LATE_MIN ? `Fewer than ${card.LATE_MIN} holes: shared only, not posted` : t.missed ? "Missed holes count as net par" : "") : ""].filter(Boolean).join(" · ");
     return `<div class="sum"><b style="font-size:19px">${esc(p.name)}</b>${where ? `<span class="muted">${esc(where)}</span>` : ""}
       <div class="stats"><div><b>${t.gross}</b><span>Gross${t.complete ? "" : ` thru ${t.done}`}</span></div>
-      <div><b>${p.guest && c.mode === "member" ? "—" : t.adjusted}</b><span>Adjusted</span></div>
+      <div><b>${(p.guest && c.mode === "member") || t.missed ? "—" : t.adjusted}</b><span>Adjusted</span></div>
       <div><b style="color:var(--green)">${t.net == null ? "—" : t.net}</b><span>${p.ch == null ? "No index" : `Net (CH ${p.ch})`}</span></div></div></div>`;
   }).join("");
 }
@@ -643,7 +681,7 @@ function screenFinish(c) {
   if (c.correcting) return screenCorrectFinish(c);
   if (c.caddieOf) return screenCaddieFinish(c);
   const check = card.postable(c);
-  const n = c.players.filter((p) => !p.guest).length;
+  const n = check.ok ? check.members.length : 0;
   const postBtn = check.ok
     ? `<button class="btn primary" data-act="post">Post ${n} round${n === 1 ? "" : "s"} to The Scorecard</button>`
     : `<div class="banner warn">${esc(check.why)}</div>`;
@@ -694,7 +732,7 @@ function screenCorrectFinish(c) {
 function screenStatus(c) {
   const posted = c.state === "posted";
   const failed = c.state === "failed";
-  const rows = c.players.filter((p) => !p.guest).map((p) => {
+  const rows = (card.postable(c).members || c.players.filter((p) => !p.guest)).map((p) => {
     const t = card.totals(c, c.players.indexOf(p));
     return `<div class="item"><span class="txt"><span class="name">${esc(p.name)} · ${t.gross}</span><span class="meta">${esc(p.groupName)}</span></span>
       <b style="color:${posted ? "var(--green)" : failed ? "var(--over)" : "#8A5A12"}">${posted ? "Posted ✓" : failed ? "Not posted" : c.sent ? "Checking" : "Waiting"}</b></div>`;
@@ -756,7 +794,7 @@ function screenCaddieMember(c) {
       <p class="muted">Scores appear here as your caddie enters them. You can put the phone away; "Continue your round" brings you back here.</p>
     </main>
     <footer class="foot">${watchBtn("watch-mine")}
-      <button class="btn" data-act="follow-start">${c.follow ? "Show the follow code" : "Let others follow this card"}</button>
+      ${c.game ? `<button class="btn" data-act="follow-game">${S.busy === "game" ? "Getting the game code…" : "The game code"}</button>` : `<button class="btn" data-act="follow-start">${c.follow ? "Show the follow code" : "Let others follow this card"}</button>`}
       <button class="btn" data-act="caddie-takeover">Take over scoring myself</button>
       <button class="btn" data-act="to-start">Go to the start screen</button></footer>`;
 }
@@ -811,14 +849,14 @@ function screenFollowShare(c) {
 }
 
 function screenFollowJoin() {
-  return `${top("Follow a card", "Watch the scores live")}
+  return `${top("Follow", "A card or a whole game, live")}
     <main class="body">${banner()}
-      <p style="font-size:20px">Type the follow code the golfer shows you.</p>
+      <p style="font-size:20px">Type the six-number follow code the golfer shows you. It can be for one card or for a whole game.</p>
       <label class="field"><span class="label">Follow code</span>
-        <input class="input bigcode-in" id="followcode" value="${esc(S.followCode || "")}" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7P 4QX"></label>
+        <input class="input bigcode-in" id="followcode" value="${esc(S.followCode || "")}" autocomplete="off" inputmode="numeric" autocapitalize="characters" spellcheck="false" placeholder="123 456"></label>
       <p class="muted">No account is needed. You only look; nothing can be changed from your phone.</p>
     </main>
-    <footer class="foot"><button class="btn primary" data-act="follow-join" ${S.busy ? "disabled" : ""}>${S.busy === "follow" ? "Opening…" : "Follow the card"}</button>
+    <footer class="foot"><button class="btn primary" data-act="follow-join" ${S.busy ? "disabled" : ""}>${S.busy === "follow" ? "Opening…" : "Follow"}</button>
       <button class="btn" data-act="home">← Back</button></footer>`;
 }
 
@@ -834,6 +872,102 @@ function screenFollowView() {
     <main class="body" style="padding:10px">${banner()}${line}${cardGrid(c, false)}</main>
     <footer class="foot">${w.posted ? "" : watchBtn("watch-send")}
       <button class="btn" data-act="follow-stop">Stop following</button></footer>`;
+}
+
+/* ---------------- following a whole game (option B, Willy 31 Oct 2026) ---------------- */
+
+/* The answer to Start, Join and Leave shows right under the button tapped,
+   never at the top of a long screen (Willy, 5 Nov 2026: "nothing happens"). */
+const gameMsg = (at) => (S.gameError && S.gameErrorAt === at ? `<div class="banner bad" role="alert">${esc(S.gameError)}</div>` : "");
+const joinForm = () => `<label class="field"><span class="label">Game code</span><input class="input bigcode-in" id="gamecode" inputmode="numeric" autocomplete="off" placeholder="123 456" value="${esc(S.gameJoinCode || "")}"></label>
+        <button class="btn primary" data-act="game-join" ${S.busy ? "disabled" : ""}>${S.busy === "gamejoin" ? "Joining…" : "Join the game"}</button>${gameMsg("join")}`;
+const startForm = (date, courseName) => `<label class="field"><span class="label">Name of the game</span><input class="input" id="gamename" placeholder="Saturday Medal" autocomplete="off" maxlength="60" value="${esc(S.gameName || "")}"></label>
+        ${S.groups.length > 1 ? `<label class="field"><span class="label">For the group</span><select class="input" id="gamegroup">${S.groups.map((x) => `<option value="${esc(x.id)}" ${x.id === S.groupTab ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>` : ""}
+        <p class="muted">For ${esc(niceDate(date))} at ${esc(courseName)}. It is posted to The Scorecard as a game.</p>
+        <button class="btn primary" data-act="game-create" ${S.busy ? "disabled" : ""}>${S.busy === "gamecreate" ? "Starting…" : "Start the game"}</button>${gameMsg("create")}`;
+
+/* Adding a golfer after tee-off (Willy, 5 Nov 2026: one joined us on the 3rd). */
+function screenLate(c) {
+  const n = c.order[c.pos];
+  const tab = S.groupTab;
+  const list = S.golfers[tab];
+  const groupPart = !member() ? "" : !S.groups.length ? `<p class="muted">Loading your groups…</p>`
+    : `<label class="field"><span class="label">From your group</span>
+        <select class="input groupsel" id="groupsel" aria-label="Group">${S.groups.map((g) => `<option value="${esc(g.id)}" ${g.id === tab ? "selected" : ""}>${esc(g.name)}</option>`).join("")}</select></label>
+      ${list === undefined ? `<p class="muted">Loading golfers…</p>` : `<div class="list">${list.filter((g) => !c.players.some((p) => p.golferId === g.golferId)).map((g) =>
+        `<button class="item" data-act="late-pick" data-v="${esc(g.golferId)}"><span class="box"></span><span class="txt"><span class="name">${esc(g.name)}</span><span class="meta">${g.index == null ? "No index yet" : `Index ${esc(g.index)}`}</span></span></button>`).join("") || `<p class="muted">Nobody else in this group.</p>`}</div>`}`;
+  return `${top("Add a golfer", `Joining on hole ${n}`)}
+    <main class="body">${banner()}
+      <p style="font-size:20px">Scored from hole ${esc(n)} on. ${c.mode === "member" ? `A member's round is posted if they play at least ${card.LATE_MIN} holes; the holes they missed count as net par.` : ""}</p>
+      ${groupPart}
+      <span class="label">${member() ? "Or as a guest · scored and shared, not posted" : "Player"}</span>
+      <div class="row2" style="grid-template-columns: minmax(0,1fr) auto"><input class="input" id="lateguest" placeholder="${member() ? "Guest's name" : "Player's name"}" autocomplete="off"><button class="btn" data-act="late-guest">Add</button></div>
+    </main>
+    <footer class="foot"><button class="btn" data-act="back-play">Cancel · back to hole ${esc(n)}</button></footer>`;
+}
+
+/* From the Game button, during the round (Willy, 5 Nov 2026): join first, as most scorers join. */
+function screenGameSetup(c) {
+  return `${top("Start or join a game", `${c.course.name} · ${niceDate(c.date)}`)}
+    <main class="body">${banner()}
+      <span class="label">Join a game</span>
+      <p class="muted">Type the code from the scorer who started it.</p>
+      ${joinForm()}
+      <span class="label" style="margin-top:22px">Or start a new game</span>
+      ${startForm(c.date, c.course.name)}
+    </main>
+    <footer class="foot"><button class="btn" data-act="back-play">Back to hole ${esc(c.order[c.pos])} →</button></footer>`;
+}
+
+function screenGameShare(c) {
+  const g = c.gameFollow;
+  const back = c.caddie && !c.caddie.ended ? "caddie" : c.state === "finished" ? "finish" : "play";
+  return `${top("The game code", `${g.name || (c.game && c.game.name) || "The game"} · ${niceDate(c.date)}`)}
+    <main class="body">${banner()}
+      <div class="bigcode" aria-label="Code ${esc(g.code.split("").join(" "))}">${esc(spaced(g.code))}</div>
+      <p style="font-size:20px"><b>Other scorers:</b> tap <b>No game</b> at the top of a hole, then type this code.</p>
+      <p style="font-size:20px"><b>Followers:</b> Follow on the start screen, then type it, or point the camera at the square.</p>
+      <div class="qrbox">${qrSvg(`${FOLLOW_WEB}?follow=${g.code}`)}</div>
+    </main>
+    <footer class="foot"><button class="btn primary" data-act="follow-back" data-v="${back}">${back === "caddie" ? "Back to your caddie's card" : back === "finish" ? "Back to the totals" : `Back to hole ${esc(c.order[c.pos])} →`}</button>
+      <button class="btn" data-act="game-board">${S.busy === "board" ? "Opening…" : "See the leaderboard"}</button>
+      ${watchBtn("watch-game")}</footer>`;
+}
+
+/* Each row of the leaderboard: place, full name, score, holes played. Tap for that golfer's card. */
+function boardRow(r, value) {
+  return `<button class="board-row" data-act="game-card" data-v="${r.card}" aria-label="${esc(r.name)}: ${esc(value)}, ${r.thru ? `thru ${r.thru}` : "not started"}. Open the card.">
+    <span class="pl">${esc(r.place)}</span><span class="nm">${esc(r.name)}</span><span class="sc">${esc(value)}</span><span class="th">${r.complete ? "F" : r.thru ? r.thru : "–"}</span></button>`;
+}
+function screenGameView() {
+  const w = S.watch;
+  const name = (w.game && w.game.name) || "The game";
+  if (S.gameCard != null && w.cards && w.cards[S.gameCard]) {
+    const v = w.cards[S.gameCard];
+    const c = card.liveCard(v);
+    return `${top(name, `${c.course.name} · ${c.tee.name}`)}
+    <main class="body" style="padding:10px">${banner()}
+      <div class="banner">${v.posted ? "Posted." : v.status === "finished" ? "This card is finished." : "Live"}${v.byCaddie ? " · scored by a caddie" : ""}</div>
+      ${cardGrid(c, false)}</main>
+    <footer class="foot"><button class="btn primary" data-act="game-back">← Back to the leaderboard</button></footer>`;
+  }
+  const b = card.gameBoard(w);
+  const when = w.lastAt ? new Date(w.lastAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "";
+  const line = b.final ? `<div class="banner ok">Every card is finished. Final results.</div>`
+    : w.stale ? `<div class="banner warn">No connection right now. Showing the scores from ${esc(when || "earlier")}.</div>`
+    : `<div class="banner">${when ? `Updated at ${esc(when)}` : "No scores yet"} · refreshes by itself</div>`;
+  const head = (a, b2) => `<div class="board-row hd"><span class="pl">#</span><span class="nm">Golfer</span><span class="sc">${a}</span><span class="th">${b2}</span></div>`;
+  const body = !b.live.length ? `<p>No card of this game is live yet. Cards show up as their scorers tee off with The Marker.</p>`
+    : b.final ? `<h3 class="sec">Gross</h3><div class="board">${head("Gross", "")}${b.gross.map((r) => boardRow(r, String(r.gross))).join("")}</div>
+      ${b.net.length ? `<h3 class="sec">Net</h3><div class="board">${head("Net", "")}${b.net.map((r) => boardRow(r, String(r.net))).join("")}</div>` : ""}
+      ${b.unfinished.length ? `<p class="muted">Not every hole entered, so not in the results: ${esc(b.unfinished.map((r) => r.name).join(", "))}.</p>` : ""}
+      <p class="muted">Net is the gross minus the course handicap, for golfers with a handicap.</p>`
+    : `<div class="board">${head("To par", "Thru")}${b.live.map((r) => boardRow(r, r.thru ? card.formatToPar(r.toPar) : "–")).join("")}</div>
+      <p class="muted">Gross, to par. Tap a golfer to see their card.</p>`;
+  return `${top("Following the game", `${name}${w.date ? ` · ${niceDate(w.date)}` : ""}`)}
+    <main class="body">${banner()}${line}${body}</main>
+    <footer class="foot">${w.own ? `<button class="btn primary" data-act="game-own-back">Back to your card</button>` : `${watchBtn("watch-send")}
+      <button class="btn" data-act="follow-stop">Stop following</button>`}</footer>`;
 }
 
 /* ---------------- your cards ---------------- */
@@ -876,8 +1010,12 @@ function screenView(c) {
             ? `<button class="btn" data-act="repost-card" data-v="${esc(c.id)}">✎ Edit and re-post</button>
                <button class="btn" data-act="hide-editable" data-v="${esc(c.id)}" data-h="${x.hidden ? "0" : "1"}" ${S.busy ? "disabled" : ""}>${x.hidden ? "Unhide (show it under Deleted in The Scorecard)" : "Hide (take it off the Deleted list)"}</button>
                <button class="btn" data-act="discard-editable" data-v="${esc(c.id)}" style="color:var(--over)" ${S.busy ? "disabled" : ""}>Delete this card</button>`
-            : `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>
-               <button class="btn" data-act="delete-rounds" data-v="${esc(c.id)}" style="color:var(--over)" ${S.busy ? "disabled" : ""}>🗑 Delete its rounds from The Scorecard</button>`;
+            /* Correct and delete only when The Scorecard says this card can be:
+               not for a card whose rounds are already deleted (Willy, 5 Nov 2026). */
+            : S.mine && S.mine.correctable.some((k) => k.cardId === c.id)
+            ? `<button class="btn" data-act="correct-card" data-v="${esc(c.id)}">✎ Correct this card</button>
+               <button class="btn" data-act="delete-rounds" data-v="${esc(c.id)}" style="color:var(--over)" ${S.busy ? "disabled" : ""}>🗑 Delete its rounds from The Scorecard</button>`
+            : "";
         })() : ""}
       ${c.state === "posted" && !(S.mine && S.mine.editable.some((k) => k.cardId === c.id)) ? `<button class="btn" data-act="remove-from-phone" data-v="${esc(c.id)}">Remove from this phone</button>` : ""}
       ${card.canDelete(c) ? `<button class="btn" data-act="delete-card" style="color:var(--over)">Delete this card</button>` : ""}
@@ -934,12 +1072,27 @@ function render() {
     case "caddie-join": html = screenCaddieJoin(); break;
     case "follow-share": html = c && c.follow ? screenFollowShare(c) : screenStart(); break;
     case "follow-join": html = screenFollowJoin(); break;
-    case "follow-view": html = S.watch ? screenFollowView() : screenFollowJoin(); break;
+    case "follow-view": html = S.watch ? (S.watch.kind === "game" ? screenGameView() : screenFollowView()) : screenFollowJoin(); break;
+    case "late": html = c && canAddLate(c) ? screenLate(c) : c ? screenStart() : screenStart(); break;
+    case "game-setup": html = c ? screenGameSetup(c) : screenStart(); break;
+    case "game-share": html = c && c.gameFollow ? screenGameShare(c) : screenStart(); break;
     default: html = screenStart();
   }
   app.innerHTML = html;
   S.flash = "";
   if (S.screen === "play" && S.typing) { const t = document.getElementById("typed"); if (t) t.focus(); }
+}
+
+/* A redraw after something loaded in the background (1.1.0): text being typed
+   survives it. A golfer list that finished loading while a guest's name was
+   typed used to wipe the box, losing the name. */
+function renderKeepingTyped() {
+  const kept = {};
+  app.querySelectorAll("input[id]").forEach((el) => { if (el.value && el.type !== "password" && el.type !== "number") kept[el.id] = el.value; });
+  const focused = document.activeElement && document.activeElement.id;
+  render();
+  for (const [id, v] of Object.entries(kept)) { const el = document.getElementById(id); if (el && !el.value) el.value = v; }
+  if (focused && kept[focused] !== undefined) { const el = document.getElementById(focused); try { if (el) el.focus(); } catch {} }
 }
 
 /* ---------------- actions ---------------- */
@@ -958,14 +1111,14 @@ async function loadGames() {
   if (!member() || !S.setup) return;
   const date = S.setup.date;
   const lists = await Promise.all(S.groups.map((g) => db.gamesOn(g, date).catch(() => [])));
-  if (S.setup && S.setup.date === date) { S.games = lists.flat(); render(); }
+  if (S.setup && S.setup.date === date) { S.games = lists.flat(); renderKeepingTyped(); }
 }
 
 async function loadGolfers(assocId) {
   if (!assocId || S.golfers[assocId]) return;
   try { S.golfers[assocId] = await db.groupGolfers(assocId); }
   catch (e) { S.golfers[assocId] = []; S.error = e.message; }
-  render();
+  renderKeepingTyped();
 }
 
 function updateCard(fn) {
@@ -1102,7 +1255,8 @@ async function followNow(done = false, posted = false) {
   if (!ownerSends(c)) { followDone = followPosted = false; return; }
   followSending = true; followAgain = false;
   const d = followDone, p = followPosted;
-  try { await db.followSend(c.follow.liveId, scoresOf(c), d, p); if (p) followPosted = false; if (d) followDone = false; }
+  const late = c.players.some((x) => x.from) ? c.players.map((x) => ({ name: x.name, ch: x.ch, ...(x.from ? { from: x.from } : {}) })) : null;
+  try { await db.followSend(c.follow.liveId, scoresOf(c), d, p, late); if (p) followPosted = false; if (d) followDone = false; }
   catch (e) {
     const m = String((e && e.message) || e);
     /* past 12 hours, or a caddie is scoring: stop sending, nothing else changes */
@@ -1118,12 +1272,7 @@ async function followNow(done = false, posted = false) {
 }
 
 /* A follower's phone: the card as it stands, every 12 seconds while open. */
-function watchCard(w) {
-  const k = w.setup;
-  const base = { course: k.course, tee: k.tee, order: k.order.map(Number), pos: 0,
-    players: k.players.map((p) => ({ name: p.name, ch: p.ch, scores: {} })) };
-  return withScores(base, w.scores);
-}
+function watchCard(w) { return card.liveCard(w); }
 let watchTimer = null;
 async function watchPoll() {
   clearTimeout(watchTimer);
@@ -1136,9 +1285,10 @@ async function watchPoll() {
     if (/stopped working|doesn't work/.test(m)) { local.remove("following"); S.watch = null; S.error = m; go("follow-join"); return; }
     S.watch = { ...S.watch, stale: true };
   }
-  if (S.watch && S.watch.posted) { try { local.remove("following"); } catch {} }
+  const over = S.watch && (S.watch.kind === "game" ? false : S.watch.posted);   /* a game keeps going until every card is in, then its code runs out */
+  if (over) { try { local.remove("following"); } catch {} }
   if (S.screen === "follow-view") render();
-  if (S.watch && !S.watch.posted) watchTimer = setTimeout(watchPoll, 12000);
+  if (S.watch && !over) watchTimer = setTimeout(watchPoll, S.watch.kind === "game" && S.watch.finished ? 60000 : 12000);
 }
 /* A first try right as the phone hands a link to the app can fail: the app
    has only just woken up. Those failures are tried once more (Willy, 29 Oct 2026). */
@@ -1146,22 +1296,25 @@ const wakeFailure = (e) => {
   const m = String((e && e.message) || e);
   return ["OFFLINE", "UNREACHABLE", "TRY_LATER", "SIGN_IN"].includes(m) || (e && e.name === "TypeError") || /network|fetch|load failed/i.test(m);
 };
-async function openFollow(code, { retry = false } = {}) {
+async function openFollow(code, { retry = false, own = false } = {}) {
   S.busy = "follow"; S.error = ""; render();
   let v;
   try { v = await db.followView(code); }
   catch (e) {
     if (retry && wakeFailure(e)) { await new Promise((r) => setTimeout(r, 2500)); return openFollow(code); }
+    if (own) { S.busy = ""; S.error = `The leaderboard could not be opened. ${joinWhy(e)}`; render(); return; }
     S.busy = ""; S.followCode = code;
     if (S.screen !== "follow-join") go("follow-join");
     S.error = joinWhy(e); render(); return;
   }
-  S.busy = ""; S.followCode = "";
-  S.watch = { code, ...v, stale: false };
-  if (v.posted) { try { local.remove("following"); } catch {} }   /* posted: following has ended */
-  else { try { local.save("following", { code, course: v.setup.course.name, expiresAt: v.expiresAt || null }); } catch { /* following still works without it */ } }
+  S.busy = ""; S.followCode = ""; S.gameCard = null;
+  S.watch = { code, ...v, stale: false, own };
+  if (own) { go("follow-view"); watchTimer = setTimeout(watchPoll, 12000); return; }
+  const label = v.kind === "game" ? `${(v.game && v.game.name) || "A game"} (game)` : v.setup.course.name;
+  if (v.posted && v.kind !== "game") { try { local.remove("following"); } catch {} }   /* posted: following has ended */
+  else { try { local.save("following", { code, course: label, expiresAt: v.expiresAt || null }); } catch { /* following still works without it */ } }
   go("follow-view");
-  if (!v.posted) watchTimer = setTimeout(watchPoll, 12000);
+  if (!v.posted || v.kind === "game") watchTimer = setTimeout(watchPoll, 12000);
 }
 
 const actions = {
@@ -1186,7 +1339,7 @@ const actions = {
     /* Not awaited: with a poor signal the anonymous sign-in can take a while,
        and nothing on the next screens needs it except searching online. */
     db.playWithoutAccount().catch(() => {});
-    S.setup = newSetup(); S.picked = []; S.games = [];
+    S.setup = newSetup(); S.picked = []; S.games = []; S.gameForm = null;
     go("setup");
   },
   async "new-round"() {
@@ -1420,12 +1573,118 @@ const actions = {
     await sendToWatch(c.follow.code, c.course.name, "watch");
   },
   "follow-back"(el) { const v = el.dataset.v; go(v); if (v === "caddie") startPolling(); },
+  "game-start-open"() { S.gameForm = "start"; S.gameError = ""; render(); },
+  "game-join-open"() { S.gameForm = "join"; S.gameError = ""; render(); },
+  "game-form-close"() { S.gameForm = null; S.gameError = ""; render(); },
+  "game-leave"() { S.setup.game = null; S.setup.gameCode = null; S.gameForm = null; render(); },
+  async "game-here"() { S.gameName = ""; S.gameJoinCode = ""; go("game-setup"); if (member() && !S.groups.length) { await loadGroupsAndGames(); render(); } },
+  /* The Game button: the game's code and leaderboard, or start or join one. */
+  async "game-tap"() { const c = local.currentCard(); if (!c || S.busy) return; if (c.game) await actions["follow-game"](); else await actions["game-here"](); },
+  async "late-open"() {
+    const c = local.currentCard();
+    if (!canAddLate(c)) return;
+    go("late");
+    if (member()) { if (!S.groups.length) await loadGroupsAndGames(); render(); await loadGolfers(S.groupTab); }
+  },
+  "late-pick"(el) {
+    const g = (S.golfers[S.groupTab] || []).find((x) => x.golferId === el.dataset.v);
+    const group = S.groups.find((x) => x.id === S.groupTab);
+    if (g) addLate({ name: g.name, golferId: g.golferId, assocId: S.groupTab, groupName: group ? group.name : "", index: g.index });
+  },
+  "late-guest"() {
+    const name = ((document.getElementById("lateguest") || {}).value || "").trim().replace(/\s+/g, " ");
+    if (name.length < 2) { S.error = "Type the golfer's name."; render(); return; }
+    addLate({ name, golferId: null, assocId: null, groupName: "", index: null });
+  },
+  async "game-create"() {
+    if (S.busy) return;
+    const mid = S.screen === "game-setup";
+    const c = mid ? local.currentCard() : null;
+    if (mid && !c) { go("start"); return; }
+    const name = ((document.getElementById("gamename") || {}).value || "").trim();
+    const sel = document.getElementById("gamegroup");
+    const assocId = sel ? sel.value : (S.groups[0] && S.groups[0].id);
+    S.gameName = name;
+    const no = (m) => { S.busy = ""; S.gameError = m; S.gameErrorAt = "create"; render(); };
+    if (name.length < 2) { no("Give the game a name, for example Saturday Medal."); return; }
+    if (!assocId) { no("You are not a member of any group, so a game cannot be started."); return; }
+    S.busy = "gamecreate"; S.gameError = ""; render();
+    const where = mid ? { date: c.date, course: c.course, tee: c.tee } : { date: S.setup.date, course: S.setup.course, tee: S.setup.tee };
+    let r;
+    try { r = await db.gameCreate({ assocId, name, ...where }); }
+    catch (e) { no(`The game could not be started. ${joinWhy(e)}`); return; }
+    S.busy = ""; S.gameForm = null; S.gameName = "";
+    if (mid) { await gameOnCard(r, `${r.game.name} is started.`); return; }
+    S.setup.game = r.game; S.setup.gameCode = { code: r.code, expiresAt: r.expiresAt, gameId: r.game.id };
+    S.flash = `${r.game.name} is started in The Scorecard. Its code is below: give it to the other scorers.`;
+    render();
+  },
+  async "game-join"() {
+    if (S.busy) return;
+    const mid = S.screen === "game-setup";
+    const c = mid ? local.currentCard() : null;
+    if (mid && !c) { go("start"); return; }
+    const code = ((document.getElementById("gamecode") || {}).value || "").replace(/[^0-9]/g, "");
+    S.gameJoinCode = code;
+    const no = (m) => { S.busy = ""; S.gameError = m; S.gameErrorAt = "join"; render(); };
+    if (code.length !== 6) { no("The game code has six numbers."); return; }
+    S.busy = "gamejoin"; S.gameError = ""; render();
+    let r;
+    try { r = await db.gameJoin(code); }
+    catch (e) { no(joinWhy(e)); return; }
+    if (mid && r.date && r.date !== c.date) { no(`This game is for ${niceDate(r.date)}, and your card is for ${niceDate(c.date)}.`); return; }
+    S.busy = ""; S.gameForm = null; S.gameJoinCode = "";
+    if (mid) { await gameOnCard(r, `Joined ${r.game.name}.`); return; }
+    const moved = r.date && r.date !== S.setup.date;
+    if (moved) S.setup.date = r.date;
+    S.setup.game = r.game; S.setup.gameCode = { code: r.code, expiresAt: r.expiresAt, gameId: r.game.id };
+    S.flash = `Joined ${r.game.name}.${moved ? ` The round's date is now ${niceDate(r.date)}, the game's day.` : ""}`;
+    render();
+  },
+  /* The scorer's own game leaderboard, from the Menu or the game code screen. */
+  async "game-board"() {
+    if (S.busy) return;
+    const c = await ensureGame("board");
+    if (!c) return;
+    S.busy = "board"; render();
+    await openFollow(c.gameFollow.code, { own: true });
+    S.busy = "";
+  },
+  "game-own-back"() { clearTimeout(watchTimer); S.watch = null; const c = local.currentCard(); go(!c ? "start" : c.caddie && !c.caddie.ended ? "caddie" : c.state === "finished" ? "finish" : "play"); },
+  /* The game's one code of the day (option B): this card goes live first if it is not yet. */
+  async "follow-game"() {
+    if (S.busy) return;
+    if (await ensureGame("game")) go("game-share");
+  },
+  async "watch-game"() {
+    const c = local.currentCard();
+    if (!c || !c.gameFollow || S.busy) return;
+    await sendToWatch(c.gameFollow.code, `${c.gameFollow.name || "The game"} (game)`);
+  },
+  "game-card"(el) { S.gameCard = Number(el.dataset.v); render(); window.scrollTo(0, 0); },
+  "game-back"() { S.gameCard = null; render(); },
+  /* Hand the card to a caddie in the middle of the round (Willy, 1 Nov 2026). */
+  async "caddie-mid"() {
+    const c = local.currentCard();
+    if (!c || S.busy || c.caddieOf || (c.caddie && !c.caddie.ended)) return;
+    S.busy = "caddie"; S.error = ""; render();
+    let r;
+    try { r = await db.caddieStart(c, c.follow && !c.follow.stopped ? c.follow.liveId : null); }
+    catch (e) { S.busy = ""; S.error = `${joinWhy(e)} You can carry on scoring yourself.`; render(); return; }
+    S.busy = "";
+    clearTimeout(followTimer);
+    const now = local.currentCard();
+    try { saveCard({ ...now, caddie: { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt, joined: false } }); }
+    catch (e) { fail(e); return; }
+    go("caddie");
+    startPolling();
+  },
   "follow-open"() { S.error = ""; go("follow-join"); },
   async "follow-join"() {
     if (S.busy) return;
     const code = ((document.getElementById("followcode") || {}).value || "").trim();
     S.followCode = code;
-    if (code.replace(/[^A-Za-z0-9]/g, "").length !== 6) { S.error = "The follow code has six letters and numbers."; render(); return; }
+    if (code.replace(/[^A-Za-z0-9]/g, "").length !== 6) { S.error = "The follow code has six numbers."; render(); return; }
     await openFollow(code);
   },
   async "follow-resume"() {
@@ -1435,7 +1694,8 @@ const actions = {
   },
   async "watch-send"() {
     if (!S.watch || S.busy) return;
-    await sendToWatch(S.watch.code, (S.watch.setup && S.watch.setup.course && S.watch.setup.course.name) || "");
+    const label = S.watch.kind === "game" ? `${(S.watch.game && S.watch.game.name) || "The game"} (game)` : (S.watch.setup && S.watch.setup.course && S.watch.setup.course.name) || "";
+    await sendToWatch(S.watch.code, label);
   },
   "follow-remove"() { clearTimeout(watchTimer); local.remove("following"); S.watch = null; render(); },
   "follow-stop"() { clearTimeout(watchTimer); local.remove("following"); S.watch = null; go("start"); },
@@ -1447,7 +1707,7 @@ const actions = {
     let r;
     try { r = await db.caddieStart(c); }
     catch (e) { S.busy = ""; S.error = `${joinWhy(e)} You can tee off and score yourself instead.`; render(); return; }
-    try { saveCard({ ...c, caddie: { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt, joined: false } }); }
+    try { saveCard({ ...c, ...(s.game && s.gameCode && s.gameCode.gameId === s.game.id ? { gameFollow: { ...s.gameCode, name: s.game.name } } : {}), caddie: { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt, joined: false } }); }
     catch (e) { S.busy = ""; fail(e); return; }
     S.busy = "";
     go("caddie");
@@ -1503,11 +1763,13 @@ const actions = {
   },
   "tee-off"() {
     const s = S.setup;
-    const c = card.newCard({ mode: member() ? "member" : "guest", date: s.date, course: s.course, tee: s.tee, holes: s.holes, start: s.start, entry: s.entry, game: s.game, players: S.picked });
+    const made = card.newCard({ mode: member() ? "member" : "guest", date: s.date, course: s.course, tee: s.tee, holes: s.holes, start: s.start, entry: s.entry, game: s.game, players: S.picked });
+    const c = s.game && s.gameCode && s.gameCode.gameId === s.game.id ? { ...made, gameFollow: { ...s.gameCode, name: s.game.name } } : made;
     try { saveCard(c); } catch (e) { fail(e); return; }
     S.typing = false;
     go("play");
     keepAwake();
+    autoLive();
   },
   who(el) { S.typing = false; updateCard((c) => ({ ...c, who: Number(el.dataset.v) })); },
   score(el) {
@@ -1916,6 +2178,7 @@ document.addEventListener("keydown", (e) => {
   const id = e.target && e.target.id;
   if (id === "typed") actions["type-save"]();
   else if (id === "guest") actions["add-guest"]();
+  else if (id === "lateguest") actions["late-guest"]();
   else if (id === "cq") actions.search();
   else if (id === "password") actions["sign-in"]();
   else if (id === "caddiecode") actions["caddie-join"]();
@@ -1991,6 +2254,85 @@ function checkWatch() {
   S.watchSupported = !!(Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.getPlatform && Cap.getPlatform() === "ios"
     && /iPhone/.test(navigator.userAgent || ""));
 }
+/* A card that is part of a game goes live by itself at tee-off (1.1.0), so
+   the game's followers see it without anyone tapping anything. No signal:
+   tried again when the signal returns and when the app opens. Silent. */
+let autoLiveBusy = false;
+async function autoLive() {
+  const c = local.currentCard();
+  if (c && c.game && c.gameLive === false && !autoLiveBusy && member() && !c.caddieOf && !c.correcting && !c.repostOf && c.state === "playing") {
+    autoLiveBusy = true;
+    try {
+      const r = await db.followGame(c);
+      const now = local.currentCard();
+      if (now && now.id === c.id) {
+        const saved = { ...now, gameLive: true, follow: now.follow || { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt } };
+        saveCard(saved);
+        if (ownerSends(saved)) followNow(false);
+      }
+    } catch { /* tried again later */ }
+    finally { autoLiveBusy = false; }
+    return;
+  }
+  if (!c || autoLiveBusy || c.follow || !c.game || !member() || c.caddie || c.caddieOf || c.correcting || c.repostOf || c.state !== "playing") return;
+  autoLiveBusy = true;
+  try {
+    const r = await db.followStart(c);
+    const now = local.currentCard();
+    if (now && now.id === c.id && !now.follow) {
+      const saved = { ...now, follow: { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt } };
+      saveCard(saved);
+      if (ownerSends(saved)) followNow(false);
+    }
+  } catch { /* tried again later */ }
+  finally { autoLiveBusy = false; }
+}
+
+/* The card's place on its game's leaderboard and the game code, made now if
+   needed (also for a card that joined the game mid-round). Returns the saved
+   card, or null (message shown). */
+async function ensureGame(busy) {
+  const c = local.currentCard();
+  if (!c || !c.game) return null;
+  if (c.gameFollow && c.gameLive !== false && Date.now() < c.gameFollow.expiresAt) return c;
+  S.busy = busy; S.error = ""; render();
+  let r;
+  try { r = await db.followGame(c); }
+  catch (e) { S.busy = ""; S.error = `The game code could not be fetched. ${joinWhy(e)}`; render(); return null; }
+  S.busy = "";
+  const now = local.currentCard();
+  const saved = { ...now, follow: now.follow || { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt }, gameLive: true,
+    gameFollow: { code: r.gameCode, expiresAt: r.gameExpiresAt, name: r.gameName || (now.game && now.game.name) || "" } };
+  try { saveCard(saved); } catch (e) { fail(e); return null; }
+  if (ownerSends(saved)) followNow(false);
+  return saved;
+}
+/* The golfer joins on the hole showing; the card is saved before anything else. */
+function addLate(p) {
+  const c = local.currentCard();
+  if (!canAddLate(c)) { go("play"); return; }
+  if (c.players.some((x) => x.name.toLowerCase() === p.name.toLowerCase() || (p.golferId && x.golferId === p.golferId))) { S.error = `${p.name} is already on the card.`; render(); return; }
+  const pl = { name: p.name, golferId: p.golferId, assocId: p.assocId, groupName: p.groupName, guest: !p.golferId,
+    index: p.index == null ? null : Number(p.index), ch: card.courseHandicapFor(p.index, c.tee), scores: {}, ...(c.pos > 0 ? { from: c.pos } : {}) };
+  try { saveCard({ ...c, players: [...c.players, pl], who: c.players.length }); } catch (e) { fail(e); return; }
+  const now = local.currentCard();
+  if (ownerSends(now)) followNow(false);
+  S.flash = `${p.name} is on the card from hole ${c.order[c.pos]}.`;
+  go("play");
+}
+
+/* A card that starts or joins a game mid-round: saved with the game first
+   (so it posts into the game), then put on the game's leaderboard; with no
+   signal that is done later by itself (autoLive). */
+async function gameOnCard(r, said) {
+  const c = local.currentCard();
+  try { saveCard({ ...c, game: r.game, gameLive: false, gameFollow: { code: r.code, expiresAt: r.expiresAt, name: r.game.name } }); }
+  catch (e) { fail(e); return; }
+  autoLive();
+  S.flash = `${said} Give the game code to the other scorers.`;
+  go("game-share");
+}
+
 /* The card's follow code, made now if it has none. Returns the saved card, or null (message shown). */
 async function ensureFollow(busy) {
   const c = local.currentCard();
@@ -2041,6 +2383,30 @@ function useLink(url) {
   try { used = openCaddieLink(url); } catch { used = false; }
   if (!used) { go("start"); S.error = `The Marker was opened with a link it could not use: ${String(url).slice(0, 300)}`; render(); }
 }
+/* Copy and continue (Willy, 2 Nov 2026): a caddie or follower without the
+   app taps the download button on the Cuberoot page, which also copies their
+   link. On its very first start the app looks at the clipboard once, and if
+   it holds such a link, opens the Join or Follow screen with the code filled
+   in. iPhone asks once ("Allow Paste"); Android does not ask. Only a caddie
+   or follow link of cuberoot-systems.com is used; anything else is ignored. */
+async function pickUpCopiedLink() {
+  const Cap = (typeof window !== "undefined" && window.Capacitor) || null;
+  if (!Cap || !Cap.isNativePlatform || !Cap.isNativePlatform()) return false;
+  if (local.load("clipboardChecked", false)) return false;
+  try { local.save("clipboardChecked", true); } catch { return false; }   /* never asked twice */
+  const Clip = (Cap.Plugins && Cap.Plugins.Clipboard) || (Cap.registerPlugin ? Cap.registerPlugin("Clipboard") : null);
+  if (!Clip) return false;
+  let text = "";
+  try { const r = await Clip.read(); text = String((r && r.value) || "").trim(); }
+  catch {
+    S.flash = "Came from a caddie or follow link? Tap Caddie or Follow at the bottom and type the code from the page, or scan the golfer's square again.";
+    render(); return false;
+  }
+  if (!/^https:\/\/(www\.)?cuberoot-systems\.com\/marker\/(caddie|follow)\/?\?(caddie|follow)=[A-Za-z0-9]{6}$/.test(text)) return false;
+  useLink(text);
+  return true;
+}
+
 async function listenForCaddieLinks() {
   const Cap = (typeof window !== "undefined" && window.Capacitor) || null;
   const App = Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.Plugins ? Cap.Plugins.App : null;
@@ -2050,6 +2416,14 @@ async function listenForCaddieLinks() {
 }
 
 async function boot() {
+  /* A fresh install (nothing kept on this phone yet), worked out before
+     anything is saved: only then is the clipboard looked at (copy and continue). */
+  let freshInstall = false;
+  try {
+    freshInstall = local.load("started", null) == null && !local.currentCard() && !local.finishedCards().length
+      && !local.load("workerUrl", "") && !local.load("prefs", null) && !local.recentCourses().length;
+    local.save("started", Date.now());
+  } catch { freshInstall = false; }
   render();
   try { await db.init(); }
   catch (e) { S.error = "No connection to The Scorecard right now. You can still play and share; posting waits for the signal."; }
@@ -2071,11 +2445,13 @@ async function boot() {
   } catch {}
   if (c && c.caddieOf && c.caddieOf.done) sendNow();
   await listenForCaddieLinks();
+  if (freshInstall && S.screen === "start") await pickUpCopiedLink();
   checkWatch();
+  autoLive();
   try { db.dropReplaced(); } catch {}
   render();
   refreshMine(true);
 }
-addEventListener("online", () => { render(); const c = local.currentCard(); if (c && c.caddieOf) sendNow(); if (ownerSends(c)) followNow(false); if (S.screen === "caddie") startPolling(); if (S.screen === "follow-view") watchPoll(); });
+addEventListener("online", () => { render(); const c = local.currentCard(); if (c && c.caddieOf) sendNow(); if (ownerSends(c)) followNow(false); autoLive(); if (S.screen === "caddie") startPolling(); if (S.screen === "follow-view") watchPoll(); });
 addEventListener("offline", () => render());
 boot();

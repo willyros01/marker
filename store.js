@@ -326,7 +326,8 @@ function updateCard(c, patch) {
    in what is shared), their hole scores, and the course as chosen. No totals
    or indexes: the worker works those out itself. */
 export function submissionCard(c) {
-  const members = c.players.filter((p) => !p.guest);
+  const check = card.postable(c);
+  const members = check.members || c.players.filter((p) => !p.guest);
   return {
     id: c.id, date: c.date, holes: c.holes, start: c.start, order: c.order.slice(),
     course: { providerId: c.course.providerId || null, name: c.course.name, where: c.course.where || "" },
@@ -339,7 +340,8 @@ export function submissionCard(c) {
     ...(c.caddie ? { scoredBy: "caddie" } : {}),
     players: members.map((p) => ({
       golferId: p.golferId, assocId: p.assocId, name: p.name,
-      scores: Object.fromEntries(c.order.map((n) => [String(n), p.scores[n]])),
+      scores: Object.fromEntries(c.order.filter((n) => !card.missedHole(c, p, n)).map((n) => [String(n), p.scores[n]])),
+      ...(card.missedOf(c, p).length ? { missed: card.missedOf(c, p) } : {}),
     })),
   };
 }
@@ -452,10 +454,17 @@ export async function saveCorrection(cardId, scores) {
 /* ---------------- a caddie scores the card (Willy, 29 Oct 2026) ---------------- */
 
 /* The member: a code for the caddie. Only what a caddie needs is sent. */
-export async function caddieStart(c) {
-  const payload = { id: c.id, date: c.date, holes: c.holes, start: c.start, order: c.order, course: { name: c.course.name }, tee: c.tee,
-    players: c.players.map((p) => ({ name: p.name, ch: p.ch, scores: p.scores })) };
-  return callWorker("/caddie/start", { method: "POST", body: { card: payload } });
+/* Only what a caddie or a follower needs, plus the game the card is part of
+   (its ids only), so the game's followers see it too (1.1.0). */
+function livePayload(c) {
+  return { id: c.id, date: c.date, holes: c.holes, start: c.start, order: c.order, course: { name: c.course.name }, tee: c.tee,
+    players: c.players.map((p) => ({ name: p.name, ch: p.ch, scores: p.scores, ...(p.from ? { from: p.from } : {}) })),
+    ...(c.game && c.game.id && c.game.assocId ? { game: { id: c.game.id, assocId: c.game.assocId } } : {}) };
+}
+/* With `liveId`, the card's live copy (already followed) is handed to the
+   caddie in the middle of the round (1.1.0). */
+export async function caddieStart(c, liveId = null) {
+  return callWorker("/caddie/start", { method: "POST", body: { card: livePayload(c), ...(liveId ? { liveId } : {}) } });
 }
 export const caddieStatus = (liveId) => callWorker("/caddie/status", { method: "POST", body: { liveId } });
 export const caddieStop = (liveId) => callWorker("/caddie/stop", { method: "POST", body: { liveId } });
@@ -472,12 +481,27 @@ export const caddieSend = (liveId, scores, done = false) => callWorker("/caddie/
 /* The member: a follow code. A card a caddie is scoring already has a live
    copy (its liveId); otherwise the card itself is sent. */
 export async function followStart(c) {
-  const body = c.caddie && c.caddie.liveId ? { liveId: c.caddie.liveId }
-    : { card: { id: c.id, date: c.date, holes: c.holes, start: c.start, order: c.order, course: { name: c.course.name }, tee: c.tee,
-        players: c.players.map((p) => ({ name: p.name, ch: p.ch, scores: p.scores })) } };
+  const body = { card: livePayload(c), ...(c.caddie && c.caddie.liveId ? { liveId: c.caddie.liveId } : {}) };
   return callWorker("/follow/start", { method: "POST", body });
 }
-export const followSend = (liveId, scores, done = false, posted = false) => callWorker("/follow/scores", { method: "POST", body: { liveId, scores, done, ...(posted ? { posted: true } : {}) } });
+/* The game's one follow code of the day (option B, Willy 31 Oct 2026). */
+export async function followGame(c) {
+  /* The card's live copy if it has one (made at tee-off, or the caddie's), so it is never on the leaderboard twice. */
+  const liveId = (c.caddie && c.caddie.liveId) || (c.follow && c.follow.liveId) || null;
+  const body = { card: livePayload(c), ...(liveId ? { liveId } : {}) };
+  return callWorker("/follow/game", { method: "POST", body });
+}
+export const followSend = (liveId, scores, done = false, posted = false, players = null) => callWorker("/follow/scores", { method: "POST", body: { liveId, scores, done, ...(posted ? { posted: true } : {}), ...(players ? { players } : {}) } });
+/* Start a real Scorecard game from The Marker, or join one with its six-number code (Willy, 5 Nov 2026, option A). */
+export async function gameCreate({ assocId, name, date, course, tee }) {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  return callWorker("/follow/game-create", { method: "POST", body: { assocId, name, date,
+    course: { name: course.name, providerId: course.providerId || null, where: course.where || "" }, tee } });
+}
+export async function gameJoin(code) {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  return callWorker("/follow/game-join", { method: "POST", body: { code } });
+}
 /* A follower needs no account: an anonymous sign-in is made if nobody is signed in. */
 export async function followView(code) {
   if (!user) await playWithoutAccount();

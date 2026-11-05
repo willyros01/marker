@@ -19,6 +19,7 @@ struct RootView: View {
     NavigationStack(path: $store.path) {
       Group {
         if store.showWidgets { WidgetGallery() }
+        else if let g = store.game { GameScreen(game: g) }
         else if let card = store.card { GroupScreen(card: card) }
         else if let l = store.link { OpeningScreen(link: l) }
         else { WaitingScreen() }
@@ -27,6 +28,8 @@ struct RootView: View {
         switch r {
         case .player(let p, let k): PlayerPager(start: p, hole: k)
         case .summary(let p): SummaryScreen(p: p)
+        case .pad: PadScreen()
+        case .gameCard(let i): GameCardScreen(index: i)
         }
       }
     }
@@ -42,8 +45,9 @@ struct WaitingScreen: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 8) {
         Text("No card yet").font(.title3.bold())
-        Text("On your iPhone, follow a card and tap Send to my watch.")
+        Text("On your iPhone, follow a card and tap Send to my watch. Or type the follow code here.")
           .font(.body).foregroundStyle(.secondary)
+        NavigationLink(value: Route.pad) { Text("Type a follow code") }
         if let m = store.message { Text(m).font(.footnote).foregroundStyle(overColor) }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
@@ -124,6 +128,7 @@ struct GroupScreen: View {
         }
         StatusLine(card: card).padding(.top, 2)
         Text(card.course).font(.footnote).foregroundStyle(.secondary)
+        NavigationLink(value: Route.pad) { Text("Follow another code") }
         Button("Stop following", role: .destructive) { store.stop() }
       }
       .padding(.horizontal, 4)
@@ -270,5 +275,165 @@ struct WidgetGallery: View {
         MineRound(card: store.card, me: 1).frame(width: 80, height: 80)
       }
     }
+  }
+}
+
+/* ---------------- 1.1.0: a whole game, and typing a code on the watch ---------------- */
+
+/* The game's leaderboard (Willy, 31 Oct 2026): one line per golfer with place,
+   first name, gross to par and holes played; tap a line for that card. Final:
+   gross, then net. */
+struct GameScreen: View {
+  @EnvironmentObject var store: FollowStore
+  let game: GameBoard
+  var body: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: 5) {
+        Text(game.name.isEmpty ? "The game" : game.name).font(.headline).foregroundStyle(markerGreen).lineLimit(2)
+        if game.cards.isEmpty {
+          Text("No card is live yet. Cards show up as their scorers tee off.").font(.body).foregroundStyle(.secondary)
+        } else if game.isFinal {
+          Text("Final · gross").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
+          ForEach(game.gross) { r in GameLine(row: r, value: "\(r.gross)", color: .white) }
+          if !game.net.isEmpty {
+            Text("Net").font(.footnote.weight(.bold)).foregroundStyle(.secondary).padding(.top, 4)
+            ForEach(game.net) { r in GameLine(row: r, value: "\(r.net ?? 0)", color: .white) }
+          }
+        } else {
+          HStack { Text("#"); Text("Golfer"); Spacer(); Text("Par · Thru") }
+            .font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 8)
+          ForEach(game.live) { r in
+            GameLine(row: r, value: r.thru > 0 ? toParText(r.toPar) : "–", color: r.thru > 0 ? parColor(r.toPar) : .secondary)
+          }
+        }
+        GameStatus(game: game).padding(.top, 2)
+        NavigationLink(value: Route.pad) { Text("Follow another code") }
+        Button("Stop following", role: .destructive) { store.stop() }
+      }
+      .padding(.horizontal, 4)
+    }
+  }
+}
+
+struct GameLine: View {
+  let row: GameRow
+  let value: String
+  let color: Color
+  var body: some View {
+    NavigationLink(value: Route.gameCard(row.card)) {
+      HStack(spacing: 4) {
+        Text(row.place).font(.footnote.weight(.bold)).foregroundStyle(.secondary).frame(width: 26, alignment: .leading)
+        Text(firstName(row.name)).font(.title3.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.6)
+        Spacer(minLength: 2)
+        Text(value).font(.title3.weight(.bold)).foregroundStyle(color)
+        Text(row.complete ? "F" : row.thru > 0 ? "\(row.thru)" : "").font(.footnote).foregroundStyle(.secondary).frame(width: 18, alignment: .trailing)
+      }
+      .padding(.vertical, 4).padding(.horizontal, 8)
+      .frame(maxWidth: .infinity)
+      .background(RoundedRectangle(cornerRadius: 12).fill(Color(white: 0.2)))
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+  }
+}
+
+struct GameStatus: View {
+  @EnvironmentObject var store: FollowStore
+  let game: GameBoard
+  var body: some View {
+    let when = clock(game.lastAt)
+    if game.isFinal {
+      Text("Every card is finished").font(.footnote).foregroundStyle(markerGreen)
+    } else if store.stale {
+      Text("No signal · \(when.isEmpty ? "earlier" : when)").font(.footnote).foregroundStyle(overColor)
+    } else {
+      Text(when.isEmpty ? "No scores yet" : "Updated \(when)").font(.footnote).foregroundStyle(.secondary)
+    }
+  }
+}
+
+/* One card of the game: everyone on that card, hole being played and total. */
+struct GameCardScreen: View {
+  @EnvironmentObject var store: FollowStore
+  let index: Int
+  var body: some View {
+    if let g = store.game, index >= 0, index < g.cards.count {
+      let card = g.cards[index]
+      let n = card.order[card.currentIndex]
+      ScrollView {
+        VStack(alignment: .leading, spacing: 5) {
+          Text("Hole \(n) · Par \(card.hole(n).par)").font(.headline).foregroundStyle(markerGreen)
+          ForEach(card.players.indices, id: \.self) { i in
+            let t = card.totals(i)
+            HStack(spacing: 4) {
+              Text(card.players[i].name).font(.title3.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.6)
+              Spacer(minLength: 4)
+              Text(scoreText(card.players[i].scores[n])).font(.title3.weight(.semibold))
+              Text("·").foregroundStyle(.secondary)
+              Text(t.done > 0 ? toParText(t.toPar) : "–").font(.title3.weight(.semibold))
+                .foregroundStyle(t.done > 0 ? parColor(t.toPar) : .secondary)
+            }
+            .padding(.vertical, 5).padding(.horizontal, 10)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color(white: 0.2)))
+          }
+          Text(card.posted ? "Posted" : card.finished ? "Finished" : card.byCaddie ? "Scored by a caddie" : "Live")
+            .font(.footnote).foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 4)
+      }
+    } else {
+      Text("The card is closed.").font(.body)
+    }
+  }
+}
+
+/* Typing a six-number follow code on the watch (Willy, 31 Oct 2026). */
+struct PadScreen: View {
+  @EnvironmentObject var store: FollowStore
+  @State private var code = ""
+  @State private var busy = false
+  @State private var error: String?
+  private let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓"]
+  var body: some View {
+    VStack(spacing: 3) {
+      Text(code.isEmpty ? "Follow code" : spaced(code))
+        .font(.system(size: code.isEmpty ? 15 : 22, weight: .heavy, design: .rounded))
+        .foregroundStyle(code.isEmpty ? .secondary : .primary)
+      if let e = error { Text(e).font(.system(size: 11)).foregroundStyle(overColor).lineLimit(2).minimumScaleFactor(0.7) }
+      if busy { ProgressView() }
+      LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 3), spacing: 3) {
+        ForEach(keys, id: \.self) { k in
+          Button(action: { tap(k) }) {
+            Text(k).font(.system(size: 18, weight: .bold, design: .rounded))
+              .frame(maxWidth: .infinity, minHeight: 28)
+              .foregroundStyle(k == "✓" ? (code.count == 6 ? Color.black : Color.secondary) : Color.white)
+              .background(RoundedRectangle(cornerRadius: 8).fill(k == "✓" ? (code.count == 6 ? markerGreen : Color(white: 0.2)) : Color(white: 0.25)))
+          }
+          .buttonStyle(.plain)
+          .disabled(busy || (k == "✓" && code.count != 6))
+          .accessibilityLabel(k == "⌫" ? "Delete" : k == "✓" ? "Follow" : k)
+        }
+      }
+    }
+    .padding(.horizontal, 2)
+  }
+
+  private func spaced(_ s: String) -> String {
+    s.count > 3 ? String(s.prefix(3)) + " " + String(s.dropFirst(3)) : s
+  }
+
+  private func tap(_ k: String) {
+    error = nil
+    if k == "⌫" { if !code.isEmpty { code.removeLast() }; return }
+    if k == "✓" {
+      busy = true
+      Task { @MainActor in
+        let why = await store.follow(code: code)
+        busy = false
+        if let w = why { error = w } else { code = "" }
+      }
+      return
+    }
+    if code.count < 6 { code += k }
   }
 }

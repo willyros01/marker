@@ -52,7 +52,7 @@ xcrun simctl boot "$UDID" 2>/dev/null || true
 xcrun simctl bootstatus "$UDID" -b
 xcrun simctl install "$UDID" "$WAPP"
 
-for screen in waiting group player summary widgets; do
+for screen in waiting group player summary widgets pad game gamecard; do
   xcrun simctl launch --terminate-running-process "$UDID" io.github.willyros01.marker.watchkitapp -markerDemo -markerShow "$screen" >/dev/null
   sleep 8
   xcrun simctl io "$UDID" screenshot "shots/watch-$screen.png" >/dev/null

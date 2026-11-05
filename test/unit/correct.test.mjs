@@ -287,3 +287,25 @@ test("D4 a card with deleted rounds can be deleted for good: off the lists, neve
   assert.equal(r.status, "refused");
   assert.match(r.reason, /was deleted/);
 });
+
+test("C20 Your cards for the app owner with 40 posted cards of four golfers: a handful of database calls, far under Cloudflare's 50 (5 Nov 2026)", async () => {
+  const { fs } = await posted();
+  fs.docs.set("appOwners/u-boss", { data: { active: true }, updateTime: "t" });
+  const base = fs.data("markerSubmissions/c1");
+  for (let k = 0; k < 40; k++) {
+    const rounds = {}, players = [];
+    for (const g of ["A", "B", "C", "D"]) {
+      const rid = `r${k}${g}`;
+      rounds[g] = rid;
+      players.push({ golferId: g, assocId: "G1", name: g, scores: scoresOf(5) });
+      if (!(k === 3 && g === "D")) fs.docs.set(`associations/G1/rounds/${rid}`, { data: { golferId: g }, updateTime: "t" });
+    }
+    fs.docs.set(`markerSubmissions/k${k}`, { data: { ...base, card: { ...base.card, id: `k${k}`, players }, rounds }, updateTime: "t" });
+  }
+  fs.calls = 0;
+  const m = await fix.myCards(fs, who("u-boss"), { limit: 100 });
+  assert.ok(fs.calls <= 10, `calls: ${fs.calls}`);
+  assert.equal(m.correctable.length, 40);   /* c1 and 39 of the 40; k3 has a deleted round */
+  assert.equal(m.editable.length, 1);
+  assert.deepEqual(m.editable[0].gone, ["D"]);
+});

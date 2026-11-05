@@ -193,3 +193,51 @@ test("U17 a posted card can be removed from the phone only; an unposted one cann
   store.removeFromPhone("p");
   assert.deepEqual(local.finishedCards().map((c) => c.id), ["w"]);
 });
+
+test("U30 the game leaderboard: live in gross with ties, golfers not started last; final in gross and net (1.1.0)", async () => {
+  const card = await import("../../card.js");
+  const holes = Array.from({ length: 18 }, (_, i) => ({ par: 4, yards: 380, si: i + 1 }));
+  const setup = (names, chs) => ({ course: { name: "Carlisle" }, tee: { name: "White", par: 72, holes }, order: Array.from({ length: 18 }, (_, i) => i + 1),
+    players: names.map((name, i) => ({ name, ch: chs[i] })) });
+  const all = (v) => Object.fromEntries(Array.from({ length: 18 }, (_, i) => [String(i + 1), v]));
+  const live = card.gameBoard({ cards: [
+    { setup: setup(["Willy Rosales", "Raul Rosales"], [22, 13]), scores: { 0: { 1: 5, 2: 4 }, 1: { 1: 3 } }, status: "live" },
+    { setup: setup(["Hermie Ticsay", "Ruben Castillo"], [18, null]), scores: { 0: { 1: 4, 2: 5 }, 1: {} }, status: "live" },
+  ] });
+  assert.deepEqual(live.live.map((r) => [r.place, r.name, r.toPar, r.thru]),
+    [["1", "Raul Rosales", -1, 1], ["T2", "Hermie Ticsay", 1, 2], ["T2", "Willy Rosales", 1, 2], ["", "Ruben Castillo", 0, 0]]);
+  assert.equal(live.final, false);
+  assert.deepEqual([live.live[0].card, live.live[0].player], [0, 1]);
+  const fin = card.gameBoard({ finished: true, cards: [
+    { setup: setup(["Willy Rosales", "Raul Rosales"], [22, 13]), scores: { 0: all(5), 1: all(5) }, status: "finished", posted: true },
+    { setup: setup(["Hermie Ticsay", "Ruben Castillo"], [18, null]), scores: { 0: all(6), 1: { 1: 4 } }, status: "finished" },
+  ] });
+  assert.equal(fin.final, true);
+  assert.deepEqual(fin.gross.map((r) => [r.place, r.name, r.gross]), [["T1", "Raul Rosales", 90], ["T1", "Willy Rosales", 90], ["3", "Hermie Ticsay", 108]]);
+  assert.deepEqual(fin.net.map((r) => [r.place, r.name, r.net]), [["1", "Willy Rosales", 68], ["2", "Raul Rosales", 77], ["3", "Hermie Ticsay", 90]]);
+  assert.deepEqual(fin.unfinished.map((r) => r.name), ["Ruben Castillo"]);
+});
+
+test("U31 a golfer who joined on the 3rd hole: missed holes need no score; 14+ holes posts, fewer is shared only (5 Nov 2026)", async () => {
+  let c = make({ start: 1 });
+  c = { ...c, players: [...c.players, { name: "Late Lou", golferId: "l", assocId: "G1", groupName: "", guest: false, index: 10, ch: card.courseHandicapFor(10, tee), scores: {}, from: 2 }] };
+  for (const n of c.order) for (let p = 0; p < 3; p++) c = card.setScore(c, p, n, 4);
+  for (const n of c.order.slice(2)) c = card.setScore(c, 3, n, 5);
+  assert.equal(card.joinedOn(c, c.players[3]), 3);
+  assert.deepEqual(card.missedOf(c, c.players[3]), [1, 2]);
+  assert.ok(card.holeComplete(c, 1) && card.cardComplete(c));
+  const t = card.totals(c, 3);
+  assert.equal(t.done, 16); assert.equal(t.missed, 2); assert.ok(t.complete); assert.equal(t.net, null);
+  const ok = card.postable(c);
+  assert.ok(ok.ok); assert.deepEqual(ok.members.map((p) => p.name), ["Willy Rosales", "Allan Elardo", "Late Lou"]);
+  /* joined on hole 6: 13 holes, not posted; the others still are */
+  const short = { ...c, players: c.players.map((p, i) => (i === 3 ? { ...p, from: 5, scores: Object.fromEntries(Object.entries(p.scores).filter(([n]) => Number(n) >= 6)) } : p)) };
+  const s = card.postable(short);
+  assert.ok(s.ok); assert.deepEqual(s.members.map((p) => p.name), ["Willy Rosales", "Allan Elardo"]); assert.deepEqual(s.short.map((p) => p.name), ["Late Lou"]);
+  /* a score typed on a missed hole simply counts */
+  const typed = card.setScore(c, 3, 1, 6);
+  assert.deepEqual(card.missedOf(typed, typed.players[3]), [2]);
+  /* the leaderboard copy keeps when they joined */
+  const lc = card.liveCard({ setup: { course, tee, order: c.order, players: c.players.map((p) => ({ name: p.name, ch: p.ch, ...(p.from ? { from: p.from } : {}) })) }, scores: { 3: c.players[3].scores } });
+  assert.ok(card.totals(lc, 3).complete);
+});
