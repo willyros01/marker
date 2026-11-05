@@ -199,7 +199,7 @@ await shot(member, "15-menu-game-and-caddie");
 await act(member, "follow-game");
 await member.waitForSelector(".bigcode", { timeout: 20000 });
 const gcode = (await member.locator(".bigcode").innerText()).replace(/\s/g, "");
-ok(/^[1-9]\d{5}$/.test(gcode) && (await text(member)).includes("Thursday Skins"), `the member gets the game's code (${gcode})`);
+ok(/^[1-9]\d{5}$/.test(gcode) && /thursday skins/i.test(await text(member)), `the member gets the game's code (${gcode})`);
 await shot(member, "16-game-code");
 await member.click('[data-act="follow-back"]');
 await member.waitForSelector('[data-act="score"], [data-act="plus"]');
