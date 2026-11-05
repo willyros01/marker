@@ -278,3 +278,18 @@ test("GS4 a game code made before 5 Nov (name only, no game id) still joins: the
   doc.data = { ...doc.data, gameKey: "G1_nogame_2026-10-29" };
   await assert.rejects(game.join(fs, OTHER, g.code, { now: NOW + 1000 }), refused(/no longer exists/));
 });
+
+test("GS5 a golfer added after tee-off reaches the followers; the golfers already on the card cannot be changed that way", async () => {
+  const fs = fakeFs();
+  const r = await follow.start(fs, MEMBER, { card: theCard() }, { now: NOW, rand });
+  const before = (await follow.view(fs, GUEST, r.code, { now: NOW + 1 })).setup.players;
+  const players = [...before, { name: "Late Lou", ch: 10, from: 2 }];
+  await follow.scores(fs, MEMBER, { liveId: r.liveId, scores: { [before.length]: { 3: 5 } }, players }, { now: NOW + 2 });
+  const v = await follow.view(fs, GUEST, r.code, { now: NOW + 3 });
+  assert.equal(v.setup.players.length, before.length + 1);
+  assert.deepEqual(v.setup.players.at(-1), { name: "Late Lou", ch: 10, from: 2 });
+  assert.equal(v.scores[String(before.length)]["3"], 5);
+  const renamed = [{ ...before[0], name: "Someone Else" }, ...players.slice(1), { name: "Fifth", ch: 1 }].slice(0, 4);
+  await follow.scores(fs, MEMBER, { liveId: r.liveId, scores: {}, players: renamed }, { now: NOW + 4 });
+  assert.equal((await follow.view(fs, GUEST, r.code, { now: NOW + 5 })).setup.players[0].name, before[0].name);
+});

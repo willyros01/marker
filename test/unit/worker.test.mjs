@@ -581,3 +581,23 @@ test("A3 without a reported cost, the tokens are priced instead", async () => {
   const day = new Date().toISOString().slice(0, 10);
   assert.equal(fs.data(`markerLimits/ai-${day}`).neurons, Math.round(2000 * 40909 / 1e6 + 1000 * 290909 / 1e6));
 });
+
+test("W30 a golfer who joined late is posted with the missed holes at net par, noted on the round; under 14 holes is refused (5 Nov 2026)", async () => {
+  const fs = world();
+  const late = { golferId: "B", assocId: "G1", name: "Ben Reyes", scores: Object.fromEntries(Object.entries(scoresOf(5)).filter(([n]) => Number(n) > 2)), missed: [1, 2] };
+  submission(fs, "late1", { players: [player("A", "G1", "Ana Cruz"), late] });
+  const r = await post(fs, "late1");
+  assert.equal(r.status, "posted");
+  const b = roundsIn(fs, "G1").find((x) => x.golferId === "B");
+  /* Ben: index 18 on the library tee; holes 1 and 2 (stroke index 1 and 2) are par 4 plus one stroke each */
+  assert.deepEqual(b.holes.slice(0, 2), [5, 5]);
+  assert.equal(b.gross, 5 * 16 + 10);
+  assert.match(b.notes, /holes 1, 2 not played, counted at net par/);
+  const fs2 = world();
+  const short = { ...late, scores: Object.fromEntries(Object.entries(scoresOf(5)).filter(([n]) => Number(n) > 5)), missed: [1, 2, 3, 4, 5] };
+  submission(fs2, "late2", { players: [short] });
+  const r2 = await post(fs2, "late2");
+  assert.equal(r2.status, "refused");
+  assert.match(fs2.data("markerSubmissions/late2").reason, /fewer than 14 holes/);
+  assert.equal(roundsIn(fs2, "G1").length, 0);
+});

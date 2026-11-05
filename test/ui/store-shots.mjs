@@ -152,7 +152,7 @@ for (const [dev, ctx] of Object.entries(sizes)) {
     for (let i = 0; i < 4; i++) await scoreOne(second, i, PLAY2[i][h]);
     if (h < 4) await act(second, "next");
   }
-  await act(second, "menu"); await act(second, "follow-game");
+  await act(second, "game-tap");
   await second.waitForSelector(".bigcode", { timeout: 20000 });
   await shot(second, "10-game-code");
   const gcode = (await second.locator(".bigcode").innerText()).replace(/\s/g, "");

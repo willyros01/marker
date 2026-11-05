@@ -492,11 +492,19 @@ function screenPlayers() {
 
 /* ---------------- 3 · playing ---------------- */
 
+/* The Game button (Willy, 5 Nov 2026): on every hole, always in the same
+   place, saying whether the card is in a game. Tap: the game's code and
+   leaderboard, or start or join one. */
+const ownScorer = (c) => !!c && !c.caddieOf && !c.correcting && !c.repostOf && member();
+const gameBtn = (c) => (ownScorer(c) ? `<button class="pill light gamepill" data-act="game-tap" aria-label="${c.game ? `In the game ${esc(c.game.name || "")}. Open the game` : "Not in a game. Start or join a game"}">${c.game ? `⛳ ${esc(c.game.name || "Game")}` : "No game"}</button>` : "");
+/* A golfer may be added after tee-off by the scorer, while nobody else is scoring the card. */
+const canAddLate = (c) => ownScorer(c) && c.state === "playing" && c.players.length < 4 && (!c.caddie || c.caddie.ended);
+
 function holeHeader(c, n) {
   const h = card.holeInfo(c, n);
   const pos = c.order.indexOf(n) + 1;
   return `<header class="top"><div class="row"><div class="sub">${esc(c.course.name)} · ${esc(c.tee.name)} · hole ${pos} of ${c.order.length}</div>
-      <div class="row"><span class="pill">${c.caddieOf ? (c.caddieOf.sentAt && c.caddieOf.sentAt >= (c.caddieOf.changedAt || 0) ? "✓ Sent to the golfer" : "Saved · not sent yet") : "✓ Saved"}</span><button class="pill light" data-act="menu">Menu</button></div></div>
+      <div class="row"><span class="pill">${c.caddieOf ? (c.caddieOf.sentAt && c.caddieOf.sentAt >= (c.caddieOf.changedAt || 0) ? "✓ Sent to the golfer" : "Saved · not sent yet") : "✓ Saved"}</span>${gameBtn(c)}<button class="pill light" data-act="menu">Menu</button></div></div>
     <div class="hole-title"><span class="big">Hole ${n}</span><span class="par">Par ${h.par}</span></div>
     <div class="hole-meta"><span>${h.yards ? `${h.yards} yards` : "Yards not known"}</span><span>${h.si ? `Handicap ${h.si}` : "No handicap number"}</span></div></header>`;
 }
@@ -507,6 +515,7 @@ function playerNote(c, pi, n) {
   const k = card.strokesOn(pl.ch, h.si);
   const cap = card.holeCap(h.par, pl.ch, h.si);
   const guest = pl.guest ? (c.mode === "member" ? "Guest · not posted · " : "") : "";
+  if (card.missedHole(c, pl, n)) return `Joined on hole ${card.joinedOn(c, pl)} · no score needed here`;
   if (pl.ch == null) return `${guest}No index · handicap limit ${cap}`;
   const strokes = !h.si ? `About ${k} stroke${k === 1 ? "" : "s"} a hole (no handicap numbers)` : k === 0 ? "No stroke here" : k > 0 ? `Gets ${k} stroke${k === 1 ? "" : "s"} here` : `Gives ${-k} stroke back here`;
   return `${guest}${strokes} · handicap limit ${cap}`;
@@ -515,7 +524,7 @@ function playerNote(c, pi, n) {
 function footPlay(c, n) {
   const last = c.order.indexOf(n) === c.order.length - 1;
   const done = card.holeComplete(c, n);
-  const left = c.players.filter((p) => !card.isEntered(p.scores[n])).length;
+  const left = c.players.filter((p) => !card.isEntered(p.scores[n]) && !card.missedHole(c, p, n)).length;
   const next = done
     ? (last ? `<button class="btn primary" data-act="finish">Finish</button>` : `<button class="btn primary" data-act="next">Hole ${c.order[c.order.indexOf(n) + 1]} →</button>`)
     : `<div class="btn dashed" style="color:var(--ink-3)">${left} to go</div>`;
@@ -544,9 +553,10 @@ function screenPlayOne(c) {
   }
   const names = c.players.map((p, i) => {
     const e = p.scores[n];
-    const cls = i === who ? "now" : card.isEntered(e) ? "done" : "";
-    return `<button class="${cls}" data-act="who" data-v="${i}">${esc(first(p.name))}${card.isEntered(e) ? ` ${esc(e)}` : ""}</button>`;
-  }).join("");
+    const off = card.missedHole(c, p, n);
+    const cls = i === who ? "now" : card.isEntered(e) || off ? "done" : "";
+    return `<button class="${cls}" data-act="who" data-v="${i}">${esc(first(p.name))}${card.isEntered(e) ? ` ${esc(e)}` : off ? " –" : ""}</button>`;
+  }).join("") + (canAddLate(c) ? `<button class="addlate" data-act="late-open" aria-label="Add a golfer">+ Add</button>` : "");
   const status = has
     ? `<div class="status done">Entered: ${s === card.PICKED_UP ? "picked up" : esc(s)}. Tap another number to change it, or tap the next name above.</div>`
     : `<div class="status empty">No score yet. Tap the number of strokes.</div>`;
@@ -579,6 +589,7 @@ function screenPlayAll(c) {
       <div class="note">${esc(playerNote(c, i, n))}</div></div>`;
   }).join("");
   return `${holeHeader(c, n)}<main class="body">${banner()}${rows}
+    ${canAddLate(c) ? `<button class="btn" data-act="late-open">+ Add a golfer</button>` : ""}
     <p class="muted">Tap + to start at par. Tap a number to type it; X means picked up.</p></main>${footPlay(c, n)}`;
 }
 
@@ -593,10 +604,7 @@ function screenMenu(c) {
       <button class="btn tall" data-act="card"><span>See the whole card</span><small>Tap a hole to go to it.</small></button>
       <button class="btn tall" data-act="share-card"><span>Share the card</span><small>WhatsApp, email or text message.</small></button>
       ${!c.caddieOf && !c.correcting && !c.repostOf && member() && (!c.caddie || c.caddie.ended) ? `<button class="btn tall" data-act="caddie-mid"><span>${S.busy === "caddie" ? "Getting a code…" : "Let my caddie score"}</span><small>Your caddie scores from this hole on. You can take it back at any time.</small></button>` : ""}
-      ${scorer && c.game ? `<button class="btn tall" data-act="follow-game"><span>${S.busy === "game" ? "Getting the game code…" : "The game code"}</span><small>${esc(c.game.name || "The game")}: other scorers join with it, followers follow with it.</small></button>
-      <button class="btn tall" data-act="game-board"><span>${S.busy === "board" ? "Opening…" : "See the leaderboard"}</span><small>Every card in the game, live.</small></button>` : ""}
-      ${scorer && !c.game ? `<button class="btn tall" data-act="game-here"><span>Start or join a game</span><small>Several foursomes on one leaderboard.</small></button>
-      <button class="btn tall" data-act="follow-start"><span>${c.follow ? "Show the follow code" : "Let others follow this card"}</span><small>They see the scores live on their phones.</small></button>` : ""}
+      ${scorer && !c.game ? `<button class="btn tall" data-act="follow-start"><span>${c.follow ? "Show the follow code" : "Let others follow this card"}</span><small>They see the scores live on their phones.</small></button>` : ""}
       <button class="btn tall" data-act="to-start"><span>Go to the start screen</span><small>The round stays on this phone. "Continue your round" brings you back to this hole.</small></button>
       ${c.caddieOf ? `<button class="btn tall" data-act="caddie-quit" style="color:var(--over)"><span>Stop scoring this card</span><small>The scores already sent stay with the golfer.</small></button>`
         : c.correcting ? `<button class="btn tall" data-act="cancel-correction" style="color:var(--over)"><span>Cancel the correction</span><small>Nothing is changed in The Scorecard.</small></button>`
@@ -632,7 +640,7 @@ function cardGrid(c, interactive) {
     const cls = interactive && n === cur ? "now-row" : k % 2 ? "zebra" : "plain";
     const cells = c.players.map((p) => {
       const s = p.scores[n];
-      const t = s === card.PICKED_UP ? "X" : card.isEntered(s) ? s : "·";
+      const t = s === card.PICKED_UP ? "X" : card.isEntered(s) ? s : card.missedHole(c, p, n) ? "–" : "·";
       const col = card.isEntered(s) && s !== card.PICKED_UP ? (s < h.par ? "under" : s > h.par ? "over" : "") : "";
       return `<div class="${col}" style="font-weight:700">${esc(t)}</div>`;
     }).join("");
@@ -658,10 +666,13 @@ function screenCard(c) {
 function summaries(c) {
   return c.players.map((p, i) => {
     const t = card.totals(c, i);
-    const where = p.guest ? (c.mode === "member" ? "Guest · shared only, not posted" : "") : p.groupName;
+    const late = card.joinedOn(c, p);
+    const where = [p.guest ? (c.mode === "member" ? "Guest · shared only, not posted" : "") : p.groupName,
+      late ? `Joined on hole ${late}` : "",
+      late && !p.guest && c.mode === "member" ? (t.missed > 18 - card.LATE_MIN ? `Fewer than ${card.LATE_MIN} holes: shared only, not posted` : t.missed ? "Missed holes count as net par" : "") : ""].filter(Boolean).join(" · ");
     return `<div class="sum"><b style="font-size:19px">${esc(p.name)}</b>${where ? `<span class="muted">${esc(where)}</span>` : ""}
       <div class="stats"><div><b>${t.gross}</b><span>Gross${t.complete ? "" : ` thru ${t.done}`}</span></div>
-      <div><b>${p.guest && c.mode === "member" ? "—" : t.adjusted}</b><span>Adjusted</span></div>
+      <div><b>${(p.guest && c.mode === "member") || t.missed ? "—" : t.adjusted}</b><span>Adjusted</span></div>
       <div><b style="color:var(--green)">${t.net == null ? "—" : t.net}</b><span>${p.ch == null ? "No index" : `Net (CH ${p.ch})`}</span></div></div></div>`;
   }).join("");
 }
@@ -670,7 +681,7 @@ function screenFinish(c) {
   if (c.correcting) return screenCorrectFinish(c);
   if (c.caddieOf) return screenCaddieFinish(c);
   const check = card.postable(c);
-  const n = c.players.filter((p) => !p.guest).length;
+  const n = check.ok ? check.members.length : 0;
   const postBtn = check.ok
     ? `<button class="btn primary" data-act="post">Post ${n} round${n === 1 ? "" : "s"} to The Scorecard</button>`
     : `<div class="banner warn">${esc(check.why)}</div>`;
@@ -721,7 +732,7 @@ function screenCorrectFinish(c) {
 function screenStatus(c) {
   const posted = c.state === "posted";
   const failed = c.state === "failed";
-  const rows = c.players.filter((p) => !p.guest).map((p) => {
+  const rows = (card.postable(c).members || c.players.filter((p) => !p.guest)).map((p) => {
     const t = card.totals(c, c.players.indexOf(p));
     return `<div class="item"><span class="txt"><span class="name">${esc(p.name)} · ${t.gross}</span><span class="meta">${esc(p.groupName)}</span></span>
       <b style="color:${posted ? "var(--green)" : failed ? "var(--over)" : "#8A5A12"}">${posted ? "Posted ✓" : failed ? "Not posted" : c.sent ? "Checking" : "Waiting"}</b></div>`;
@@ -875,7 +886,27 @@ const startForm = (date, courseName) => `<label class="field"><span class="label
         <p class="muted">For ${esc(niceDate(date))} at ${esc(courseName)}. It is posted to The Scorecard as a game.</p>
         <button class="btn primary" data-act="game-create" ${S.busy ? "disabled" : ""}>${S.busy === "gamecreate" ? "Starting…" : "Start the game"}</button>${gameMsg("create")}`;
 
-/* From the Menu, during the round (Willy, 5 Nov 2026): join first, as most scorers join. */
+/* Adding a golfer after tee-off (Willy, 5 Nov 2026: one joined us on the 3rd). */
+function screenLate(c) {
+  const n = c.order[c.pos];
+  const tab = S.groupTab;
+  const list = S.golfers[tab];
+  const groupPart = !member() ? "" : !S.groups.length ? `<p class="muted">Loading your groups…</p>`
+    : `<label class="field"><span class="label">From your group</span>
+        <select class="input groupsel" id="groupsel" aria-label="Group">${S.groups.map((g) => `<option value="${esc(g.id)}" ${g.id === tab ? "selected" : ""}>${esc(g.name)}</option>`).join("")}</select></label>
+      ${list === undefined ? `<p class="muted">Loading golfers…</p>` : `<div class="list">${list.filter((g) => !c.players.some((p) => p.golferId === g.golferId)).map((g) =>
+        `<button class="item" data-act="late-pick" data-v="${esc(g.golferId)}"><span class="box"></span><span class="txt"><span class="name">${esc(g.name)}</span><span class="meta">${g.index == null ? "No index yet" : `Index ${esc(g.index)}`}</span></span></button>`).join("") || `<p class="muted">Nobody else in this group.</p>`}</div>`}`;
+  return `${top("Add a golfer", `Joining on hole ${n}`)}
+    <main class="body">${banner()}
+      <p style="font-size:20px">Scored from hole ${esc(n)} on. ${c.mode === "member" ? `A member's round is posted if they play at least ${card.LATE_MIN} holes; the holes they missed count as net par.` : ""}</p>
+      ${groupPart}
+      <span class="label">${member() ? "Or as a guest · scored and shared, not posted" : "Player"}</span>
+      <div class="row2" style="grid-template-columns: minmax(0,1fr) auto"><input class="input" id="lateguest" placeholder="${member() ? "Guest's name" : "Player's name"}" autocomplete="off"><button class="btn" data-act="late-guest">Add</button></div>
+    </main>
+    <footer class="foot"><button class="btn" data-act="back-play">Cancel · back to hole ${esc(n)}</button></footer>`;
+}
+
+/* From the Game button, during the round (Willy, 5 Nov 2026): join first, as most scorers join. */
 function screenGameSetup(c) {
   return `${top("Start or join a game", `${c.course.name} · ${niceDate(c.date)}`)}
     <main class="body">${banner()}
@@ -894,7 +925,7 @@ function screenGameShare(c) {
   return `${top("The game code", `${g.name || (c.game && c.game.name) || "The game"} · ${niceDate(c.date)}`)}
     <main class="body">${banner()}
       <div class="bigcode" aria-label="Code ${esc(g.code.split("").join(" "))}">${esc(spaced(g.code))}</div>
-      <p style="font-size:20px"><b>Other scorers:</b> Menu, Start or join a game, then type this code.</p>
+      <p style="font-size:20px"><b>Other scorers:</b> tap <b>No game</b> at the top of a hole, then type this code.</p>
       <p style="font-size:20px"><b>Followers:</b> Follow on the start screen, then type it, or point the camera at the square.</p>
       <div class="qrbox">${qrSvg(`${FOLLOW_WEB}?follow=${g.code}`)}</div>
     </main>
@@ -1038,6 +1069,7 @@ function render() {
     case "follow-share": html = c && c.follow ? screenFollowShare(c) : screenStart(); break;
     case "follow-join": html = screenFollowJoin(); break;
     case "follow-view": html = S.watch ? (S.watch.kind === "game" ? screenGameView() : screenFollowView()) : screenFollowJoin(); break;
+    case "late": html = c && canAddLate(c) ? screenLate(c) : c ? screenStart() : screenStart(); break;
     case "game-setup": html = c ? screenGameSetup(c) : screenStart(); break;
     case "game-share": html = c && c.gameFollow ? screenGameShare(c) : screenStart(); break;
     default: html = screenStart();
@@ -1219,7 +1251,8 @@ async function followNow(done = false, posted = false) {
   if (!ownerSends(c)) { followDone = followPosted = false; return; }
   followSending = true; followAgain = false;
   const d = followDone, p = followPosted;
-  try { await db.followSend(c.follow.liveId, scoresOf(c), d, p); if (p) followPosted = false; if (d) followDone = false; }
+  const late = c.players.some((x) => x.from) ? c.players.map((x) => ({ name: x.name, ch: x.ch, ...(x.from ? { from: x.from } : {}) })) : null;
+  try { await db.followSend(c.follow.liveId, scoresOf(c), d, p, late); if (p) followPosted = false; if (d) followDone = false; }
   catch (e) {
     const m = String((e && e.message) || e);
     /* past 12 hours, or a caddie is scoring: stop sending, nothing else changes */
@@ -1540,7 +1573,25 @@ const actions = {
   "game-join-open"() { S.gameForm = "join"; S.gameError = ""; render(); },
   "game-form-close"() { S.gameForm = null; S.gameError = ""; render(); },
   "game-leave"() { S.setup.game = null; S.setup.gameCode = null; S.gameForm = null; render(); },
-  "game-here"() { S.gameName = ""; S.gameJoinCode = ""; go("game-setup"); },
+  async "game-here"() { S.gameName = ""; S.gameJoinCode = ""; go("game-setup"); if (member() && !S.groups.length) { await loadGroupsAndGames(); render(); } },
+  /* The Game button: the game's code and leaderboard, or start or join one. */
+  async "game-tap"() { const c = local.currentCard(); if (!c || S.busy) return; if (c.game) await actions["follow-game"](); else await actions["game-here"](); },
+  async "late-open"() {
+    const c = local.currentCard();
+    if (!canAddLate(c)) return;
+    go("late");
+    if (member()) { if (!S.groups.length) await loadGroupsAndGames(); render(); await loadGolfers(S.groupTab); }
+  },
+  "late-pick"(el) {
+    const g = (S.golfers[S.groupTab] || []).find((x) => x.golferId === el.dataset.v);
+    const group = S.groups.find((x) => x.id === S.groupTab);
+    if (g) addLate({ name: g.name, golferId: g.golferId, assocId: S.groupTab, groupName: group ? group.name : "", index: g.index });
+  },
+  "late-guest"() {
+    const name = ((document.getElementById("lateguest") || {}).value || "").trim().replace(/\s+/g, " ");
+    if (name.length < 2) { S.error = "Type the golfer's name."; render(); return; }
+    addLate({ name, golferId: null, assocId: null, groupName: "", index: null });
+  },
   async "game-create"() {
     if (S.busy) return;
     const mid = S.screen === "game-setup";
@@ -2123,6 +2174,7 @@ document.addEventListener("keydown", (e) => {
   const id = e.target && e.target.id;
   if (id === "typed") actions["type-save"]();
   else if (id === "guest") actions["add-guest"]();
+  else if (id === "lateguest") actions["late-guest"]();
   else if (id === "cq") actions.search();
   else if (id === "password") actions["sign-in"]();
   else if (id === "caddiecode") actions["caddie-join"]();
@@ -2251,6 +2303,20 @@ async function ensureGame(busy) {
   if (ownerSends(saved)) followNow(false);
   return saved;
 }
+/* The golfer joins on the hole showing; the card is saved before anything else. */
+function addLate(p) {
+  const c = local.currentCard();
+  if (!canAddLate(c)) { go("play"); return; }
+  if (c.players.some((x) => x.name.toLowerCase() === p.name.toLowerCase() || (p.golferId && x.golferId === p.golferId))) { S.error = `${p.name} is already on the card.`; render(); return; }
+  const pl = { name: p.name, golferId: p.golferId, assocId: p.assocId, groupName: p.groupName, guest: !p.golferId,
+    index: p.index == null ? null : Number(p.index), ch: card.courseHandicapFor(p.index, c.tee), scores: {}, ...(c.pos > 0 ? { from: c.pos } : {}) };
+  try { saveCard({ ...c, players: [...c.players, pl], who: c.players.length }); } catch (e) { fail(e); return; }
+  const now = local.currentCard();
+  if (ownerSends(now)) followNow(false);
+  S.flash = `${p.name} is on the card from hole ${c.order[c.pos]}.`;
+  go("play");
+}
+
 /* A card that starts or joins a game mid-round: saved with the game first
    (so it posts into the game), then put on the game's leaderboard; with no
    signal that is done later by itself (autoLive). */

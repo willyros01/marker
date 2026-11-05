@@ -205,10 +205,9 @@ await shot(member, "14-whos-playing-caddie");
 for (const n of ["Cora Diaz", "Dan Kim"]) { await member.fill("#guest", n); await act(member, "add-guest"); }
 await act(member, "tee-off");
 await member.waitForSelector('[data-act="menu"]');
-await act(member, "menu");
-await member.waitForSelector('[data-act="follow-game"]');
-await shot(member, "15-menu-game-and-caddie");
-await act(member, "follow-game");
+ok(/Thursday Skins/.test(await member.locator(".gamepill").innerText()), "the Game button on the hole shows the game's name");
+await shot(member, "15-hole-with-game-button");
+await act(member, "game-tap");
 await member.waitForSelector(".bigcode", { timeout: 20000 });
 const gcode = (await member.locator(".bigcode").innerText()).replace(/\s/g, "");
 ok(/^[1-9]\d{5}$/.test(gcode) && /thursday skins/i.test(await text(member)), `the member gets the game's code (${gcode})`);
@@ -282,7 +281,7 @@ await until(other, () => /Joined Saturday Medal/.test(document.body.innerText), 
 await shot(other, "21-game-joined");
 await act(other, "tee-off");
 await other.waitForSelector('[data-act="menu"]');
-await act(other, "menu"); await act(other, "follow-game");
+await act(other, "game-tap");
 await other.waitForSelector(".bigcode", { timeout: 20000 });
 ok((await other.locator(".bigcode").innerText()).replace(/\s/g, "") === scode, "the joined card shows the same game code");
 const sfan = await (await browser.newContext(phone)).newPage();
@@ -302,10 +301,9 @@ await third.waitForSelector('[data-act="new-round"]', { timeout: 20000 });
 await startRound(third, ["Ivy Wu"]);
 await act(third, "tee-off");
 await third.waitForSelector('[data-act="menu"]');
-await act(third, "menu");
-ok(await third.locator('[data-act="game-here"]').count() === 1 && await third.locator('[data-act="follow-game"]').count() === 0, "the Menu offers Start or join a game for a card not in a game");
-await shot(third, "23-menu-no-game");
-await act(third, "game-here");
+ok((await third.locator(".gamepill").innerText()).trim() === "No game", "a card not in a game says No game at the top of the hole");
+await shot(third, "23-hole-no-game");
+await act(third, "game-tap");
 await third.fill("#gamecode", "999999");
 await act(third, "game-join");
 await until(third, () => { const b = document.querySelector('[data-act="game-join"]'); const m = b && b.nextElementSibling; return !!m && m.classList.contains("bad") && /not a game code/i.test(m.textContent); }, "the refusal right under the Join button");
@@ -322,8 +320,33 @@ ok(true, "the card that joined mid-round is on the game's leaderboard (five golf
 await shot(third, "26-own-leaderboard");
 await act(third, "game-own-back");
 await third.waitForSelector('[data-act="menu"]');
+ok(/Saturday Medal/.test(await third.locator(".gamepill").innerText()), "after joining, the Game button shows the game's name");
 await act(third, "menu");
-ok(await third.locator('[data-act="follow-game"]').count() === 1 && await third.locator('[data-act="follow-start"]').count() === 0, "in a game, the Menu shows The game code and no separate card code");
+ok(await third.locator('[data-act="follow-start"]').count() === 0 && await third.locator('[data-act="game-here"]').count() === 0, "the Menu has no game buttons and no separate card code in a game");
+await act(third, "back-play");
+
+/* 15. a golfer joins on the 3rd hole (Willy, 5 Nov 2026) */
+const scoreHere = async (p, i, v) => {
+  if (await p.locator('[data-act="who"]').count()) { await act(p, "who", i); await act(p, "score", v); }
+  else await p.locator(`[data-act="plus"][data-v="${i}"]`).click();
+};
+await third.waitForSelector('[data-act="score"], [data-act="plus"]');
+await scoreHere(third, 0, 4); await act(third, "next");
+await scoreHere(third, 0, 5); await act(third, "next");
+await act(third, "late-open");
+await third.waitForFunction(() => !document.body.innerText.includes("Loading") && !!document.querySelector("#lateguest"), null, { timeout: 20000 });
+await shot(third, "27-add-a-golfer");
+await third.locator('[data-act="late-pick"]').first().click();
+await third.waitForSelector('[data-act="score"], [data-act="plus"]');
+ok(/from hole 3/.test(await text(third)) && (await third.locator('[data-act="who"]').count() === 2 || await third.locator(".player").count() === 2), "a group member is added on hole 3");
+await scoreHere(third, 1, 5);
+ok(!/to go/.test(await third.locator("footer").innerText()), "hole 3 is complete with both golfers' scores");
+await act(third, "prev");
+ok(/no score needed here|–/.test(await text(third)) && !/to go/.test(await third.locator("footer").innerText()), "hole 2 needs no score from the late golfer");
+await act(third, "next");
+await until(sfan, () => document.querySelectorAll(".board-row:not(.hd)").length === 6, "the late golfer on the game's leaderboard");
+ok(true, "the late golfer reaches the game's leaderboard");
+await shot(third, "28-late-golfer-on-hole-3");
 
 await browser.close();
 console.log("ALL PASSED");

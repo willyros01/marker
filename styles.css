@@ -248,3 +248,7 @@ h3.sec { font-family: var(--serif); font-size: 23px; font-weight: 600; margin: 4
 .board-row.hd .sc, .board-row.hd .th { font-size: 14px; white-space: nowrap; }
 /* 1.1.0: "Let my caddie score" on Who's playing?, no longer tucked under Tee off. */
 .btn.caddie-choice { border: 2px solid var(--green); }
+/* The Game button on every hole (5 Nov 2026): the game's name or "No game", cut short when long. */
+.gamepill { max-width: 38vw; overflow: hidden; text-overflow: ellipsis; }
+/* "+ Add" at the end of the golfers' names on a hole */
+.names button.addlate { flex: 0 0 auto; border-style: dashed; color: var(--green); background: transparent; }

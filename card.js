@@ -61,6 +61,18 @@ export function grossOn(score, cap) {
 
 const entered = (s) => s === PICKED_UP || (Number.isInteger(s) && s >= 1 && s <= 20);
 
+/* A golfer who joined after tee-off (Willy, 5 Nov 2026): `from` is their
+   place in the order when they joined. A hole before that without a score is
+   a hole they did not play. With at least 14 holes played the round is still
+   posted, each missed hole counted at net par (the World Handicap System rule
+   before 2024; the 2024 "expected score" needs Golf Canada's own figures). */
+export const LATE_MIN = 14;
+export const missedHole = (card, pl, n) => (Number(pl.from) || 0) > card.order.indexOf(n) && !entered(pl.scores[n]);
+export const missedOf = (card, pl) => card.order.filter((n) => missedHole(card, pl, n));
+export const joinedOn = (card, pl) => ((Number(pl.from) || 0) > 0 ? card.order[Number(pl.from)] : null);
+/* Par plus the strokes the golfer receives on the hole. */
+export const netPar = (par, ch, si) => Number(par) + strokesOn(ch, si);
+
 /* The hole details for a hole number on the card's tee. */
 export function holeInfo(card, n) {
   const h = (card.tee.holes || [])[n - 1] || {};
@@ -83,14 +95,15 @@ export function totals(card, p) {
     done++;
     if (s === PICKED_UP) pickedUp++;
   }
-  const complete = done === card.order.length;
-  const net = complete && player.ch != null ? gross - player.ch : null;
-  return { gross, adjusted, toPar, done, pickedUp, complete, net };
+  const missed = missedOf(card, player).length;
+  const complete = done + missed === card.order.length && done > 0;
+  const net = complete && !missed && player.ch != null ? gross - player.ch : null;
+  return { gross, adjusted, toPar, done, pickedUp, complete, net, missed };
 }
 
 export const formatToPar = (d) => (d === 0 ? "E" : d > 0 ? `+${d}` : `−${Math.abs(d)}`);
 
-export const holeComplete = (card, n) => card.players.every((p) => entered(p.scores[n]));
+export const holeComplete = (card, n) => card.players.every((p) => entered(p.scores[n]) || missedHole(card, p, n));
 export const cardComplete = (card) => card.order.every((n) => holeComplete(card, n));
 export const isEntered = entered;
 
@@ -138,9 +151,12 @@ export function postable(card) {
   if (!members.length) return { ok: false, why: "Nobody on this card is a member of a group, so there is nothing to post." };
   if (card.holes !== "18") return { ok: false, why: "The Scorecard keeps 18-hole rounds only, so a 9-hole card is shared, not posted." };
   if (!Number(card.tee.rating) || !Number(card.tee.slope)) return { ok: false, why: "This tee has no rating and slope, which a handicap needs. Share the card instead." };
-  const missing = members.filter((p) => card.order.some((n) => !entered(p.scores[n])));
-  if (missing.length) return { ok: false, why: `Every hole needs a score first (${missing.map((p) => p.name).join(", ")}).` };
-  return { ok: true, members };
+  const short = members.filter((p) => card.order.length - missedOf(card, p).length < LATE_MIN);
+  const posted = members.filter((p) => !short.includes(p));
+  if (!posted.length) return { ok: false, short, why: `${short.map((p) => p.name).join(", ")} played fewer than ${LATE_MIN} holes, so no round can be posted. The card is kept and shared.` };
+  const missing = posted.filter((p) => card.order.some((n) => !entered(p.scores[n]) && !missedHole(card, p, n)));
+  if (missing.length) return { ok: false, short, why: `Every hole needs a score first (${missing.map((p) => p.name).join(", ")}).` };
+  return { ok: true, members: posted, short };
 }
 
 /* May this kept card be deleted? Never once posted (it lives in The Scorecard
@@ -191,7 +207,8 @@ export function roundFor(card, p, { uid, courseId, teeId, roundId = model.newId(
     tee: { id: teeId, name: card.tee.name, rating: card.tee.rating, slope: card.tee.slope, par: card.tee.par },
     gross: t.gross,
     adjusted: t.adjusted,
-    notes: card.scoredBy === "caddie" ? "Scored hole by hole with The Marker, by a caddie" : "Scored hole by hole with The Marker",
+    notes: (card.scoredBy === "caddie" ? "Scored hole by hole with The Marker, by a caddie" : "Scored hole by hole with The Marker")
+      + (Array.isArray(pl.missed) && pl.missed.length ? `. Joined late: hole${pl.missed.length === 1 ? "" : "s"} ${pl.missed.slice().sort((a, b) => a - b).join(", ")} not played, counted at net par` : ""),
     enteredBy: uid,
     handicapIndexAtEntry: pl.index,
   });
@@ -231,7 +248,7 @@ export function frozenHoles(tee) {
 export function liveCard(v) {
   const k = v.setup;
   const base = { course: k.course, tee: k.tee, order: k.order.map(Number), pos: 0,
-    players: k.players.map((p) => ({ name: p.name, ch: p.ch, scores: {} })) };
+    players: k.players.map((p) => ({ name: p.name, ch: p.ch, from: Number(p.from) || 0, scores: {} })) };
   const scores = v.scores || {};
   return { ...base, players: base.players.map((p, i) => ({ ...p,
     scores: Object.fromEntries(Object.entries(scores[String(i)] || {}).map(([n, s]) => [Number(n), s])) })) };
