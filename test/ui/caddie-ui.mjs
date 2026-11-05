@@ -255,7 +255,7 @@ await act(member, "game-start-open");
 await member.fill("#gamename", "Saturday Medal");
 await act(member, "game-create");
 await until(member, () => /game code \d{3} \d{3}/.test(document.body.innerText), "the new game's code on Who's playing?");
-const scode = (await member.locator(".item.on .meta").innerText()).match(/(\d{3}) (\d{3})/).slice(1).join("");
+const scode = (await text(member)).match(/game code (\d{3}) (\d{3})/i).slice(1).join("");
 ok(/^[1-9]\d{5}$/.test(scode), `the member starts a game in The Marker and gets its code (${scode})`);
 const game = (await fs.query("associations/G1", "games", [], 20)).find((g) => g.data.name === "Saturday Medal");
 ok(game && game.data.createdVia === "marker" && game.data.courseId, "it is a real game in The Scorecard, with its course");
