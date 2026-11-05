@@ -239,5 +239,53 @@ await until(gfan, () => [...document.querySelectorAll(".board-row:not(.hd) .th")
 ok(true, "the caddie's scores reach the game's leaderboard, on the same card (still two golfers)");
 await shot(gfan, "19-game-after-caddie");
 
+/* 13. starting a game in The Marker and joining it with its code (Willy, 5 Nov 2026, option A) */
+const startRound = async (p, guests) => {
+  await p.goto(APP); await p.waitForSelector('[data-act="new-round"]', { timeout: 20000 });
+  await act(p, "new-round");
+  await act(p, "go-course");
+  await p.waitForSelector('[data-act="pick-saved"]', { timeout: 20000 });
+  await p.locator('[data-act="pick-saved"]').first().click();
+  await p.waitForSelector('[data-act="tee"]'); await act(p, "tee", 0);
+  await act(p, "go-players");
+  for (const n of guests) { await p.fill("#guest", n); await act(p, "add-guest"); }
+};
+await startRound(member, ["Eve Lim", "Fay Ong"]);
+await act(member, "game-start-open");
+await member.fill("#gamename", "Saturday Medal");
+await act(member, "game-create");
+await until(member, () => /game code \d{3} \d{3}/.test(document.body.innerText), "the new game's code on Who's playing?");
+const scode = (await member.locator(".item.on .meta").innerText()).match(/(\d{3}) (\d{3})/).slice(1).join("");
+ok(/^[1-9]\d{5}$/.test(scode), `the member starts a game in The Marker and gets its code (${scode})`);
+const game = (await fs.query("associations/G1", "games", [], 20)).find((g) => g.data.name === "Saturday Medal");
+ok(game && game.data.createdVia === "marker" && game.data.courseId, "it is a real game in The Scorecard, with its course");
+await shot(member, "20-game-started");
+await act(member, "tee-off");
+await member.waitForSelector('[data-act="menu"]');
+/* a second scorer (same account, another phone) joins with the code */
+const other = await (await browser.newContext(phone)).newPage();
+other.on("dialog", (d) => d.accept());
+await other.goto(APP); await other.waitForSelector('[data-act="go-signin"]', { timeout: 20000 });
+await act(other, "go-signin");
+await other.fill("#email", "willy@example.com"); await other.fill("#password", "pass-W-123");
+await act(other, "sign-in");
+await other.waitForSelector('[data-act="new-round"]', { timeout: 20000 });
+await startRound(other, ["Gil Tan", "Hal Yu"]);
+await act(other, "game-join-open");
+await other.fill("#gamecode", scode.slice(0, 3) + " " + scode.slice(3));
+await act(other, "game-join");
+await until(other, () => /Joined Saturday Medal/.test(document.body.innerText), "joined the game");
+await shot(other, "21-game-joined");
+await act(other, "tee-off");
+await other.waitForSelector('[data-act="menu"]');
+await act(other, "menu"); await act(other, "follow-game");
+await other.waitForSelector(".bigcode", { timeout: 20000 });
+ok((await other.locator(".bigcode").innerText()).replace(/\s/g, "") === scode, "the joined card shows the same game code");
+const sfan = await (await browser.newContext(phone)).newPage();
+await sfan.goto(`${APP}&follow=${scode}`);
+await until(sfan, () => document.querySelectorAll(".board-row:not(.hd)").length === 4 && /Gil Tan/.test(document.body.innerText) && /Eve Lim/.test(document.body.innerText), "both cards on the started game's leaderboard");
+ok(true, "both foursomes are on the game's leaderboard");
+await shot(sfan, "22-started-game-leaderboard");
+
 await browser.close();
 console.log("ALL PASSED");

@@ -490,6 +490,16 @@ export async function followGame(c) {
   return callWorker("/follow/game", { method: "POST", body });
 }
 export const followSend = (liveId, scores, done = false, posted = false) => callWorker("/follow/scores", { method: "POST", body: { liveId, scores, done, ...(posted ? { posted: true } : {}) } });
+/* Start a real Scorecard game from The Marker, or join one with its six-number code (Willy, 5 Nov 2026, option A). */
+export async function gameCreate({ assocId, name, date, course, tee }) {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  return callWorker("/follow/game-create", { method: "POST", body: { assocId, name, date,
+    course: { name: course.name, providerId: course.providerId || null, where: course.where || "" }, tee } });
+}
+export async function gameJoin(code) {
+  if (!user || user.anonymous) throw new Error("SIGN_IN");
+  return callWorker("/follow/game-join", { method: "POST", body: { code } });
+}
 /* A follower needs no account: an anonymous sign-in is made if nobody is signed in. */
 export async function followView(code) {
   if (!user) await playWithoutAccount();

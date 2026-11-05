@@ -457,11 +457,35 @@ function screenPlayers() {
       <p class="muted">Only golfers already in your groups can be posted. Anyone else: add them below as a guest.</p>`;
   }
   const guests = S.picked.filter((p) => !p.golferId);
+  /* Part of a game: start one here or join one with its code (Willy, 5 Nov 2026, option A) */
+  let gamePart = "";
+  if (member()) {
+    const g = s.game;
+    gamePart = g
+      ? `<span class="label">Part of a game</span>
+        <div class="item on"><span class="box">✓</span><span class="txt"><span class="name">${esc(g.name)}</span><span class="meta">${esc(g.groupName || "")}${s.gameCode && s.gameCode.gameId === g.id ? ` · game code ${esc(spaced(s.gameCode.code))}` : ""}</span></span>
+          <button class="btn" style="min-height:44px" data-act="game-leave">Leave</button></div>
+        ${s.gameCode && s.gameCode.gameId === g.id ? `<p class="muted">Give this code to the other scorers: they tap <b>Join a game</b> and type it. Followers use the same code.</p>` : ""}`
+      : S.gameForm === "start"
+      ? `<span class="label">Start a game</span>
+        <label class="field"><span class="label">Name of the game</span><input class="input" id="gamename" placeholder="Saturday Medal" autocomplete="off" maxlength="60" value="${esc(S.gameName || "")}"></label>
+        ${S.groups.length > 1 ? `<label class="field"><span class="label">For the group</span><select class="input" id="gamegroup">${S.groups.map((x) => `<option value="${esc(x.id)}" ${x.id === S.groupTab ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>` : ""}
+        <p class="muted">A real game in The Scorecard, for ${esc(niceDate(s.date))} at ${esc(s.course.name)}. You get a six-number code for the other scorers and for followers.</p>
+        <div class="row2"><button class="btn" data-act="game-form-close">Cancel</button><button class="btn primary" data-act="game-create" ${S.busy ? "disabled" : ""}>${S.busy === "gamecreate" ? "Starting…" : "Start the game"}</button></div>`
+      : S.gameForm === "join"
+      ? `<span class="label">Join a game</span>
+        <label class="field"><span class="label">Game code</span><input class="input bigcode-in" id="gamecode" inputmode="numeric" autocomplete="off" placeholder="123 456" value="${esc(S.gameJoinCode || "")}"></label>
+        <p class="muted">The six-number code from the scorer who started the game.</p>
+        <div class="row2"><button class="btn" data-act="game-form-close">Cancel</button><button class="btn primary" data-act="game-join" ${S.busy ? "disabled" : ""}>${S.busy === "gamejoin" ? "Joining…" : "Join the game"}</button></div>`
+      : `<span class="label">Part of a game?</span>
+        <div class="row2"><button class="btn" data-act="game-start-open">Start a game</button><button class="btn" data-act="game-join-open">Join a game</button></div>`;
+  }
   return `${top("Who's playing?", `${s.course.name} · ${s.tee.name}`, `<span class="pill">${count} of 4</span>`)}
     <main class="body">${banner()}${groupPart}
       <span class="label">${member() ? "Guests · scored and shared, not posted" : "Players"}</span>
       ${guests.map((g) => `<div class="item on"><span class="box">✓</span><span class="txt"><span class="name">${esc(g.name)}</span><span class="meta">${member() ? "Guest" : "Player"}</span></span><button class="btn" style="min-height:44px" data-act="unguest" data-v="${esc(g.name)}">Remove</button></div>`).join("")}
       ${full ? "" : `<div class="row2" style="grid-template-columns: minmax(0,1fr) auto"><input class="input" id="guest" placeholder="${member() ? "Guest's name" : "Player's name"}" value="${esc(S.guestName)}" autocomplete="off"><button class="btn" data-act="add-guest">Add</button></div>`}
+      ${gamePart}
       ${member() ? `<span class="label">Playing with a caddie?</span>
       <button class="btn tall caddie-choice" data-act="caddie-start" ${count && !S.busy ? "" : "disabled"}><span>${S.busy === "caddie" ? "Getting a code…" : "Let my caddie score"}</span><small>Your caddie enters the scores on their own phone. You can also hand the card over later, from the Menu.</small></button>` : ""}
     </main>
@@ -1240,7 +1264,7 @@ const actions = {
     /* Not awaited: with a poor signal the anonymous sign-in can take a while,
        and nothing on the next screens needs it except searching online. */
     db.playWithoutAccount().catch(() => {});
-    S.setup = newSetup(); S.picked = []; S.games = [];
+    S.setup = newSetup(); S.picked = []; S.games = []; S.gameForm = null;
     go("setup");
   },
   async "new-round"() {
@@ -1474,6 +1498,43 @@ const actions = {
     await sendToWatch(c.follow.code, c.course.name, "watch");
   },
   "follow-back"(el) { const v = el.dataset.v; go(v); if (v === "caddie") startPolling(); },
+  "game-start-open"() { S.gameForm = "start"; S.error = ""; render(); },
+  "game-join-open"() { S.gameForm = "join"; S.error = ""; render(); },
+  "game-form-close"() { S.gameForm = null; S.error = ""; render(); },
+  "game-leave"() { S.setup.game = null; S.setup.gameCode = null; S.gameForm = null; render(); },
+  async "game-create"() {
+    if (S.busy) return;
+    const name = ((document.getElementById("gamename") || {}).value || "").trim();
+    const sel = document.getElementById("gamegroup");
+    const assocId = sel ? sel.value : (S.groups[0] && S.groups[0].id);
+    S.gameName = name;
+    if (name.length < 2) { S.error = "Give the game a name, for example Saturday Medal."; render(); return; }
+    if (!assocId) { S.error = "You are not a member of any group, so a game cannot be started."; render(); return; }
+    S.busy = "gamecreate"; S.error = ""; render();
+    let r;
+    try { r = await db.gameCreate({ assocId, name, date: S.setup.date, course: S.setup.course, tee: S.setup.tee }); }
+    catch (e) { S.busy = ""; S.error = `The game could not be started. ${joinWhy(e)}`; render(); return; }
+    S.busy = ""; S.gameForm = null; S.gameName = "";
+    S.setup.game = r.game; S.setup.gameCode = { code: r.code, expiresAt: r.expiresAt, gameId: r.game.id };
+    S.flash = `${r.game.name} is started in The Scorecard. Its code is below: give it to the other scorers.`;
+    render();
+  },
+  async "game-join"() {
+    if (S.busy) return;
+    const code = ((document.getElementById("gamecode") || {}).value || "").replace(/[^0-9]/g, "");
+    S.gameJoinCode = code;
+    if (code.length !== 6) { S.error = "The game code has six numbers."; render(); return; }
+    S.busy = "gamejoin"; S.error = ""; render();
+    let r;
+    try { r = await db.gameJoin(code); }
+    catch (e) { S.busy = ""; S.error = joinWhy(e); render(); return; }
+    S.busy = ""; S.gameForm = null; S.gameJoinCode = "";
+    const moved = r.date && r.date !== S.setup.date;
+    if (moved) S.setup.date = r.date;
+    S.setup.game = r.game; S.setup.gameCode = { code: r.code, expiresAt: r.expiresAt, gameId: r.game.id };
+    S.flash = `Joined ${r.game.name}.${moved ? ` The round's date is now ${niceDate(r.date)}, the game's day.` : ""}`;
+    render();
+  },
   /* The game's one code of the day (option B): this card goes live first if it is not yet. */
   async "follow-game"() {
     const c = local.currentCard();
@@ -1542,7 +1603,7 @@ const actions = {
     let r;
     try { r = await db.caddieStart(c); }
     catch (e) { S.busy = ""; S.error = `${joinWhy(e)} You can tee off and score yourself instead.`; render(); return; }
-    try { saveCard({ ...c, caddie: { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt, joined: false } }); }
+    try { saveCard({ ...c, ...(s.game && s.gameCode && s.gameCode.gameId === s.game.id ? { gameFollow: { ...s.gameCode, name: s.game.name } } : {}), caddie: { liveId: r.liveId, code: r.code, expiresAt: r.expiresAt, joined: false } }); }
     catch (e) { S.busy = ""; fail(e); return; }
     S.busy = "";
     go("caddie");
@@ -1598,7 +1659,8 @@ const actions = {
   },
   "tee-off"() {
     const s = S.setup;
-    const c = card.newCard({ mode: member() ? "member" : "guest", date: s.date, course: s.course, tee: s.tee, holes: s.holes, start: s.start, entry: s.entry, game: s.game, players: S.picked });
+    const made = card.newCard({ mode: member() ? "member" : "guest", date: s.date, course: s.course, tee: s.tee, holes: s.holes, start: s.start, entry: s.entry, game: s.game, players: S.picked });
+    const c = s.game && s.gameCode && s.gameCode.gameId === s.game.id ? { ...made, gameFollow: { ...s.gameCode, name: s.game.name } } : made;
     try { saveCard(c); } catch (e) { fail(e); return; }
     S.typing = false;
     go("play");
