@@ -44,7 +44,14 @@ enum Shared {
   static func loadCard() -> FollowCard? {
     guard let data = defaults.data(forKey: "card"),
           let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return nil }
+    if obj["kind"] as? String == "game" { return nil }
     return FollowCard.parse(obj)
+  }
+  /* The last answer for a game code (1.1.0). */
+  static func loadGame() -> GameBoard? {
+    guard let data = defaults.data(forKey: "card"),
+          let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return nil }
+    return GameBoard.parse(obj)
   }
 
   /* The golfer last opened on the watch: the one the "my score" widget shows. */
@@ -57,6 +64,24 @@ enum Shared {
 enum FollowNet {
   private static var idToken: String?
   private static var idExpires = Date.distantPast
+
+  /* The Scorecard's public web key (the same one the web app carries, limited
+     to The Marker's address). Lets the watch follow a code typed on the watch
+     itself, before the iPhone has ever sent it anything (1.1.0). */
+  static let webKey = "AIzaSyA5qWtnz3QHco5YSAlHb7TXmCNg1kUdVhA"
+
+  /* The worker's address, from markerConfig/public (any sign-in may read it). */
+  static func workerUrl(_ key: String) async throws -> String {
+    let t = try await token(key, fresh: false)
+    guard let url = URL(string: "https://firestore.googleapis.com/v1/projects/scorecard-f41b8/databases/(default)/documents/markerConfig/public") else { throw URLError(.badURL) }
+    var req = URLRequest(url: url, timeoutInterval: 20)
+    req.setValue("Bearer \(t)", forHTTPHeaderField: "Authorization")
+    let j = try await json(req)
+    let fields = j["fields"] as? [String: Any] ?? [:]
+    let w = (fields["workerUrl"] as? [String: Any])?["stringValue"] as? String ?? ""
+    guard w.hasPrefix("https://") else { throw Refused(reason: "The Marker could not be reached. Try again in a moment.") }
+    return w
+  }
 
   /* The card as it stands: the parsed answer and its raw bytes. */
   static func view(_ l: FollowLink) async throws -> ([String: Any], Data) {
@@ -160,4 +185,21 @@ extension FollowCard {
 func firstName(_ s: String) -> String {
   let parts = s.split(separator: " ")
   return parts.first.map(String.init) ?? s
+}
+
+/* Made-up game for the build check: two cards, fictional golfers. */
+extension GameBoard {
+  static func sampleObject() -> [String: Any] {
+    var a = FollowCard.sampleObject()
+    var b = FollowCard.sampleObject()
+    b["setup"] = {
+      var st = b["setup"] as? [String: Any] ?? [:]
+      st["players"] = [["name": "Chris Lane", "ch": 12], ["name": "Robin Shaw", "ch": 22], ["name": "Alex Moore", "ch": 8]]
+      return st
+    }()
+    b["scores"] = ["0": ["1": 4, "2": 4, "3": 3, "4": 4, "5": 6], "1": ["1": 6, "2": 5, "3": 4, "4": 6, "5": 6], "2": ["1": 4, "2": 3, "3": 3, "4": 4, "5": 5]]
+    a["status"] = "live"
+    return ["kind": "game", "game": ["name": "Thursday Skins"], "date": "2026-11-05",
+            "cards": [a, b], "lastAt": Date().timeIntervalSince1970 * 1000, "finished": false]
+  }
 }

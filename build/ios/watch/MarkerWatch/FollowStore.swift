@@ -15,11 +15,14 @@ import WidgetKit
 enum Route: Hashable {
   case player(Int, Int)   // golfer, hole (index in playing order)
   case summary(Int)       // golfer
+  case pad                // typing a follow code on the watch (1.1.0)
+  case gameCard(Int)      // one card of the game being followed (1.1.0)
 }
 
 final class FollowStore: NSObject, ObservableObject, WCSessionDelegate {
   @Published var link: FollowLink?
   @Published var card: FollowCard?
+  @Published var game: GameBoard?   /* following a whole game (1.1.0) */
   @Published var message: String?
   @Published var stale = false
   @Published var path: [Route] = []
@@ -35,7 +38,7 @@ final class FollowStore: NSObject, ObservableObject, WCSessionDelegate {
     if demo { loadDemo(); return }
     Shared.migrate()
     link = Shared.loadLink()
-    if link != nil { card = Shared.loadCard() }
+    if link != nil { card = Shared.loadCard(); game = Shared.loadGame() }
     if WCSession.isSupported() {
       WCSession.default.delegate = self
       WCSession.default.activate()
@@ -65,7 +68,7 @@ final class FollowStore: NSObject, ObservableObject, WCSessionDelegate {
           let worker = ctx["workerUrl"] as? String, worker.hasPrefix("https://"),
           let key = ctx["apiKey"] as? String, !key.isEmpty else { return }
     let l = FollowLink(code: code, course: ctx["course"] as? String ?? "", workerUrl: worker, apiKey: key)
-    if l != link { card = nil; path = []; endedSeen = nil; Shared.saveCardData(nil) }
+    if l != link { card = nil; game = nil; path = []; endedSeen = nil; Shared.saveCardData(nil) }
     message = nil
     link = l
     Shared.saveLink(l)
@@ -73,8 +76,51 @@ final class FollowStore: NSObject, ObservableObject, WCSessionDelegate {
     refresh()
   }
 
+  /* A code typed on the watch (1.1.0): a card or a whole game. The worker's
+     address comes from the last link the iPhone sent, else is looked up. */
+  func follow(code: String) async -> String? {
+    let digits = code.filter { $0.isNumber }
+    guard digits.count == 6 else { return "A follow code has six numbers." }
+    var worker = link?.workerUrl ?? ""
+    let key = link?.apiKey ?? FollowNet.webKey
+    if worker.isEmpty {
+      do { worker = try await FollowNet.workerUrl(key) }
+      catch let r as Refused { return r.reason }
+      catch { return "No signal. Try again when the watch is online." }
+    }
+    let l = FollowLink(code: digits, course: "", workerUrl: worker, apiKey: key)
+    do {
+      let (obj, data) = try await FollowNet.view(l)
+      card = nil; game = nil; path = []; endedSeen = nil; message = nil; stale = false
+      link = l
+      Shared.saveLink(l)
+      take(obj, data)
+      reloadWidgets()
+      return nil
+    } catch let r as Refused {
+      return r.reason
+    } catch {
+      return "No signal. Try again when the watch is online."
+    }
+  }
+
+  /* An answer from the worker: one card, or a whole game. */
+  private func take(_ obj: [String: Any], _ data: Data) {
+    let changed = Shared.defaults.data(forKey: "card") != data
+    if let g = GameBoard.parse(obj) {
+      game = g; card = nil; stale = false; message = nil
+      Shared.saveCardData(data)
+      if changed { reloadWidgets() }
+    } else if let c = FollowCard.parse(obj) {
+      card = c; game = nil; stale = false; message = nil
+      Shared.saveCardData(data)
+      if changed { reloadWidgets() }
+      if c.posted && endedSeen == nil { endedSeen = Date() }
+    } else { message = "This card could not be read." }
+  }
+
   func stop(_ why: String? = nil) {
-    link = nil; card = nil; stale = false; path = []; endedSeen = nil
+    link = nil; card = nil; game = nil; stale = false; path = []; endedSeen = nil
     message = why
     Shared.saveLink(nil)
     reloadWidgets()
@@ -101,6 +147,7 @@ final class FollowStore: NSObject, ObservableObject, WCSessionDelegate {
        opened, at least 10 minutes later) and after its 12 hours (Willy, 30 Oct 2026). */
     if let seen = endedSeen, Date().timeIntervalSince(seen) > 600 { stop(); return }
     if let c = card, let until = c.expiresAt, Date() >= until { stop("The 12 hours are over. Send a card again from the iPhone."); return }
+    if let g = game, let until = g.expiresAt, Date() >= until { stop("The game's code has stopped (12 hours are over)."); return }
     refresh()
     timer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in self?.refresh() }
   }
@@ -114,18 +161,12 @@ final class FollowStore: NSObject, ObservableObject, WCSessionDelegate {
       do {
         let (obj, data) = try await FollowNet.view(l)
         guard self.link == l else { return }
-        if let c = FollowCard.parse(obj) {
-          let changed = Shared.defaults.data(forKey: "card") != data
-          self.card = c; self.stale = false; self.message = nil
-          Shared.saveCardData(data)
-          if changed { self.reloadWidgets() }
-          if c.posted && self.endedSeen == nil { self.endedSeen = Date() }
-        } else { self.message = "This card could not be read." }
+        self.take(obj, data)
       } catch let r as Refused {
         guard self.link == l else { return }
         if r.reason.contains("stopped working") || r.reason.contains("doesn't work") { self.stop(r.reason); return }
         self.message = r.reason
-        if self.card != nil { self.stale = true }
+        if self.card != nil || self.game != nil { self.stale = true }
       } catch {
         self.stale = true
       }
@@ -144,6 +185,9 @@ final class FollowStore: NSObject, ObservableObject, WCSessionDelegate {
       case "summary": path = [.player(1, 6), .summary(1)]
       case "waiting": link = nil; card = nil
       case "widgets": showWidgets = true
+      case "pad": link = nil; card = nil; path = [.pad]
+      case "game": card = nil; game = GameBoard.parse(GameBoard.sampleObject())
+      case "gamecard": card = nil; game = GameBoard.parse(GameBoard.sampleObject()); path = [.gameCard(1)]
       default: break
       }
     }
