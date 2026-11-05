@@ -484,7 +484,9 @@ export async function followStart(c) {
 }
 /* The game's one follow code of the day (option B, Willy 31 Oct 2026). */
 export async function followGame(c) {
-  const body = { card: livePayload(c), ...(c.caddie && c.caddie.liveId ? { liveId: c.caddie.liveId } : {}) };
+  /* The card's live copy if it has one (made at tee-off, or the caddie's), so it is never on the leaderboard twice. */
+  const liveId = (c.caddie && c.caddie.liveId) || (c.follow && c.follow.liveId) || null;
+  const body = { card: livePayload(c), ...(liveId ? { liveId } : {}) };
   return callWorker("/follow/game", { method: "POST", body });
 }
 export const followSend = (liveId, scores, done = false, posted = false) => callWorker("/follow/scores", { method: "POST", body: { liveId, scores, done, ...(posted ? { posted: true } : {}) } });

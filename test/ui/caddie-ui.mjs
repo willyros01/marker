@@ -30,8 +30,17 @@ const phone = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 };
 const member = await (await browser.newContext(phone)).newPage();
 const cad = await (await browser.newContext(phone)).newPage();
 for (const p of [member, cad]) p.on("dialog", (d) => d.accept());
-const act = (p, a, v) => p.click(v == null ? `[data-act="${a}"]` : `[data-act="${a}"][data-v="${v}"]`);
 const shot = (p, name) => p.screenshot({ path: `${SHOTS}/${name}.png` });
+let fails = 0;
+/* On a failure, a picture of the page first, then the error (1.1.0). */
+async function act(p, a, v) {
+  try { await p.click(v == null ? `[data-act="${a}"]` : `[data-act="${a}"][data-v="${v}"]`); }
+  catch (e) { await shot(p, `FAIL-${++fails}-${a}`).catch(() => {}); console.log("page text:", (await p.locator("#app").innerText().catch(() => "")).slice(0, 600)); throw e; }
+}
+async function until(p, fn, what) {
+  try { await p.waitForFunction(fn, null, { timeout: 45000 }); }
+  catch (e) { await shot(p, `FAIL-${++fails}-wait`).catch(() => {}); console.log("waiting for:", what, "\npage text:", (await p.locator("#app").innerText().catch(() => "")).slice(0, 800)); throw e; }
+}
 const text = (p) => p.locator("#app").innerText();
 
 async function memberToCode() {
@@ -206,10 +215,10 @@ await member.waitForSelector('[data-act="score"], [data-act="plus"]');
 for (let i = 0; i < 2; i++) { if (await member.locator('[data-act="who"]').count()) { await act(member, "who", i); await act(member, "score", i === 0 ? 3 : 5); } else { await member.locator(`[data-act="plus"][data-v="${i}"]`).click(); } }
 const gfan = await (await browser.newContext(phone)).newPage();
 await gfan.goto(`${APP}&follow=${gcode}`);
-await gfan.waitForFunction(() => document.body.innerText.includes("Following the game"), null, { timeout: 20000 });
-await gfan.waitForFunction(() => document.querySelectorAll(".board-row:not(.hd)").length === 2 && /Cora Diaz/.test(document.body.innerText), null, { timeout: 45000 });
+await until(gfan, () => document.body.innerText.includes("Following the game"), "the game's leaderboard");
+await until(gfan, () => document.querySelectorAll(".board-row:not(.hd)").length === 2 && /Cora Diaz/.test(document.body.innerText), "two golfers on the leaderboard");
 ok(true, "the game's follower sees the leaderboard with the card's golfers");
-await gfan.waitForFunction(() => /−1|\+1/.test(document.querySelector(".board").innerText), null, { timeout: 45000 });
+await until(gfan, () => /−1|\+1/.test(document.querySelector(".board").innerText), "scores on the leaderboard");
 ok(true, "the scores reach the game's leaderboard by themselves");
 await shot(gfan, "17-game-leaderboard");
 await gfan.locator(".board-row:not(.hd)").first().click();
@@ -226,7 +235,7 @@ ok(/^[A-Z2-9]{6}$/.test(mid), `the member gets a caddie code mid-round (${mid})`
 await caddieJoins(mid);
 ok(/hole 2|Hole 2/i.test(await text(cad)), "the caddie joins on hole 2, after the scores so far");
 await scoreHole(4);
-await gfan.waitForFunction(() => [...document.querySelectorAll(".board-row:not(.hd) .th")].some((e) => e.textContent.trim() === "2"), null, { timeout: 45000 });
+await until(gfan, () => [...document.querySelectorAll(".board-row:not(.hd) .th")].some((e) => e.textContent.trim() === "2"), "the caddie's hole 2 on the leaderboard");
 ok(true, "the caddie's scores reach the game's leaderboard, on the same card (still two golfers)");
 await shot(gfan, "19-game-after-caddie");
 
