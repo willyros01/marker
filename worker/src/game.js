@@ -68,8 +68,13 @@ export async function code(fs, game, { now = Date.now(), rand = Math.random } = 
 export async function view(fs, codeDoc, { now = Date.now() } = {}) {
   const d = codeDoc.data;
   if (now >= d.expiresAt) refuse("This follow code has stopped working (12 hours have passed).");
-  const live = (await fs.query("", "markerLive", [["gameKey", "EQUAL", d.gameKey]], 60))
+  const all = (await fs.query("", "markerLive", [["gameKey", "EQUAL", d.gameKey]], 60))
     .sort((a, b) => (Number(a.data.createdAt) || 0) - (Number(b.data.createdAt) || 0));
+  /* One card is never shown twice: if a scorer's card got two live copies,
+     the newest one counts (it is the one receiving the scores). */
+  const newest = new Map();
+  for (const x of all) newest.set(`${x.data.owner}|${x.data.cardId || x.id}`, x);
+  const live = all.filter((x) => newest.get(`${x.data.owner}|${x.data.cardId || x.id}`) === x);
   const cards = live.map((x) => ({
     setup: x.data.setup, scores: x.data.scores || {}, lastAt: x.data.lastAt || null,
     status: x.data.status === "finished" ? "finished" : "live",

@@ -196,3 +196,14 @@ test("G6 a card made live before it was tagged gets its game when the scorer ask
   assert.equal(fs.docs.get(`markerLive/${k.liveId}`).data.gameKey, "G1_gm1_2026-10-29");
   assert.equal((await follow.view(fs, GUEST, g.gameCode, { now: NOW + 3000 })).cards.length, 1);
 });
+
+test("G7 one card never shows twice on the leaderboard, even with two live copies", async () => {
+  const fs = fakeFs(gameSeed());
+  await follow.start(fs, MEMBER, { card: inGame() }, { now: NOW, rand });
+  const again = await follow.start(fs, MEMBER, { card: inGame() }, { now: NOW + 1000, rand });   /* same card, a second copy */
+  await follow.scores(fs, MEMBER, { liveId: again.liveId, scores: { 0: { 1: 4 } } }, { now: NOW + 2000 });
+  const g = await follow.gameStart(fs, OTHER, { card: secondCard() }, { now: NOW + 3000, rand });
+  const v = await follow.view(fs, GUEST, g.gameCode, { now: NOW + 4000 });
+  assert.equal(v.cards.length, 2);
+  assert.equal(v.cards.filter((c) => c.setup.players[0].name === "Willy Rosales")[0].scores["0"]["1"], 4);
+});
