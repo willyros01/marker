@@ -348,5 +348,9 @@ await until(sfan, () => document.querySelectorAll(".board-row:not(.hd)").length 
 ok(true, "the late golfer reaches the game's leaderboard");
 await shot(third, "28-late-golfer-on-hole-3");
 
+/* 16. many documents in one call against Firestore itself (the emulator): the Your cards list (5 Nov 2026) */
+const many = await fs.getMany([`associations/G1/games/${game.id}`, "associations/G1/games/not-there", `associations/G1/games/${game.id}`]);
+ok(many.length === 3 && many[0] && many[0].data.name === "Saturday Medal" && many[1] === null && many[2] && many[2].id === game.id, "one call fetches many documents, in order, null where missing");
+
 await browser.close();
 console.log("ALL PASSED");
