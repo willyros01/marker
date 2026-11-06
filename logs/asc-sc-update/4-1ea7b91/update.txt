@@ -1,0 +1,13 @@
+1. build 33: VALID, expired=false
+   version 2.31.2: PREPARE_FOR_SUBMISSION
+   version 2.30.0: READY_FOR_SALE
+2. version 2.31.2 found (release: manual)
+   build 33 attached
+3. text saved (en-US): description 1809 chars, keywords 97/100, What's New
+   subtitle: "Track your index & group games" (30/30); name unchanged: "The Scorecard: Golf Handicaps"
+4. App Review notes updated for 2.31.2 (1905 chars)
+4. review details already there (demo sign-in present)
+5. APP_IPHONE_61: 5 old pictures removed (the new ones scale to it)
+5. APP_IPHONE_67: 6 already done, 0 sent, 0 old removed; all 6 accepted
+
+STOPPED before the submission: POST appScreenshots -> 409 [{"id":"d4e3bc30-db4d-46b1-8a43-b92694d7c5c5","status":"409","code":"STATE_ERROR.SCREENSHOT_TOO_MANY","title":"Too many screenshots.","detail":"Set: 2f31f681-9929-4ae2-b164-a0b8777d4610 has already 10 appScreenshots"}]
