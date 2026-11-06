@@ -1,0 +1,17 @@
+1. build 33: VALID, expired=false
+   version 2.31.2: PREPARE_FOR_SUBMISSION
+   version 2.30.0: READY_FOR_SALE
+2. version 2.31.2 found (release: manual)
+   build 33 attached
+3. text saved (en-US): description 1809 chars, keywords 97/100, What's New
+   subtitle: "Track your index & group games" (30/30); name unchanged: "The Scorecard: Golf Handicaps"
+4. App Review notes updated for 2.31.2 (1905 chars)
+4. review details already there (demo sign-in present)
+5. APP_IPHONE_67: 6 already done, 0 sent, 0 old removed; all 6 accepted
+   ipad-night-6-summary.png: still UPLOAD_COMPLETE — sent once more
+   ipad-night-6-summary.png: still UPLOAD_COMPLETE — sent once more
+5. APP_IPAD_PRO_3GEN_129: 3 already done, 5 sent, 7 old removed; all 6 accepted
+6. accessibility declarations Apple holds: [{"deviceFamily":"IPHONE","state":"PUBLISHED","supportsAudioDescriptions":null,"supportsCaptions":null,"supportsDarkInterface":true,"supportsDifferentiateWithoutColorAlone":null,"supportsLargerText":null,"supportsReducedMotion":null,"supportsSufficientContrast":null,"supportsVoiceControl":null,"supp
+6. Dark Interface: not set through the API (PATCH accessibilityDeclarations/89c3e446-bac1-4251-8732-c9f0b93e6d15 -> 409 [{"id":"fa614a76-5632-4779-bb69-35008f55b8d7","status":"409","code":"STATE_ERROR.ACC) — one tap in App Store Connect instead; it does not affect the review
+
+READY, NOT SUBMITTED (waiting for Willy's OK): version 2.31.2 is PREPARE_FOR_SUBMISSION
