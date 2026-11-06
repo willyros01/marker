@@ -1,0 +1,3 @@
+iPhone test copy: emulators only, Web Inspector on
+Xcode project: privacy manifest added as a resource; entitlements set.
+Web Inspector socket: /private/tmp/com.apple.launchd.dzzySvTvmh/com.apple.webinspectord_sim.socket
