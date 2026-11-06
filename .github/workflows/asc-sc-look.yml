@@ -1,0 +1,20 @@
+name: Scorecard App Store look (read-only)
+on:
+  push:
+    branches: [main]
+    paths: [build/sc-look.mjs, .github/workflows/asc-sc-look.yml]
+permissions:
+  contents: read
+jobs:
+  look:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: node build/sc-look.mjs
