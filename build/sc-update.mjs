@@ -102,6 +102,8 @@ try {
     let old = (await get(`appScreenshotSets/${set.id}/appScreenshots?limit=20`)).data || [];
     const ids = [];
     let kept = 0, removed = 0, sent = 0;
+    /* Old pictures go first (Apple allows at most 10 per size). */
+    for (const o of old.filter((o) => !files.includes(o.attributes.fileName))) { await call("DELETE", `appScreenshots/${o.id}`); removed++; }
     for (const f of files) {
       const have = old.find((o) => o.attributes.fileName === f);
       const st = have ? (have.attributes.assetDeliveryState || {}).state : "";
@@ -110,7 +112,6 @@ try {
       if (have) { await call("DELETE", `appScreenshots/${have.id}`); removed++; }
       ids.push(await upload(f)); sent++;
     }
-    for (const o of old.filter((o) => !files.includes(o.attributes.fileName))) { await call("DELETE", `appScreenshots/${o.id}`); removed++; }
     /* Wait for Apple; a picture still not processed after 4 minutes is sent once more. */
     for (let round = 0; round < 3; round++) {
       let st = [];
