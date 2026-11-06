@@ -63,6 +63,7 @@ try {
   say(`   subtitle: "${T.subtitle}" (${T.subtitle.length}/30); name unchanged: "${il.attributes.name}"`);
   /* 4 */
   let rd = null; try { rd = (await get(`appStoreVersions/${ver.id}/appStoreReviewDetail`)).data; } catch {}
+  if (rd && T.notes) { await call("PATCH", `appStoreReviewDetails/${rd.id}`, { data: { type: "appStoreReviewDetails", id: rd.id, attributes: { notes: T.notes } } }); say(`4. App Review notes updated for 2.31.2 (${T.notes.length} chars)`); }
   if (!rd || !rd.attributes.demoAccountName) {
     const prev = vs.find((v) => v.attributes.versionString === "2.30.0");
     const p = prev && (await get(`appStoreVersions/${prev.id}/appStoreReviewDetail`)).data;
@@ -74,6 +75,14 @@ try {
   } else say("4. review details already there (demo sign-in present)");
   /* 5 */
   const sets = (await get(`appStoreVersionLocalizations/${loc.id}/appScreenshotSets?limit=50`)).data || [];
+  /* Any other size (e.g. the old 6.1-inch iPhone set, still green) is emptied:
+     Apple then scales the new 6.9-inch and 13-inch pictures to every device. */
+  for (const st of sets.filter((x) => !["APP_IPHONE_67", "APP_IPAD_PRO_3GEN_129"].includes(x.attributes.screenshotDisplayType))) {
+    const sh = (await get(`appScreenshotSets/${st.id}/appScreenshots?limit=20`)).data || [];
+    for (const o of sh) await call("DELETE", `appScreenshots/${o.id}`);
+    await call("DELETE", `appScreenshotSets/${st.id}`).catch(() => {});
+    say(`5. ${st.attributes.screenshotDisplayType}: ${sh.length} old pictures removed (the new ones scale to it)`);
+  }
   for (const [type, prefix] of [["APP_IPHONE_67", "iphone"], ["APP_IPAD_PRO_3GEN_129", "ipad"]]) {
     const files = fs.readdirSync("shots").filter((f) => f.startsWith(prefix)).sort();
     if (files.length !== 6) stop(`${prefix}: expected 6 pictures, found ${files.length}`);
@@ -131,6 +140,7 @@ try {
     say("   Dark Interface declared for iPhone");
   } catch (x) { say(`6. Dark Interface: not set through the API (${String(x.message).slice(0, 160)}) — one tap in App Store Connect instead; it does not affect the review`); }
   /* 7 */
+  if (e.SUBMIT !== "yes") { const v2 = (await get(`appStoreVersions/${ver.id}`)).data; say(`\nREADY, NOT SUBMITTED (waiting for Willy's OK): version 2.31.2 is ${v2.attributes.appStoreState}`); process.exit(0); }
   const open = (await get(`reviewSubmissions?filter[app]=${app.id}&filter[state]=READY_FOR_REVIEW,WAITING_FOR_REVIEW,IN_REVIEW,UNRESOLVED_ISSUES&limit=5`)).data || [];
   let sub = open.find((s) => s.attributes.state === "READY_FOR_REVIEW");
   if (open.some((s) => s.attributes.state !== "READY_FOR_REVIEW")) stop(`a submission is already ${open.map((s) => s.attributes.state).join(",")}`);
