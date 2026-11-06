@@ -32,7 +32,7 @@ jobs:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-          SUBMIT: "yes"   # Willy, 6 Nov 2026, 3:59 pm: submit when ready
+          SUBMIT: "no"    # 2.31.2 was submitted on 6 Nov 2026, 3:59 pm
         run: |
           set -o pipefail
           node build/sc-update.mjs 2>&1 | tee update.txt
