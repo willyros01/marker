@@ -1,0 +1,11 @@
+delete golfers/mss0ir7tagkms5  (golfer "willyros01@gmail.com")
+delete associations/mv41i2sx1c9tyw/roster/mss0ir7tagkms5  (its roster entry)
+delete associations/mv41i2sx1c9tyw/directory/mss0ir7tagkms5  (its directory entry)
+delete golferNames/willyros01-gmail-com  (its name claim)
+delete golfers/mt2woyfy7pygjj  (golfer "willyros01@yahoo.com")
+delete golferNames/willyros01-yahoo-com  (its name claim)
+delete userGroups/Rt4aR1dfwTebv0EMmcwAieLlquU2/groups/mst71vmrsw4jvv  (group-list entry for a removed group)
+clear the deleted game from 54 Golfing Buddies rounds
+delete users/wJ1NLFR4fXTXOFiBfUsckKK2Qjv2/data/scorecard  (version 1 data)
+writes: 62
+DONE: one commit at 2026-11-06T13:15:58.791333Z
