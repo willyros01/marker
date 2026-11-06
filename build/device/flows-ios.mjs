@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import * as d from "./sim.mjs";
 import { seed, invitation, approvalLink, getDoc, accountByEmail, R1 } from "./seed.mjs";
+import { flows231 } from "./flows-231.mjs";
 const OUT = process.argv[2] || "out"; const APP = process.argv[3]; const BID = "io.github.willyros01.scorecard";
 fs.mkdirSync(OUT, { recursive: true });
 const report = (s) => { console.log(s); fs.appendFileSync(`${OUT}/report.txt`, s + "\n"); };
@@ -35,8 +36,9 @@ await flow("I1", "iPhone: invitation for Ivy on a fresh phone — Terms, create 
   await d.waitApp(/You.re invited|Create your account/); snap("invited-create-account");
   await d.fill('[name="email"]', "ivy@example.com"); await d.fill('[name="password"]', "ivy-pass-1"); await d.fill('[name="password-again"]', "ivy-pass-1");
   await d.press('[data-act="create-account"]');
-  await d.waitApp(/Joining as[\s\S]*Ivy Invitee/, 45000); snap("joining-as-ivy");
-  await d.press('[data-act="accept-named"]');
+  /* 2.31: Join on the welcome screen finishes joining (older: a "Joining as" step). */
+  await d.waitApp(/Joining as[\s\S]*Ivy Invitee|Saturday Group/, 45000); snap("joining-as-ivy");
+  if (/Joining as/.test(await d.appText())) await d.press('[data-act="accept-named"]');
   await d.waitApp(/Saturday Group/i, 45000);
   for (let i = 0; i < 20 && /Joining the group/.test(await d.appText()); i++) await d.sleep(1000);
   await d.sleep(1000); snap("in-the-group");
@@ -57,7 +59,7 @@ await flow("I2", "iPhone: application on a fresh phone (Auto) — apply, approva
   const link = await approvalLink("pia.applicant@example.com");
   if (!link) throw new Error("no sign-in email was sent");
   await openLink(link);
-  await d.waitApp(/Create your password/, 30000); snap("create-your-password");
+  await d.waitApp(/Create your password|Welcome to the public group/, 30000); snap("create-your-password");
   await d.fill('[name="password"]', "pia-pass-1"); await d.fill('[name="password-again"]', "pia-pass-1");
   await d.press('[data-act="finish-apply"]');
   await d.waitApp(/public group|Welcome/i, 45000); await d.sleep(2000); snap("in-the-public-group");
@@ -72,8 +74,13 @@ await flow("I3", "iPhone: Rex is signed in; an invitation for Jay arrives — th
   await d.waitApp(/Sign in/); await d.fill('[name="email"]', R1.email); await d.fill('[name="password"]', R1.password);
   await d.press('[data-act="sign-in"]'); await d.waitApp(/Saturday Group/i, 45000); snap("rex-signed-in");
   await openLink(await invitation("gJ", "Jay Unjoined"));
-  await d.waitApp(/Is this invitation for you|for a new person/, 30000); snap("is-this-for-you");
+  /* 2.31.1 (item 1): Rex plays as his own golfer, so the app signs out by itself. */
+  await d.waitApp(/Is this invitation for you|for a new person|You.re invited/, 30000); snap("is-this-for-you");
 });
+
+await flows231({ d, flow, prefix: "I", snap,
+  start: async () => { await fresh(); d.launch(BID); await d.sleep(5000); await acceptTerms(); },
+  link: openLink });
 
 report(`\nRESULT: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

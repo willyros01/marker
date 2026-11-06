@@ -8,6 +8,10 @@ on:
     branches: [main]
     paths: [build/device/flows-ios.mjs, build/device/sim.mjs, build/device/ios-flows.sh, build/device/seed.mjs, .github/workflows/device-ios-flows.yml]
   workflow_dispatch:
+    inputs:
+      scorecard_ref:
+        description: The Scorecard branch to test
+        default: v2
 
 permissions:
   contents: write   # only to save the screenshots to the ci-logs branch
@@ -25,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: willyros01/scorecard
-          ref: v2
+          ref: ${{ inputs.scorecard_ref || 'v2' }}
           path: sc
           persist-credentials: false
       - uses: maxim-lobanov/setup-xcode@v1

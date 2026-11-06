@@ -9,6 +9,10 @@ on:
     branches: [main]
     paths: [build/device/flows-android.mjs, build/device/flows-marker.mjs, build/device/adb.mjs, build/device/build-test-apk.sh, build/device/build-marker-test-apk.sh, .github/workflows/device-android-flows.yml]
   workflow_dispatch:
+    inputs:
+      scorecard_ref:
+        description: The Scorecard branch to test
+        default: android
 
 permissions:
   contents: write   # only to save the screenshots to the ci-logs branch
@@ -26,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: willyros01/scorecard
-          ref: android
+          ref: ${{ inputs.scorecard_ref || 'android' }}
           path: sca
           persist-credentials: false
       - uses: actions/setup-java@v4
