@@ -1,0 +1,138 @@
+iPhone test copy: emulators only, Web Inspector on
+Xcode project: privacy manifest added as a resource; entitlements set.
+Web Inspector socket: /private/tmp/com.apple.launchd.E7phcYwTjJ/com.apple.webinspectord_sim.socket
+
+I1  iPhone: invitation for Ivy on a fresh phone — Terms, create account, 'Yes, that's me', lands in Saturday Group
+An error was encountered processing the command (domain=NSPOSIXErrorDomain, code=3):
+Simulator device failed to terminate io.github.willyros01.scorecard.
+found nothing to terminate
+Underlying error (domain=NSPOSIXErrorDomain, code=3):
+	The request to terminate "io.github.willyros01.scorecard" failed. found nothing to terminate
+	found nothing to terminate
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/201-terms.png
+    screenshot 201-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/202-invited-create-account.png
+    screenshot 202-invited-create-account.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/203-joining-as-ivy.png
+    screenshot 203-joining-as-ivy.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/204-in-the-group.png
+    screenshot 204-in-the-group.png
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  I1
+
+I2  iPhone: application on a fresh phone (Auto) — apply, approval link, Create your password, lands in the public group
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/205-terms.png
+    screenshot 205-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/206-apply-form.png
+    screenshot 206-apply-form.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/207-check-your-email.png
+    screenshot 207-check-your-email.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/208-create-your-password.png
+    screenshot 208-create-your-password.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/209-in-the-public-group.png
+    screenshot 209-in-the-public-group.png
+    database: Pia is a member of the public group
+PASS  I2
+
+I3  iPhone: Rex is signed in; an invitation for Jay arrives — the app asks whether it is for him
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/210-terms.png
+    screenshot 210-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/211-rex-signed-in.png
+    screenshot 211-rex-signed-in.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/212-is-this-for-you.png
+    screenshot 212-is-this-for-you.png
+PASS  I3
+
+I4  item 1: Rex (plays as his own golfer) is signed in; an invitation for Jay arrives: signed out by itself, no question; Jay joins
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/213-terms.png
+    screenshot 213-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/214-rex-signed-in.png
+    screenshot 214-rex-signed-in.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/215-signed-out-by-itself.png
+    screenshot 215-signed-out-by-itself.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/216-joined.png
+    screenshot 216-joined.png
+PASS  I4
+
+I5  item 8: the group owner (no golfer of his own) is signed in; invitation; 'No, it's for someone else': no box over Join; the new person joins
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/217-terms.png
+    screenshot 217-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/218-is-this-for-you.png
+    screenshot 218-is-this-for-you.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/219-welcome-no-box.png
+    screenshot 219-welcome-no-box.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/220-joined.png
+    screenshot 220-joined.png
+PASS  I5
+
+I6  item 7: signed in with a box open; an invitation link arrives: the box closes and the link's screen shows
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/221-terms.png
+    screenshot 221-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/222-box-open.png
+    screenshot 222-box-open.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/223-link-screen.png
+    screenshot 223-link-screen.png
+PASS  I6
+
+I7  item 11: applying with a wrong email: a pop-up in the middle stays until OK; then the email box is outlined
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/224-terms.png
+    screenshot 224-terms.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/225-pop-up.png
+    screenshot 225-pop-up.png
+Detected file type from extension: PNG
+Note: No display specified. Defaulting to display: BC551BA7-541C-4E87-91E8-C286C8D97D86 (screenID: 1, name: LCD)
+Wrote screenshot to: /Users/runner/work/marker/marker/out-ios/226-after-ok.png
+    screenshot 226-after-ok.png
+PASS  I7
+
+RESULT: 7 passed, 0 failed
