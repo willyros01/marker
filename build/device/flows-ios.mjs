@@ -38,7 +38,8 @@ await flow("I1", "iPhone: invitation for Ivy on a fresh phone — Terms, create 
   await d.press('[data-act="create-account"]');
   /* 2.31: Join on the welcome screen finishes joining (older: a "Joining as" step). */
   await d.waitApp(/Joining as[\s\S]*Ivy Invitee|Saturday Group/, 45000); snap("joining-as-ivy");
-  if (/Joining as/.test(await d.appText())) await d.press('[data-act="accept-named"]');
+  /* Only if the button is there: 2.31 joins by itself straight after Join. */
+  if (await d.js(`!!document.querySelector('[data-act="accept-named"]:not([disabled])')`)) await d.press('[data-act="accept-named"]');
   await d.waitApp(/Saturday Group/i, 45000);
   for (let i = 0; i < 20 && /Joining the group/.test(await d.appText()); i++) await d.sleep(1000);
   await d.sleep(1000); snap("in-the-group");

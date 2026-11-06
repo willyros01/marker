@@ -72,6 +72,7 @@ jobs:
             adb reverse tcp:8080 tcp:8080 && adb reverse tcp:9099 tcp:9099
             node build/device/flows-android.mjs out sca/android/app/build/outputs/apk/debug/app-debug.apk 2>&1 | tee run.log
             node build/device/flows-marker.mjs out /tmp/marker-test.apk sca/android/app/build/outputs/apk/debug/app-debug.apk 2>&1 | tee -a run.log
+            if grep -q '^FAIL' run.log; then echo 'A device flow failed (see FAIL above)'; exit 1; fi
       - name: Save the report and screenshots to the ci-logs branch
         if: always()
         run: |

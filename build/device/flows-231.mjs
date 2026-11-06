@@ -14,7 +14,8 @@ async function golfer(id, name) {
 }
 async function signIn(d, who) {
   await d.waitApp(/Sign in/); await d.fill('[name="email"]', who.email); await d.fill('[name="password"]', who.password);
-  await d.press('[data-act="sign-in"]'); await d.waitApp(/Saturday Group/i, 45000); await d.sleep(2500);
+  /* Signed in, in whichever group opens first (the owner lands in PUBLIC). */
+  await d.press('[data-act="sign-in"]'); await d.waitApp(/Enter[\s\S]*Summary/, 45000); await d.sleep(2500);
 }
 async function sheetOpen(d) { return d.js(`(() => { const s = document.getElementById("sheet"); return !!(s && !s.hidden); })()`); }
 async function joinAs(d, email, password, golferId, snap) {

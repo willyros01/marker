@@ -54,7 +54,9 @@ jobs:
           for i in $(seq 1 60); do curl -s 127.0.0.1:8080 > /dev/null && curl -s 127.0.0.1:9099 > /dev/null && break; sleep 2; done
           curl -s 127.0.0.1:9099 > /dev/null && echo "emulators up"
       - name: Build the test copy and run the flows
-        run: bash build/device/ios-flows.sh 2>&1 | tee run-ios.log
+        run: |
+          set -o pipefail
+          bash build/device/ios-flows.sh 2>&1 | tee run-ios.log
       - name: Save the report and screenshots to the ci-logs branch
         if: always()
         run: |
