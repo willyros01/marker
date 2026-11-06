@@ -79,10 +79,15 @@ try {
     if (files.length !== 6) stop(`${prefix}: expected 6 pictures, found ${files.length}`);
     let set = sets.find((s) => s.attributes.screenshotDisplayType === type);
     if (!set) set = (await call("POST", "appScreenshotSets", { data: { type: "appScreenshotSets", attributes: { screenshotDisplayType: type }, relationships: { appStoreVersionLocalization: { data: { type: "appStoreVersionLocalizations", id: loc.id } } } } })).data;
-    const old = (await get(`appScreenshotSets/${set.id}/appScreenshots?limit=20`)).data || [];
-    for (const o of old) await call("DELETE", `appScreenshots/${o.id}`);
-    const ids = [];
-    for (const f of files) {
+    let old = (await get(`appScreenshotSets/${set.id}/appScreenshots?limit=20`)).data || [];
+    /* Already uploaded by an earlier run (same 6 names, none refused): keep
+       them and only wait for Apple to finish processing. */
+    const same = old.length === 6 && files.every((f) => old.some((o) => o.attributes.fileName === f))
+      && !old.some((o) => ((o.attributes.assetDeliveryState || {}).state || "") === "FAILED");
+    const ids = same ? files.map((f) => old.find((o) => o.attributes.fileName === f).id) : [];
+    if (same) { say(`5. ${type}: the 6 new pictures are already uploaded; waiting for Apple`); old = []; }
+    else for (const o of old) await call("DELETE", `appScreenshots/${o.id}`);
+    for (const f of (same ? [] : files)) {
       const buf = fs.readFileSync("shots/" + f);
       const res = (await call("POST", "appScreenshots", { data: { type: "appScreenshots", attributes: { fileName: f, fileSize: buf.length }, relationships: { appScreenshotSet: { data: { type: "appScreenshotSets", id: set.id } } } } })).data;
       for (const op of res.attributes.uploadOperations) {
@@ -92,12 +97,12 @@ try {
       await call("PATCH", `appScreenshots/${res.id}`, { data: { type: "appScreenshots", id: res.id, attributes: { uploaded: true, sourceFileChecksum: crypto.createHash("md5").update(buf).digest("hex") } } });
       ids.push(res.id);
     }
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 120; i++) {
       const st = await Promise.all(ids.map(async (id) => (await get(`appScreenshots/${id}`)).data.attributes.assetDeliveryState.state));
       if (st.every((s) => s === "COMPLETE")) break;
       if (st.some((s) => s === "FAILED")) stop(`${prefix}: Apple refused a picture (${st.join(",")})`);
       await new Promise((r) => setTimeout(r, 5000));
-      if (i === 39) stop(`${prefix}: pictures still processing (${st.join(",")})`);
+      if (i === 119) stop(`${prefix}: pictures still processing after 10 minutes (${st.join(",")})`);
     }
     await call("PATCH", `appScreenshotSets/${set.id}/relationships/appScreenshots`, { data: ids.map((id) => ({ type: "appScreenshots", id })) });
     say(`5. ${type}: ${old.length} old pictures removed, ${ids.length} new uploaded and accepted, in order`);
