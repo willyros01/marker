@@ -1,4 +1,4 @@
-/* inv.mjs — READ-ONLY (Willy, 6 Nov 2026, 8:10 am: "I want all of them done"):
+/* inv.mjs — READ-ONLY (6 Nov 2026, after the 8:15 am clean-up): check that it is all gone.
  * the lists for the five data clean-ups, for Willy to check before anything
  * is changed. Writes nothing. */
 import { client } from "../worker/src/firestore.js";
