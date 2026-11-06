@@ -1,0 +1,9 @@
+1. build 33: VALID, expired=false
+   version 2.30.0: READY_FOR_SALE
+2. version 2.31.2 made (release: manual)
+   build 33 attached
+3. text saved (en-US): description 1809 chars, keywords 97/100, What's New
+   subtitle: "Track your index & group games" (30/30); name unchanged: "The Scorecard: Golf Handicaps"
+4. review details already there (demo sign-in present)
+
+STOPPED before the submission: iphone: pictures still processing (UPLOAD_COMPLETE,UPLOAD_COMPLETE,UPLOAD_COMPLETE,COMPLETE,COMPLETE,UPLOAD_COMPLETE)
