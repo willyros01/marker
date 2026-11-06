@@ -93,8 +93,19 @@ export const clearLog = () => sh(["logcat", "-c"]);
    still go through Android itself. ---- */
 let cdp = null, cdpPid = null, seq = 0, current = "io.github.willyros01.scorecard";
 export function use(pkg) { current = pkg; }
+const pidOf = (pkg) => { try { return sh(["shell", "pidof", pkg]).trim(); } catch { return ""; } };
 async function connect(pkg = current) {
-  const pid = sh(["shell", "pidof", pkg]).trim();
+  let pid = pidOf(pkg);
+  if (!pid) {
+    /* 6 Nov 2026 (F2 failed once that way, then passed): on a busy emulator
+       the system can stop a just-started app while Google services restart.
+       If OUR app crashed, that is a real failure; otherwise start it once more. */
+    const crash = (() => { try { return sh(["logcat", "-d", "-v", "brief", "AndroidRuntime:E", "*:S"]); } catch { return ""; } })();
+    if (new RegExp(`FATAL EXCEPTION[\\s\\S]{0,400}${pkg.replace(/\./g, "\\.")}`).test(crash)) throw new Error("the app crashed: " + crash.slice(-400));
+    console.log(`      note: ${pkg} was not running (stopped by the system); started again once`);
+    launch(pkg);
+    for (let i = 0; i < 20 && !pid; i++) { await sleep(1000); pid = pidOf(pkg); }
+  }
   if (!pid) throw new Error("the app is not running");
   if (cdp && cdpPid === pid && cdp.readyState === 1) return cdp;
   try { cdp && cdp.close(); } catch {}

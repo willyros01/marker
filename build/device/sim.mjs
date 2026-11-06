@@ -47,9 +47,14 @@ async function js1(expression) {
   return r.result ? r.result.value : undefined;
 }
 /* The page can be replaced under us (sign-in reloads it): reconnect and try again once. */
+/* A freshly installed app on a cold simulator can take a while before its
+   web view answers (6 Nov 2026: I1 failed once that way, then passed): wait
+   and reconnect up to 4 times (about 40 seconds) before giving up. */
 export async function js(expression) {
-  try { return await js1(expression); }
-  catch (e) { if (!/did not answer|connection/.test(e.message)) throw e; disconnect(); await sleep(2000); return js1(expression); }
+  for (let i = 0; ; i++) {
+    try { return await js1(expression); }
+    catch (e) { if (!/did not answer|connection|Web Inspector/.test(e.message) || i >= 3) throw e; disconnect(); await sleep(5000); }
+  }
 }
 export const appText = () => js("document.body.innerText");
 export async function waitApp(re, ms = 30000) {
