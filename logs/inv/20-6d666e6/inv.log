@@ -1,0 +1,61 @@
+groups: Public group (PUBLIC) | Golfing Buddies (mss0iqvqder7g2) | Philippine Golfers (mstjip6n4yzfhh) | Apple Test Group (mv41i2sx1c9tyw)
+
+=== STEP 22: golfers named after an email ===
+golfer mss0ir7tagkms5 "willyros01@gmail.com" linkedUid wJ1NLF groups ["mv41i2sx1c9tyw"]
+  rounds: 0; rosters: Apple Test Group; directory: Apple Test Group
+  members pointing at it: none; name claims: willyros01-gmail-com; games: 0; Marker cards: 3
+golfer mt2woyfy7pygjj "willyros01@yahoo.com" linkedUid 3muIsV groups []
+  rounds: 0; rosters: none; directory: none
+  members pointing at it: none; name claims: willyros01-yahoo-com; games: 0; Marker cards: 0
+group-list entries (userGroups/*/groups/*) for a group that no longer exists:
+  userGroups/Rt4aR1dfwTebv0EMmcwAieLlquU2/groups/mst71vmrsw4jvv name "Ronnie Rosales’ Memorial Tournament"
+
+=== FIX 4: rounds whose game no longer exists ===
+Golfing Buddies · game msngo2mu2yqef3: 54 rounds, 2025-05-18 to 2026-07-26
+total: 54
+
+=== STEP 19: Philippine Golfers ===
+group Philippine Golfers (mstjip6n4yzfhh) created : 37 rounds, 7 on roster, 9 members, 5 games
+  golfer "Peter Elardo" mstjpgr3924jv4: 5 rounds here, 0 elsewhere; also in: no other group; account: no
+  golfer "Manny Elardo" mstjrpaipcsvzr: 6 rounds here, 0 elsewhere; also in: no other group; account: yes
+  golfer "Allan Elardo" mstn9uqrj5ozut: 5 rounds here, 0 elsewhere; also in: no other group; account: yes
+  golfer "Joe Rodriguez" mstnahfc0twkmq: 8 rounds here, 0 elsewhere; also in: no other group; account: yes
+  golfer "Sonny Sisante" mstnb001zb8qsk: 6 rounds here, 0 elsewhere; also in: no other group; account: no
+  golfer "Jeseica de Jesus" mstnbiceafp2us: 6 rounds here, 0 elsewhere; also in: no other group; account: yes
+  golfer "Public Tester" mv5jt0zgryvguu: 1 rounds here, 0 elsewhere; also in: no other group; account: no
+  member IvrWPw role admin "Jo Rosales"
+  member RptK8R role admin "Jo Rosales"
+  member Vk3pcK role member "Allan Elardo"
+  member XelCUn role member "Joe Rodriguez"
+  member Yr7bw8 role member "Jeseica de Jesus"
+  member nq2K11 role member "Public Tester"
+  member tKRRON role member "Joe Rodriguez"
+  member wJ1NLF role owner "willyros01@gmail.com"
+  member y84czv role member "Manny Elardo"
+  group-list entries pointing here: 28; Marker cards for it: 3
+
+=== STEP 12: users/{uid} with anything besides terms and prefs ===
+node:internal/deps/undici/undici:15456
+      Error.captureStackTrace(err);
+            ^
+
+TypeError: Failed to parse URL from projects/scorecard-f41b8/databases/(default)/documents/users/05pVeUlDblNHDQPhyCpTTEiiGM93:listCollectionIds
+    at node:internal/deps/undici/undici:15456:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async call (file:///home/runner/work/marker/marker/build/inv.mjs:8:47)
+    at async file:///home/runner/work/marker/marker/build/inv.mjs:66:16 {
+  [cause]: TypeError: Invalid URL
+      at new URL (node:internal/url:818:25)
+      at new Request (node:internal/deps/undici/undici:10034:25)
+      at fetch (node:internal/deps/undici/undici:10763:25)
+      at fetch (node:internal/deps/undici/undici:15454:10)
+      at fetch (node:internal/bootstrap/web/exposed-window-or-worker:75:12)
+      at call (file:///home/runner/work/marker/marker/build/inv.mjs:8:53)
+      at file:///home/runner/work/marker/marker/build/inv.mjs:66:22
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+    code: 'ERR_INVALID_URL',
+    input: 'projects/scorecard-f41b8/databases/(default)/documents/users/05pVeUlDblNHDQPhyCpTTEiiGM93:listCollectionIds'
+  }
+}
+
+Node.js v22.23.4
