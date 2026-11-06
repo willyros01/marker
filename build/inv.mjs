@@ -63,7 +63,7 @@ let users = [], tok = "";
 do { const { j } = await call(`${base}/users?pageSize=300&showMissing=true${tok ? "&pageToken=" + tok : ""}`); users = users.concat(j.documents || []); tok = j.nextPageToken || ""; } while (tok);
 let n12 = 0;
 for (const u of users) {
-  const ids = (await call(`${u.name}:listCollectionIds`, { pageSize: 50 })).j.collectionIds || [];
+  const ids = (await call(`https://firestore.googleapis.com/v1/${u.name}:listCollectionIds`, { pageSize: 50 })).j.collectionIds || [];
   const extra = ids.filter((c) => !["terms", "prefs"].includes(c));
   if (extra.length) { n12++; console.log(`  users/${u.name.split("/").pop().slice(0, 6)}…: ${extra.join(", ")} (kept: ${ids.filter((c) => !extra.includes(c)).join(", ") || "nothing"})`); }
 }
