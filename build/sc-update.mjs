@@ -79,15 +79,7 @@ try {
     if (files.length !== 6) stop(`${prefix}: expected 6 pictures, found ${files.length}`);
     let set = sets.find((s) => s.attributes.screenshotDisplayType === type);
     if (!set) set = (await call("POST", "appScreenshotSets", { data: { type: "appScreenshotSets", attributes: { screenshotDisplayType: type }, relationships: { appStoreVersionLocalization: { data: { type: "appStoreVersionLocalizations", id: loc.id } } } } })).data;
-    let old = (await get(`appScreenshotSets/${set.id}/appScreenshots?limit=20`)).data || [];
-    /* Already uploaded by an earlier run (same 6 names, none refused): keep
-       them and only wait for Apple to finish processing. */
-    const same = old.length === 6 && files.every((f) => old.some((o) => o.attributes.fileName === f))
-      && !old.some((o) => ((o.attributes.assetDeliveryState || {}).state || "") === "FAILED");
-    const ids = same ? files.map((f) => old.find((o) => o.attributes.fileName === f).id) : [];
-    if (same) { say(`5. ${type}: the 6 new pictures are already uploaded; waiting for Apple`); old = []; }
-    else for (const o of old) await call("DELETE", `appScreenshots/${o.id}`);
-    for (const f of (same ? [] : files)) {
+    const upload = async (f) => {
       const buf = fs.readFileSync("shots/" + f);
       const res = (await call("POST", "appScreenshots", { data: { type: "appScreenshots", attributes: { fileName: f, fileSize: buf.length }, relationships: { appScreenshotSet: { data: { type: "appScreenshotSets", id: set.id } } } } })).data;
       for (const op of res.attributes.uploadOperations) {
@@ -95,17 +87,38 @@ try {
         if (!r.ok) stop(`upload of ${f} refused (${r.status})`);
       }
       await call("PATCH", `appScreenshots/${res.id}`, { data: { type: "appScreenshots", id: res.id, attributes: { uploaded: true, sourceFileChecksum: crypto.createHash("md5").update(buf).digest("hex") } } });
-      ids.push(res.id);
+      return res.id;
+    };
+    const stateOf = async (id) => (((await get(`appScreenshots/${id}`)).data.attributes.assetDeliveryState) || {}).state || "";
+    let old = (await get(`appScreenshotSets/${set.id}/appScreenshots?limit=20`)).data || [];
+    const ids = [];
+    let kept = 0, removed = 0, sent = 0;
+    for (const f of files) {
+      const have = old.find((o) => o.attributes.fileName === f);
+      const st = have ? (have.attributes.assetDeliveryState || {}).state : "";
+      if (have && st === "COMPLETE") { ids.push(have.id); kept++; continue; }
+      /* not there, refused, or stuck: (re)send this one picture */
+      if (have) { await call("DELETE", `appScreenshots/${have.id}`); removed++; }
+      ids.push(await upload(f)); sent++;
     }
-    for (let i = 0; i < 120; i++) {
-      const st = await Promise.all(ids.map(async (id) => (await get(`appScreenshots/${id}`)).data.attributes.assetDeliveryState.state));
-      if (st.every((s) => s === "COMPLETE")) break;
-      if (st.some((s) => s === "FAILED")) stop(`${prefix}: Apple refused a picture (${st.join(",")})`);
-      await new Promise((r) => setTimeout(r, 5000));
-      if (i === 119) stop(`${prefix}: pictures still processing after 10 minutes (${st.join(",")})`);
+    for (const o of old.filter((o) => !files.includes(o.attributes.fileName))) { await call("DELETE", `appScreenshots/${o.id}`); removed++; }
+    /* Wait for Apple; a picture still not processed after 4 minutes is sent once more. */
+    for (let round = 0; round < 3; round++) {
+      let st = [];
+      for (let i = 0; i < 48; i++) {
+        st = await Promise.all(ids.map(stateOf));
+        if (st.every((x) => x === "COMPLETE")) break;
+        await new Promise((r) => setTimeout(r, 5000));
+      }
+      if (st.every((x) => x === "COMPLETE")) break;
+      if (round === 2) stop(`${prefix}: Apple did not finish the pictures (${st.join(",")})`);
+      for (let k = 0; k < ids.length; k++) if (st[k] !== "COMPLETE") {
+        say(`   ${files[k]}: still ${st[k]} — sent once more`);
+        await call("DELETE", `appScreenshots/${ids[k]}`); ids[k] = await upload(files[k]); sent++;
+      }
     }
+    say(`5. ${type}: ${kept} already done, ${sent} sent, ${removed} old removed; all 6 accepted`);
     await call("PATCH", `appScreenshotSets/${set.id}/relationships/appScreenshots`, { data: ids.map((id) => ({ type: "appScreenshots", id })) });
-    say(`5. ${type}: ${old.length} old pictures removed, ${ids.length} new uploaded and accepted, in order`);
   }
   /* 6 */
   try {
