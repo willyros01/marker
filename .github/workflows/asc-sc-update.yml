@@ -1,0 +1,52 @@
+name: Scorecard 2.31.2 App Store update (text, pictures, build 33, submit)
+
+# Willy, 6 Nov 2026, 3:24 pm: "Everything checks out. You can start the update".
+# Runs build/sc-update.mjs once; every step is checked, and any problem stops it
+# before the submission.
+on:
+  push:
+    branches: [main]
+    paths: [build/sc-update.mjs, build/sc-update-text.json, .github/workflows/asc-sc-update.yml]
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Fetch the 12 new pictures (made-up Saturday Club, build 33 colours)
+        run: |
+          set -e; mkdir -p shots
+          for d in iphone ipad; do for f in day-1-enter day-2-history day-3-card day-4-summary day-5-stats night-6-summary; do
+            curl -fsSL -o "shots/$d-$f.png" "https://raw.githubusercontent.com/willyros01/scorecard/ci-logs/logs/store-shots/00006-b690cd7/$d-$f.png"
+          done; done
+          ls -la shots | wc -l
+      - name: Update and submit
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          set -o pipefail
+          node build/sc-update.mjs 2>&1 | tee update.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/asc-sc-update/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp update.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          for i in 1 2 3; do
+            git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+            mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+            git add logs && git commit -qm "asc sc update ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs && break
+            sleep 5
+          done
