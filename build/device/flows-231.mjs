@@ -76,9 +76,9 @@ export async function flows231(ctx) {
     await d.fill('[name="apply-name"]', "Format Tester"); await d.fill('[name="apply-email"]', "format.tester-at-example.com");
     await d.check('[name="ap-agree"]'); await d.press('[data-act="submit-application"]');
     await d.waitApp(/That email does not look right/, 20000); snap("pop-up");
-    if (!(await d.js(`!!document.querySelector("#sheet.pop-centre [data-form-ok]")`))) throw new Error("not the centred pop-up with OK");
-    await d.press("[data-form-ok]"); await d.sleep(1200); snap("after-ok");
-    if (await sheetOpen(d)) throw new Error("the pop-up did not close with OK");
+    if (!(await d.js(`!!document.querySelector("#popmsg:not([hidden]) [data-pop-ok]")`))) throw new Error("not the pop-up with OK");
+    await d.press("[data-pop-ok]"); await d.sleep(1200); snap("after-ok");
+    if (await d.js(`!document.getElementById("popmsg").hidden`)) throw new Error("the pop-up did not close with OK");
     if (!(await d.js(`document.querySelector('[name="apply-email"]').classList.contains("needs-fix")`))) throw new Error("the email box is not outlined");
   });
 }
