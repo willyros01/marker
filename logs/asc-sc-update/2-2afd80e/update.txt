@@ -1,0 +1,11 @@
+1. build 33: VALID, expired=false
+   version 2.31.2: PREPARE_FOR_SUBMISSION
+   version 2.30.0: READY_FOR_SALE
+2. version 2.31.2 found (release: manual)
+   build 33 attached
+3. text saved (en-US): description 1809 chars, keywords 97/100, What's New
+   subtitle: "Track your index & group games" (30/30); name unchanged: "The Scorecard: Golf Handicaps"
+4. review details already there (demo sign-in present)
+5. APP_IPHONE_67: the 6 new pictures are already uploaded; waiting for Apple
+
+STOPPED before the submission: iphone: pictures still processing after 10 minutes (UPLOAD_COMPLETE,COMPLETE,COMPLETE,COMPLETE,COMPLETE,COMPLETE)
