@@ -19,8 +19,55 @@
  * Every run writes maintenance/golferCleanup: when it ran, how many golfers it
  * checked, which it deleted, which are waiting and since when. A missed or late
  * run does no harm: the next run catches up.
+ *
+ * Deleted accounts (Willy, 7 Nov 2026, "yes"): "Delete my account" keeps the
+ * golfer on its group's roster so rounds and handicaps stay. A golfer whose
+ * account was deleted and who has NO rounds, games or Marker cards has nothing
+ * to keep, so it counts as unused even while on a roster, and its roster
+ * entries go in the same commit. Only golfers noted by noteDeletedAccounts
+ * (below) are treated this way; a golfer an admin added and who never had an
+ * account is never touched while on a roster.
  */
 import { deleteWrite, setWrite } from "./firestore.js";
+
+/* Golfers whose account was deleted, noted every 5 minutes from the deletion
+   requests (accountDeletions/{uid}). Such a request lasts about an hour (the
+   completion job removes it), so it is noted here while it is there. The
+   request is written by the person, so its list of golfers is NOT trusted on
+   its own: a golfer is noted only if it has no linked sign-in AND was changed
+   after the request was made (the deletion unlinks it). A request naming
+   somebody else's golfer therefore notes nothing. At most MAX_IDS per request. */
+export const ACCOUNT_STATE = "maintenance/deletedAccountGolfers";
+export const MAX_IDS = 5;
+const ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+export async function noteDeletedAccounts(fs, { now = Date.now() } = {}) {
+  const reqs = await fs.query("", "accountDeletions", [], 500);
+  if (!reqs.length) return { requests: 0, added: 0 };
+  const st = await fs.get(ACCOUNT_STATE);
+  const golfers = { ...((st && st.data && st.data.golfers) || {}) };
+  const cand = [];
+  for (const r of reqs) {
+    const list = Array.isArray(r.data && r.data.golferIds) ? r.data.golferIds.slice(0, MAX_IDS) : [];
+    for (const g of list) if (typeof g === "string" && ID.test(g) && !golfers[g]) cand.push([g, r]);
+  }
+  const listed = Object.keys(golfers);
+  const paths = [...new Set([...cand.map(([g]) => `golfers/${g}`), ...listed.map((g) => `golfers/${g}`)])];
+  const docs = new Map((await fs.getMany(paths)).filter(Boolean).map((d) => [d.id, d]));
+  let added = 0, dropped = 0;
+  for (const [g, r] of cand) {
+    const d = docs.get(g);
+    const made = Date.parse(r.createTime || "");
+    if (!d || (d.data && d.data.linkedUid) || !made || !(Date.parse(d.updateTime) >= made)) continue;
+    if (!golfers[g]) { golfers[g] = now; added++; }
+  }
+  for (const g of listed) if (!docs.has(g)) { delete golfers[g]; dropped++; }   /* already gone */
+  if (added || dropped) {
+    const guard = st ? { updateTime: st.updateTime } : { exists: false };
+    await fs.commit([setWrite(fs, ACCOUNT_STATE, { golfers, updatedAt: new Date(now).toISOString() }, guard)]);
+  }
+  return { requests: reqs.length, added, dropped };
+}
 
 export const WAIT_DAYS = 7;
 export const STATE = "maintenance/golferCleanup";
@@ -30,11 +77,13 @@ const names = (doc, id) => JSON.stringify(doc.data || {}).includes(`"${id}"`);
 
 export async function cleanGolfers(fs, { now = Date.now(), max = 10, log = () => {} } = {}) {
   /* Read everything first. If any read fails the run stops here: nothing deleted. */
-  const [allGolfers, rounds, rosters, members, games, cards, directory, claims, state] = await Promise.all([
+  const [allGolfers, rounds, rosters, members, games, cards, directory, claims, state, accounts] = await Promise.all([
     fs.queryGroup("golfers"), fs.queryGroup("rounds"), fs.queryGroup("roster"), fs.queryGroup("members"),
     fs.queryGroup("games"), fs.query("", "markerSubmissions", [], 5000), fs.queryGroup("directory"),
-    fs.query("", "golferNames", [], 5000), fs.get(STATE),
+    fs.query("", "golferNames", [], 5000), fs.get(STATE), fs.get(ACCOUNT_STATE),
   ]);
+  const deletedAccount = new Set(Object.keys((accounts && accounts.data && accounts.data.golfers) || {}));
+  const onRoster = (id) => rosters.filter((r) => r.id === id || (r.data && r.data.golferId === id));
   const golfers = allGolfers.filter((g) => g.path === `golfers/${g.id}`);
   const blocks = allGolfers.filter((g) => g.path.startsWith("userBlocks/"));
   const before = (state && state.data && state.data.pending) || {};
@@ -43,7 +92,7 @@ export async function cleanGolfers(fs, { now = Date.now(), max = 10, log = () =>
     const d = g.data || {};
     if (d.linkedUid) return false;
     if (Number(d.roundCount) > 0 || (Array.isArray(d.recentWindow) && d.recentWindow.length)) return false;
-    if (rosters.some((r) => r.id === g.id || (r.data && r.data.golferId === g.id))) return false;
+    if (!deletedAccount.has(g.id) && onRoster(g.id).length) return false;
     for (const list of [rounds, members, games, cards]) if (list.some((x) => names(x, g.id))) return false;
     return true;
   };
@@ -63,6 +112,7 @@ export async function cleanGolfers(fs, { now = Date.now(), max = 10, log = () =>
       ...claims.filter((c) => c.data && c.data.golferId === g.id),
       ...directory.filter((x) => x.id === g.id),
       ...blocks.filter((x) => x.id === g.id),
+      ...(deletedAccount.has(g.id) ? onRoster(g.id) : []),
     ];
     try {
       await fs.commit([g, ...extra].map((x) => deleteWrite(fs, x.path, { updateTime: x.updateTime })));

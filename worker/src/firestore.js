@@ -60,7 +60,7 @@ export function client({ project, token, base = "https://firestore.googleapis.co
     return text ? JSON.parse(text) : {};
   }
 
-  const asDoc = (d) => ({ id: d.name.split("/").pop(), path: d.name.slice(root.length + 1), updateTime: d.updateTime, data: fromFields(d.fields) });
+  const asDoc = (d) => ({ id: d.name.split("/").pop(), path: d.name.slice(root.length + 1), updateTime: d.updateTime, createTime: d.createTime, data: fromFields(d.fields) });
 
   return {
     root,

@@ -8,9 +8,9 @@ export function fakeFs(seed = {}) {
   const docs = new Map();
   let tick = 0;
   const stamp = () => new Date(Date.UTC(2026, 9, 16, 12, 0, 0) + ++tick).toISOString();
-  for (const [path, data] of Object.entries(seed)) docs.set(path, { data: structuredClone(data), updateTime: stamp() });
+  for (const [path, data] of Object.entries(seed)) { const t = stamp(); docs.set(path, { data: structuredClone(data), updateTime: t, createTime: t }); }
 
-  const asDoc = (path, d) => ({ id: path.split("/").pop(), path, updateTime: d.updateTime, data: structuredClone(d.data) });
+  const asDoc = (path, d) => ({ id: path.split("/").pop(), path, updateTime: d.updateTime, createTime: d.createTime || d.updateTime, data: structuredClone(d.data) });
   const parentOf = (path) => path.split("/").slice(0, -2).join("/");
   const collOf = (path) => path.split("/").slice(-2, -1)[0];
   const commits = [];
@@ -62,7 +62,7 @@ export function fakeFs(seed = {}) {
         const fields = fromFields(w.update.fields);
         const data = w.updateMask ? { ...cur.data, ...fields } : fields;
         for (const t of w.updateTransforms || []) data[t.fieldPath] = now;
-        next.set(path, { data, updateTime: now });
+        next.set(path, { data, updateTime: now, createTime: (cur && cur.createTime) || now });
       }
       docs.clear();
       for (const [k, v] of next) docs.set(k, v);
@@ -70,6 +70,6 @@ export function fakeFs(seed = {}) {
       return {};
     },
     data(path) { const d = docs.get(path); return d ? d.data : null; },
-    touch(path, patch) { const d = docs.get(path); docs.set(path, { data: { ...d.data, ...patch }, updateTime: stamp() }); },
+    touch(path, patch) { const d = docs.get(path); docs.set(path, { data: { ...d.data, ...patch }, updateTime: stamp(), createTime: d.createTime || d.updateTime }); },
   };
 }

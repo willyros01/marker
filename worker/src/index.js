@@ -24,6 +24,7 @@
  *   POST /follow/scores {liveId, scores, done} -> { status }  the member's own scores, for followers
  *   POST /follow/view {code}         -> { setup, scores, lastAt, status }   any sign-in, read-only
  *   every 5 minutes          -> posts a card still waiting (one per run)
+ *                               and notes golfers of deleted accounts (cleanup.js)
  *   GET  /cleanup-status     -> { ok, lastRun, hoursAgo, ... }  no sign-in; 503 when the
  *                               daily clean-up has not run for 48 hours (cron-job.org watchdog)
  *   once a day (07:00 UTC)   -> deletes golfers unused for 7 days, and live cards
@@ -40,7 +41,7 @@ import { processSubmission, sweep } from "./post.js";
 import * as search from "./search.js";
 import * as fix from "./correct.js";
 import { Refusal } from "./post.js";
-import { cleanGolfers, cleanLiveCards, cleanupStatus } from "./cleanup.js";
+import { cleanGolfers, cleanLiveCards, cleanupStatus, noteDeletedAccounts } from "./cleanup.js";
 import * as caddie from "./caddie.js";
 import * as follow from "./follow.js";
 import * as game from "./game.js";
@@ -179,5 +180,8 @@ export default {
       return;
     }
     ctx.waitUntil(sweep(fsFor(env), { log: (m) => console.log(m) }).then((r) => console.log("sweep", JSON.stringify(r))));
+    ctx.waitUntil(noteDeletedAccounts(fsFor(env))
+      .then((r) => { if (r.requests) console.log("deleted accounts", JSON.stringify(r)); })
+      .catch((e) => console.log("deleted-account note failed, nothing changed:", e && e.message)));
   },
 };
