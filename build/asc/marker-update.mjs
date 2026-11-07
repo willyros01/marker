@@ -47,6 +47,8 @@ const stateOf = async (kind, id) => (((await get(`${kind}/${id}`)).data.attribut
 try {
   const app = (await get("apps?filter[bundleId]=io.github.willyros01.marker&limit=1")).data[0];
   if (!app) stop("The Marker not found");
+  /* The Marker's main language is English (Canada), en-CA. */
+  const LOCALE = app.attributes.primaryLocale || "en-CA";
   /* 1 */
   if (!BUILD) stop("no build number given");
   const build = ((await get(`builds?filter[app]=${app.id}&filter[version]=${BUILD}&filter[preReleaseVersion.version]=${VERSION}&limit=5`)).data || [])[0];
@@ -69,16 +71,16 @@ try {
   say(`   build ${BUILD} attached`);
   /* 3 */
   let locs = (await get(`appStoreVersions/${ver.id}/appStoreVersionLocalizations`)).data || [];
-  let loc = locs.find((l) => l.attributes.locale === "en-US") || locs[0];
+  let loc = locs.find((l) => l.attributes.locale === LOCALE) || locs[0];
   const vattrs = { description: T.description, keywords: T.keywords, whatsNew: T.whatsNew, promotionalText: T.promotionalText, supportUrl: T.supportUrl };
   if (loc) await call("PATCH", `appStoreVersionLocalizations/${loc.id}`, { data: { type: "appStoreVersionLocalizations", id: loc.id, attributes: vattrs } });
-  else loc = (await call("POST", "appStoreVersionLocalizations", { data: { type: "appStoreVersionLocalizations", attributes: { locale: "en-US", ...vattrs }, relationships: { appStoreVersion: { data: { type: "appStoreVersions", id: ver.id } } } } })).data;
+  else loc = (await call("POST", "appStoreVersionLocalizations", { data: { type: "appStoreVersionLocalizations", attributes: { locale: LOCALE, ...vattrs }, relationships: { appStoreVersion: { data: { type: "appStoreVersions", id: ver.id } } } } })).data;
   say(`3. text saved (${loc.attributes.locale}): description ${T.description.length} chars, keywords ${T.keywords.length}/100, What's New ${T.whatsNew.length}, Promotional Text ${T.promotionalText.length}/170`);
   const live = ["READY_FOR_SALE", "READY_FOR_DISTRIBUTION", "REPLACED_WITH_NEW_INFO"];
   const info = ((await get(`apps/${app.id}/appInfos`)).data || []).find((i) => !live.includes(i.attributes.appStoreState || i.attributes.state));
   if (!info) stop("no editable app info for the name and subtitle");
-  const il = ((await get(`appInfos/${info.id}/appInfoLocalizations`)).data || []).find((l) => l.attributes.locale === "en-US");
-  if (!il) stop("no en-US app info text");
+  const il = ((await get(`appInfos/${info.id}/appInfoLocalizations`)).data || []).find((l) => l.attributes.locale === LOCALE);
+  if (!il) stop(`no ${LOCALE} app info text`);
   const oldName = il.attributes.name;
   await call("PATCH", `appInfoLocalizations/${il.id}`, { data: { type: "appInfoLocalizations", id: il.id, attributes: { name: T.name, subtitle: T.subtitle, privacyPolicyUrl: T.privacyPolicyUrl } } });
   say(`   name: "${T.name}" (was "${oldName}"); subtitle: "${T.subtitle}"`);
