@@ -1,0 +1,13 @@
+1. build 46 (1.1.0): VALID, expired=false
+   version 1.1.0: PREPARE_FOR_SUBMISSION
+   version 1.0.0: READY_FOR_SALE
+2. version 1.1.0 found (release: manual)
+   build 46 attached
+3. text saved (en-CA): description 2285 chars, keywords 100/100, What's New 796, Promotional Text 154/170
+   name: "The Marker: Golf Scorecard" (was "The Marker"); subtitle: "Companion to The Scorecard"
+4. review details: contact and demo sign-in from 1.0.0, notes 2195 chars
+   review video: uploaded and accepted
+5. APP_IPHONE_67: 0 already done, 9 sent, 8 old removed; all 9 accepted, in order
+5. APP_IPAD_PRO_3GEN_129: 0 already done, 9 sent, 8 old removed; all 9 accepted, in order
+5. APP_WATCH_ULTRA: 0 already done, 5 sent, 3 old removed; all 5 accepted, in order
+6. SUBMITTED: submission WAITING_FOR_REVIEW; version 1.1.0 is WAITING_FOR_REVIEW; release: manual (you release it after approval)
