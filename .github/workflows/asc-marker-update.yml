@@ -33,7 +33,7 @@ jobs:
           ASSETS: assets-branch/marker-1.1.0
           VIDEO: assets-branch/marker-1.0.0/TheMarker.review.video.v1.0.0.mp4
           BUILD: "46"
-          SUBMIT: "yes"
+          SUBMIT: "no"    # 1.1.0 was submitted on 7 Nov 2026
         run: |
           set -o pipefail
           node build/asc/marker-update.mjs 2>&1 | tee update.txt
