@@ -1,0 +1,7 @@
+1. build 46 (1.1.0): VALID, expired=false
+   version 1.0.0: READY_FOR_SALE
+2. version 1.1.0 made (release: manual)
+   build 46 attached
+3. text saved (en-CA): description 2285 chars, keywords 100/100, What's New 796, Promotional Text 154/170
+
+STOPPED before the submission: no en-US app info text
