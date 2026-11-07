@@ -1,0 +1,54 @@
+name: The Marker 1.1.0 App Store update (text, pictures, build 46, submit)
+
+# Willy approved the text and pictures on 6 Nov 2026, 8:22 pm, and said on
+# 7 Nov, 9:48 am: "please submit TheMarker for approval at the App Store".
+# Runs build/asc/marker-update.mjs once; every step is checked, and any problem
+# stops it before the submission. Release is manual (Thursday, with The Scorecard).
+on:
+  push:
+    branches: [main]
+    paths: [build/asc/marker-update.mjs, .github/workflows/asc-marker-update.yml]
+
+permissions:
+  contents: write   # only to save the result to the ci-logs branch
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: appstore-assets
+          path: assets-branch
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Update and submit
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASSETS: assets-branch/marker-1.1.0
+          VIDEO: assets-branch/marker-1.0.0/TheMarker.review.video.v1.0.0.mp4
+          BUILD: "46"
+          SUBMIT: "yes"
+        run: |
+          set -o pipefail
+          node build/asc/marker-update.mjs 2>&1 | tee update.txt
+      - name: Save the result to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/asc-marker-update/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp update.txt "/tmp/$dir/" 2>/dev/null || true
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          for i in 1 2 3; do
+            git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+            mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+            git add logs && git commit -qm "asc marker update ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs && break
+            sleep 5
+          done
