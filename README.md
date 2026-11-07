@@ -1,5 +1,8 @@
 # The Marker
 
+> **Updated illustrated code documentation (7 Nov 2026):** [APP-CODE-GUIDE.md](APP-CODE-GUIDE.md)
+
+
 Hole-by-hole scorecard for a foursome, an add-on to The Scorecard.
 
 - Web app: https://willyros01.github.io/marker/ (iPhone and Android builds follow, same code).
