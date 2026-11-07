@@ -28,3 +28,9 @@ Hole-by-hole scorecard for a foursome, an add-on to The Scorecard.
   (`mk1.txt` is retired and must not be run.)
 - `.github/workflows/tests.yml` unit tests, rules tests and an end-to-end posting test on the
   Firebase emulator, on every push. `.github/workflows/deploy-worker.yml` deploys the worker.
+
+
+## Application documentation
+
+- [Illustrated application and architecture guide](APP-CODE-GUIDE.md)
+- [JavaScript function reference](JAVASCRIPT-REFERENCE.md) — function purposes, data contracts, dependencies and technical details.
