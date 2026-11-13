@@ -64,7 +64,10 @@ const shot = async (p, name, full = true) => {
   await p.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: full, animations: "disabled" });
   log(name);
 };
-const text = (p, t, timeout = 30000) => p.waitForFunction((s) => document.body.innerText.includes(s), t, { timeout });
+const text = async (p, t, timeout = 30000) => {
+  try { await p.waitForFunction((s) => document.body.innerText.includes(s), t, { timeout }); }
+  catch (e) { console.log(`--- waiting for "${t}", the screen shows:\n${await p.evaluate(() => document.body.innerText)}`); throw e; }
+};
 
 /* Every golfer on the hole on screen who has not missed it: who, then score. */
 async function scoreHole(p, h, skip = []) {
