@@ -1,0 +1,68 @@
+name: Scorecard user guide pictures (emulators)
+
+# Willy, 13 Nov 2026: The Scorecard's user guide pictures, real Lake blue
+# screens with made-up golfers. The real Scorecard web app (main,
+# read-only checkout in ./sc) against the Firebase emulators (demo-scorecard).
+# Nothing live is touched; the scorecard repository is not changed.
+# Pictures go to the ci-logs branch under logs/sc-doc-shots/.
+on:
+  push:
+    branches: [sc-doc-shots]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # only to save the pictures to ci-logs
+
+jobs:
+  shots:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: willyros01/scorecard
+          ref: main
+          path: sc
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: Tools (exact versions)
+        run: |
+          npm install -g firebase-tools@15.31.0
+          npm install --no-save --no-audit --no-fund playwright@1.48.2
+          npx playwright@1.48.2 install --with-deps chromium
+      - name: Take the pictures
+        env: { SHOTS: /tmp/shots, SC: sc }
+        run: |
+          set -o pipefail
+          mkdir -p /tmp/shots
+          # the test copy only: the worker stand-in runs on http://127.0.0.1
+          python3 - <<'PY'
+          p = "sc/store.js"; t = open(p).read()
+          n = t.count("/^https:\\/\\//.test(url)")
+          assert n >= 1, n
+          open(p, "w").write(t.replace("/^https:\\/\\//.test(url)", "/^https?:\\/\\//.test(url)"))
+          PY
+          (cd sc && python3 -m http.server 8000 --bind 127.0.0.1 > /tmp/www.log 2>&1 &)
+          cp sc/firestore.rules sc/test/ops/firestore.rules.copy
+          firebase emulators:exec --config sc/test/ops/firebase.json --only firestore,auth --project demo-scorecard \
+            "bash -c 'PROJECT=demo-scorecard node test/ui/doc-server.mjs > /tmp/doc-server.log 2>&1 & sleep 2; node test/ui/sc-doc-shots.mjs'" 2>&1 | tee ui.log
+      - name: Save the log and pictures to the ci-logs branch
+        if: always()
+        run: |
+          set -e
+          dir="logs/sc-doc-shots/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          mkdir -p "/tmp/$dir"; cp ui.log /tmp/doc-server.log "/tmp/$dir/" 2>/dev/null || true; cp /tmp/shots/*.png "/tmp/$dir/" 2>/dev/null || true
+          rm -rf sc
+          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
+          for i in 1 2 3 4; do
+            git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
+            git rm -rq --cached . 2>/dev/null || true
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
+            mkdir -p "$dir"; cp /tmp/$dir/* "$dir/" 2>/dev/null || true
+            git add logs && git commit -qm "sc-doc-shots ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs && break
+            sleep 5
+          done
