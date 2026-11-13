@@ -231,7 +231,7 @@ await scene(S, "golfers", async () => { await S.goto(APP); await S.waitForSelect
 await scene(S, "invite", async () => {
   const show = S.locator('[data-act="toggle-golfer-list"]'); if (await show.count()) { await show.first().click(); await S.waitForTimeout(800); }
   await snap(S, "golfer-list", "full");
-  await S.locator(".roster-row [data-invite-golfer]:visible").first().click(); await text(S, "They join as"); }, "sheet");
+  await S.locator(".roster-row [data-invite-golfer]:visible").first().click(); await text(S, "Choose how to send it"); }, "sheet");
 await closeSheet(S);
 await scene(S, "courses", async () => {
   await S.goto(APP); await S.waitForSelector('button[data-tab="manage"]', { timeout: 45000 }); await tab(S, "manage");
