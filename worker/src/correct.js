@@ -92,7 +92,14 @@ async function load(fs, sub) {
     if (!r) refuse(`${full(p.name)}'s round from this card was deleted in The Scorecard, so the card can no longer be corrected. It can be re-posted from Your cards: by the scorer for 24 hours after posting, by an owner or admin of the group at any time.`);
     /* The handicap frozen on the round when it was posted, never today's. */
     const index = r.data.indexAtEntry == null ? null : Number(r.data.indexAtEntry);
-    players.push({ name: p.name || "", golferId: p.golferId, assocId: p.assocId, guest: false, index, ch: card.courseHandicapFor(index, roundTee(tee, r)), scores: Object.fromEntries(order.map((n) => [n, p.scores[n]])) });
+    /* A golfer who joined late (Willy, 13 Nov 2026): the holes they missed were
+       posted at net par; that value is on the round itself, so it is taken from
+       there and never from the phone. */
+    const missed = Array.isArray(p.missed) ? p.missed.map(Number) : [];
+    const posted = Array.isArray(r.data.holes) ? r.data.holes : [];
+    if (missed.some((n) => !Number.isInteger(posted[n - 1]))) refuse(`${full(p.name)}'s round does not show the holes they missed, so the card cannot be corrected here. An owner or admin can correct it in The Scorecard.`);
+    players.push({ name: p.name || "", golferId: p.golferId, assocId: p.assocId, guest: false, index, ch: card.courseHandicapFor(index, roundTee(tee, r)),
+      scores: Object.fromEntries(order.map((n) => [n, missed.includes(n) ? posted[n - 1] : p.scores[n]])), ...(missed.length ? { missed } : {}) });
     docs.push(r);
   }
   /* The round must still say what the card says. */
@@ -286,12 +293,15 @@ export async function correct(fs, who, { cardId, scores } = {}, { now = Date.now
   const given = scores && typeof scores === "object" ? scores : {};
   const fixed = players.map((p) => {
     const s = given[p.golferId] && typeof given[p.golferId] === "object" ? given[p.golferId] : {};
+    const missed = p.missed || [];
     return { ...p, scores: Object.fromEntries(order.map((n) => {
+      if (missed.includes(n)) return [n, p.scores[n]];   /* not played: stays at net par */
       const v = s[n] ?? s[String(n)];
       return [n, v === card.PICKED_UP || v === "X" ? card.PICKED_UP : Number(v)];
     })) };
   });
-  const newCard = { ...c, players: c.players.map((p, i) => ({ ...p, scores: Object.fromEntries(order.map((n) => [String(n), fixed[i].scores[n]])) })) };
+  const newCard = { ...c, players: c.players.map((p, i) => ({ ...p,
+    scores: Object.fromEntries(order.filter((n) => !(fixed[i].missed || []).includes(n)).map((n) => [String(n), fixed[i].scores[n]])) })) };
   checkCard(newCard, "2999-01-01");
 
   const at = new Date(now).toISOString();

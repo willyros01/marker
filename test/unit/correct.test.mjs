@@ -309,3 +309,72 @@ test("C20 Your cards for the app owner with 40 posted cards of four golfers: a h
   assert.equal(m.editable.length, 1);
   assert.deepEqual(m.editable[0].gone, ["D"]);
 });
+
+/* Willy, 13 Nov 2026: a golfer who joined late (holes 1 and 2 not played,
+   counted at net par when posted). Found by the guide-picture run. */
+async function postedLate() {
+  const fs = world();
+  const sub = fs.data("markerSubmissions/c1");
+  const B = sub.card.players[1];
+  const scores = { ...B.scores }; delete scores["1"]; delete scores["2"];
+  sub.card.players[1] = { ...B, scores, missed: [1, 2] };
+  fs.docs.set("markerSubmissions/c1", { data: sub, updateTime: "2026-10-16T11:00:00.000Z" });
+  const r = await processSubmission(fs, "c1", { today: TODAY });
+  assert.equal(r.status, "posted");
+  return { fs, rounds: r.rounds };
+}
+
+test("L1 a card with a late golfer can be corrected; the missed holes stay at net par whatever the phone sends", async () => {
+  const { fs, rounds } = await postedLate();
+  const before = fs.data(`associations/G1/rounds/${rounds.B}`);
+  const netPar = before.holes[0];
+  assert.ok(Number.isInteger(netPar), "posted at net par");
+  /* The Marker 1.1.0 sends nothing for the missed holes; a phone could also send a number. */
+  const sent = { A: fixHole1(4).A, B: { ...scoresOf(6) } }; delete sent.B["1"]; sent.B["2"] = 3; sent.B["5"] = 5;
+  const r = await fix.correct(fs, who(SCORER), { cardId: "c1", scores: sent }, { now: postedAt(fs) + 3600_000 });
+  assert.equal(r.status, "corrected");
+  assert.deepEqual(r.changed.sort(), ["Ana Cruz", "Ben Reyes"]);
+  const after = fs.data(`associations/G1/rounds/${rounds.B}`);
+  assert.equal(after.holes[0], netPar, "hole 1 still net par");
+  assert.equal(after.holes[1], before.holes[1], "hole 2 still net par, the phone's 3 ignored");
+  assert.equal(after.holes[4], 5, "a played hole is corrected");
+  assert.equal(after.gross, before.gross - 1);
+  const kept = fs.data("markerSubmissions/c1").card.players[1];
+  assert.deepEqual(kept.missed, [1, 2], "still marked as missed");
+  assert.equal(kept.scores["1"], undefined);
+  /* and the corrected card can be opened and corrected again */
+  const again = await fix.cardForCorrection(fs, who(SCORER), "c1", { now: postedAt(fs) + 3700_000 });
+  assert.equal(again.card.players[1].scores["5"], 5);
+});
+
+test("L2 nothing changed on a late golfer's card: unchanged, not refused", async () => {
+  const { fs } = await postedLate();
+  const sent = { A: scoresOf(5), B: scoresOf(6) }; delete sent.B["1"]; delete sent.B["2"];
+  const r = await fix.correct(fs, who(SCORER), { cardId: "c1", scores: sent }, { now: postedAt(fs) + 3600_000 });
+  assert.equal(r.status, "unchanged");
+});
+
+test("L3 a late golfer's card re-posted by The Marker 1.1.0 (missed holes empty, not marked): posted, at net par", async () => {
+  const { fs, rounds } = await postedLate();
+  const netPar = fs.data(`associations/G1/rounds/${rounds.B}`).holes[0];
+  fs.docs.delete(`associations/G1/rounds/${rounds.B}`);
+  const B = fs.data("markerSubmissions/c1").card.players[1];
+  const { missed, ...plain } = B;   /* 1.1.0 forgets which holes were missed */
+  repostSub(fs, "c2", [plain]);
+  const r = await processSubmission(fs, "c2", { today: TODAY });
+  assert.equal(r.status, "posted", r.reason);
+  const round = fs.data(`associations/G1/rounds/${r.rounds.B}`);
+  assert.equal(round.holes[0], netPar);
+  assert.match(round.notes, /Joined late: holes 1, 2 not played/);
+});
+
+test("L4 a re-post with other empty holes is still refused (only exactly the missed holes are taken)", async () => {
+  const { fs, rounds } = await postedLate();
+  fs.docs.delete(`associations/G1/rounds/${rounds.B}`);
+  const { missed, ...plain } = fs.data("markerSubmissions/c1").card.players[1];
+  const scores = { ...plain.scores }; delete scores["7"];
+  repostSub(fs, "c2", [{ ...plain, scores }]);
+  const r = await processSubmission(fs, "c2", { today: TODAY });
+  assert.equal(r.status, "refused");
+  assert.match(r.reason, /no score on hole 1/);
+});

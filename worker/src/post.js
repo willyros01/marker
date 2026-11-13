@@ -162,10 +162,31 @@ export async function processSubmission(fs, cardId, { onlyScorer = null, today =
   }
 }
 
+/* A re-posted card (Willy, 13 Nov 2026): The Marker 1.1.0 forgets which holes
+   a golfer who joined late did not play, so those holes arrive empty. They are
+   taken from the original card, and only when exactly those holes are empty:
+   anything else is checked as usual. */
+export async function withMissedFromOriginal(fs, c) {
+  if (!c || !c.repostOf || !Array.isArray(c.players)) return c;
+  const old = await fs.get(`markerSubmissions/${String(c.repostOf).slice(0, 80)}`);
+  const before = new Map(((old && old.data.card && old.data.card.players) || []).map((p) => [p.golferId, p]));
+  const entered = (v) => v === card.PICKED_UP || (Number.isInteger(v) && v >= 1 && v <= 20);
+  return { ...c, players: c.players.map((p) => {
+    if (Array.isArray(p.missed) && p.missed.length) return p;
+    const o = before.get(p.golferId);
+    const missed = o && Array.isArray(o.missed) ? o.missed.map(Number) : [];
+    if (!missed.length) return p;
+    const scores = p.scores && typeof p.scores === "object" ? p.scores : {};
+    const empty = (Array.isArray(c.order) ? c.order : []).map(Number).filter((n) => !entered(scores[n] ?? scores[String(n)]));
+    if (empty.length !== missed.length || empty.some((n) => !missed.includes(n))) return p;
+    return { ...p, missed, scores: Object.fromEntries(Object.entries(scores).filter(([n]) => !missed.includes(Number(n)))) };
+  }) };
+}
+
 /* Everything to write for one card, or a Refusal. Reads only. */
 export async function plan(fs, sub, today) {
   const s = sub.data;
-  const c = s.card;
+  const c = await withMissedFromOriginal(fs, s.card);
   const scorer = s.scorer;
   const order = checkCard(c, today);
 
