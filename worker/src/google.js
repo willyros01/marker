@@ -4,8 +4,7 @@
  * every deploy. An access token lasts an hour; it is kept until five minutes
  * before it runs out.
  */
-/* Firestore, plus Identity Toolkit for The Scorecard's sign-in links (sendlink.js). */
-const SCOPE = "https://www.googleapis.com/auth/datastore https://www.googleapis.com/auth/cloud-platform";
+const SCOPE = "https://www.googleapis.com/auth/datastore";
 let cached = null;
 
 const b64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
