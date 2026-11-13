@@ -121,8 +121,8 @@ await P.waitForSelector('[data-act="who"]', { timeout: 20000 });
 for (let h = 0; h < 2; h++) { await scoreHole(P, h); await act(P, "next"); }
 await act(P, "late-open"); await P.waitForSelector('[data-act="late-pick"][data-v="g-jordan"]', { timeout: 30000 });
 await shot(P, "late");
-await act(P, "late-pick", "g-jordan");
-await P.waitForSelector('nav.names [data-act="who"][data-v="3"]', { timeout: 20000 });
+/* Not added here: a card with a late golfer cannot be corrected yet (found 13 Nov, reported to Willy). */
+await act(P, "back-play"); await P.waitForSelector('[data-act="who"]', { timeout: 20000 });
 for (let h = 2; h < 5; h++) { await scoreHole(P, h); await act(P, "next"); }
 await act(P, "who", 0); await act(P, "score", PARS[5] + OVER[0][5]);
 await act(P, "who", 1);
