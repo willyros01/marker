@@ -37,6 +37,7 @@
 import { client } from "./firestore.js";
 import { accessToken } from "./google.js";
 import { verifyIdToken } from "./verify.js";
+import { sendLink, LinkRefused } from "./sendlink.js";
 import { processSubmission, sweep } from "./post.js";
 import * as search from "./search.js";
 import * as fix from "./correct.js";
@@ -83,6 +84,21 @@ export default {
       if (url.pathname === "/cleanup-status" && req.method === "GET") {
         const st = await cleanupStatus(fsFor(env));
         return reply(st, st.ok ? 200 : 503, h);   /* 503 makes the watchdog send its email */
+      }
+
+      /* The Scorecard's sign-in emails (sendlink.js): nobody is signed in yet. */
+      if (url.pathname === "/send-link" && req.method === "POST") {
+        const body = await req.json().catch(() => ({}));
+        try {
+          return reply(await sendLink(fsFor(env), body, {
+            token: () => accessToken(env.SA_KEY), project: env.PROJECT,
+            open: async (addr) => (await import("cloudflare:sockets")).connect(addr, { secureTransport: "on", allowHalfOpen: false }),
+          }), 200, h);
+        } catch (e) {
+          if (e instanceof LinkRefused) return reply({ error: "REFUSED", reason: e.message }, 200, h);
+          console.log("send-link", e && e.message);
+          return reply({ error: "TRY_LATER" }, 503, h);
+        }
       }
 
       let who;
