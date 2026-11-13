@@ -119,7 +119,7 @@ export async function sendLink(fs, { email, url } = {}, { token, open, fetchFn =
     body: JSON.stringify({ requestType: "EMAIL_SIGNIN", email: address, continueUrl: continueUrl.href, canHandleCodeInApp: true, returnOobLink: true }),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data.oobLink) throw new Error(`Firebase did not make the link (${res.status} ${(data.error && data.error.message) || ""})`);
+  if (!res.ok || !data.oobLink) throw new Error(`Firebase did not make the link (${res.status} ${JSON.stringify(data.error || {}).slice(0, 300)})`);
 
   /* Counted only once Firebase has made the link, just before Gmail sends it. */
   await count(fs, address, now);

@@ -99,7 +99,7 @@ export default {
           /* Our own messages only (Gmail's or Firebase's answer code), never the password: the app
              falls back to Firebase's email, and the reason shows in the test run. */
           console.log("send-link", e && e.message);
-          return reply({ error: "TRY_LATER", why: String((e && e.message) || "").slice(0, 200) }, 503, h);
+          return reply({ error: "TRY_LATER", why: String((e && e.message) || "").slice(0, 400) }, 503, h);
         }
       }
 
