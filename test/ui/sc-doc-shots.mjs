@@ -174,7 +174,7 @@ const tab = async (p, t) => { await p.click(`button[data-tab="${t}"]`); await p.
 const snap = async (p, name, mode = "full") => {
   await p.waitForTimeout(900);
   const path = `${SHOTS}/sc-${name}.png`;
-  if (mode === "sheet") await p.locator("#sheet").screenshot({ path, animations: "disabled" });
+  if (mode === "sheet") await p.locator("#sheet .sheet-body").first().screenshot({ path, animations: "disabled" });
   else {
     if (mode === "full") await p.evaluate(() => window.scrollTo(0, 0));
     await p.screenshot({ path, fullPage: mode === "full", animations: "disabled" });
@@ -230,7 +230,8 @@ await scene(S, "new-game", async () => { await S.goto(APP); await S.waitForSelec
 await scene(S, "golfers", async () => { await S.goto(APP); await S.waitForSelector('button[data-tab="manage"]', { timeout: 45000 }); await tab(S, "manage"); });
 await scene(S, "invite", async () => {
   const show = S.locator('[data-act="toggle-golfer-list"]'); if (await show.count()) { await show.first().click(); await S.waitForTimeout(800); }
-  await S.locator("[data-invite-golfer]").first().click(); await text(S, "They join as"); }, "sheet");
+  await snap(S, "golfer-list", "full");
+  await S.locator(".roster-row [data-invite-golfer]:visible").first().click(); await text(S, "They join as"); }, "sheet");
 await closeSheet(S);
 await scene(S, "courses", async () => {
   await S.goto(APP); await S.waitForSelector('button[data-tab="manage"]', { timeout: 45000 }); await tab(S, "manage");
