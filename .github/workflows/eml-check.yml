@@ -1,0 +1,31 @@
+name: Check the helper can make sign-in links (read-only)
+
+# Runs build/eml-check.mjs by hand. Sends no email; changes nothing; the
+# short-lived key it makes for marker-worker is deleted at the end.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Keyless sign-in to Google
+        id: auth
+        uses: google-github-actions/auth@v3.0.0
+        with:
+          workload_identity_provider: projects/811267714235/locations/global/workloadIdentityPools/scorecard-github/providers/marker-provider
+          service_account: marker-deployer@scorecard-f41b8.iam.gserviceaccount.com
+          token_format: access_token
+      - name: Check
+        env:
+          TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: node build/eml-check.mjs
