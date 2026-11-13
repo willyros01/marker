@@ -13,7 +13,7 @@
  *   - the link can only lead to the Cuberoot join page;
  *   - one address gets at most 3 emails an hour (6 a day);
  *   - all addresses together at most 300 a day (Gmail allows about 500).
- * Each email is counted BEFORE it is sent, in one commit, so two requests at
+ * Each email is counted before Gmail sends it, in one commit, so two requests at
  * once cannot both slip under the limit.
  */
 import { setWrite } from "./firestore.js";
@@ -112,7 +112,6 @@ export async function sendLink(fs, { email, url } = {}, { token, open, fetchFn =
   const pass = sender && String(sender.data.appPassword || "").replace(/\s+/g, "");
   if (!user || !pass) throw new MailError("The apps' Gmail account is not set up yet.");
 
-  await count(fs, address, now);
 
   const res = await fetchFn(`https://identitytoolkit.googleapis.com/v1/projects/${project}/accounts:sendOobCode`, {
     method: "POST",
@@ -122,6 +121,8 @@ export async function sendLink(fs, { email, url } = {}, { token, open, fetchFn =
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.oobLink) throw new Error(`Firebase did not make the link (${res.status} ${(data.error && data.error.message) || ""})`);
 
+  /* Counted only once Firebase has made the link, just before Gmail sends it. */
+  await count(fs, address, now);
   const kind = kindOf(continueUrl.href);
   const m = compose(kind, joinLink(data.oobLink));
   await send({ user, pass, to: address, ...m }, { open });

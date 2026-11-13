@@ -87,14 +87,14 @@ test("SL4 only links to the Cuberoot join page; only real-looking addresses", as
   assert.equal(g.calls.length, 0, "Firebase was never asked");
 });
 
-test("SL5 at most 3 emails an hour to one address; counted before sending", async () => {
+test("SL5 at most 3 emails an hour to one address; counted before Gmail sends", async () => {
   const fs = fakeFs(SENDER), g = fakeGoogle(), gm = fakeGmail();
   const t = Date.UTC(2026, 10, 13, 15);
   for (let i = 0; i < LIMITS.perHour; i++) await sendLink(fs, { email: "lee@example.com", url: APPLY }, opts(g, gm, t + i));
   await assert.rejects(sendLink(fs, { email: "lee@example.com", url: APPLY }, opts(g, gm, t + 10)), /wait an hour/);
   await sendLink(fs, { email: "pat@example.com", url: APPLY }, opts(g, gm, t + 11));   /* another address is fine */
   await sendLink(fs, { email: "lee@example.com", url: APPLY }, opts(g, gm, t + 3600_001));   /* an hour later */
-  assert.equal(g.calls.length, 5);
+  assert.equal(g.calls.length, 6, "Firebase made 6 links; the refused one was never emailed");
 });
 
 test("SL6 the day's total is capped for everyone together", async () => {
