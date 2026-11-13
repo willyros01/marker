@@ -146,7 +146,12 @@ console.log(`seeded: ${golfers.length} golfers, ${COURSES.length} courses, ${rou
 
 /* ---------------- the pictures ---------------- */
 const browser = await chromium.launch();
-const CTX = { viewport: { width: 430, height: 932 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
+/* The app turns to its night look from 7 pm to 6 am (local time). The guide
+   shows the day look: a time zone where it is daytime now. */
+const DAY_TZ = ["Pacific/Honolulu", "America/Los_Angeles", "America/Toronto", "Europe/London", "Europe/Berlin", "Asia/Dubai", "Asia/Kolkata", "Asia/Tokyo", "Australia/Sydney"]
+  .find((z) => { const h = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hour12: false, timeZone: z }).format(new Date())); return h >= 9 && h <= 16; }) || "America/Toronto";
+console.log("time zone for the day look:", DAY_TZ);
+const CTX = { viewport: { width: 430, height: 932 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, timezoneId: DAY_TZ, colorScheme: "light" };
 const missing = [];
 async function open(email) {
   const context = await browser.newContext(CTX);
@@ -164,14 +169,20 @@ async function open(email) {
   return page;
 }
 const tab = async (p, t) => { await p.click(`button[data-tab="${t}"]`); await p.waitForTimeout(1200); };
-const snap = async (p, name, full = true) => {
+/* full: the whole page from the top; view: the screen as it is now;
+   sheet: only the pop-up sheet at the bottom. */
+const snap = async (p, name, mode = "full") => {
   await p.waitForTimeout(900);
-  await p.evaluate(() => { window.scrollTo(0, 0); const s = document.getElementById("sheet"); if (s) s.scrollTop = 0; });
-  await p.screenshot({ path: `${SHOTS}/sc-${name}.png`, fullPage: full, animations: "disabled" });
+  const path = `${SHOTS}/sc-${name}.png`;
+  if (mode === "sheet") await p.locator("#sheet").screenshot({ path, animations: "disabled" });
+  else {
+    if (mode === "full") await p.evaluate(() => window.scrollTo(0, 0));
+    await p.screenshot({ path, fullPage: mode === "full", animations: "disabled" });
+  }
   console.log("ok -", name);
 };
-async function scene(p, name, fn, full = true) {
-  try { await fn(); await snap(p, name, full); }
+async function scene(p, name, fn, mode = "full") {
+  try { await fn(); await snap(p, name, mode); }
   catch (e) {
     missing.push(name);
     console.log(`MISSING ${name}: ${String(e.message).split("\n")[0]}`);
@@ -199,11 +210,9 @@ await scene(L, "member-course", async () => {
   await L.locator("[data-tee]").first().click(); await L.waitForTimeout(600); });
 await scene(L, "member-score", async () => { await L.click('[data-act="step-next"]'); await L.waitForTimeout(800); await L.fill('input[name="gross"]', "84"); await L.waitForTimeout(600); });
 await scene(L, "member-rounds", async () => { await tab(L, "history"); });
-await scene(L, "marker-card", async () => { await L.locator('[data-act="show-card"]').first().click(); await text(L, "Scored in The Marker"); });
+await scene(L, "marker-card", async () => { await L.locator('[data-act="show-card"]').first().click(); await text(L, "Scored in The Marker"); }, "sheet");
 await closeSheet(L);
 await scene(L, "member-summary", async () => { await tab(L, "summary"); });
-await scene(L, "member-games", async () => { await tab(L, "games"); });
-await scene(L, "game-board", async () => { await L.getByText("Fall Classic").first().click(); await L.waitForTimeout(1500); });
 
 /* ---- the owner: Sam Carter ---- */
 const S = await open(EMAIL);
@@ -215,19 +224,26 @@ await scene(S, "course-search", async () => {
 await scene(S, "admin-history", async () => { await S.goto(APP); await S.waitForSelector('button[data-tab="history"]', { timeout: 45000 }); await tab(S, "history"); });
 await scene(S, "round-edit", async () => { await S.locator('[data-edit], [data-act="edit-round"], .round-row button, .list-row').first().click(); await S.waitForTimeout(1200); });
 await scene(S, "rankings", async () => { await S.goto(APP); await S.waitForSelector('button[data-tab="summary"]', { timeout: 45000 }); await tab(S, "summary"); });
-await scene(S, "new-game", async () => { await tab(S, "games"); await S.click('[data-act="new-game"]'); await S.waitForTimeout(1000); });
+await scene(S, "games", async () => { await tab(S, "games"); });
+await scene(S, "game-board", async () => { await S.locator(".list-row", { hasText: "Fall Classic" }).first().click(); await text(S, "Fall Classic"); await S.waitForTimeout(1500); });
+await scene(S, "new-game", async () => { await S.goto(APP); await S.waitForSelector('button[data-tab="games"]', { timeout: 45000 }); await tab(S, "games"); await S.click('[data-act="new-game"]'); await S.waitForTimeout(1000); });
 await scene(S, "golfers", async () => { await S.goto(APP); await S.waitForSelector('button[data-tab="manage"]', { timeout: 45000 }); await tab(S, "manage"); });
-await scene(S, "invite", async () => { await S.locator("[data-invite-golfer]").first().click(); await text(S, "They join as"); });
+await scene(S, "invite", async () => {
+  const show = S.locator('[data-act="toggle-golfer-list"]'); if (await show.count()) { await show.first().click(); await S.waitForTimeout(800); }
+  await S.locator("[data-invite-golfer]").first().click(); await text(S, "They join as"); }, "sheet");
 await closeSheet(S);
-await scene(S, "courses", async () => { const c = S.locator('[data-act="toggle-course-list"]'); if (await c.count()) await c.first().click(); await S.waitForTimeout(800);
-  await S.locator("text=Courses").first().scrollIntoViewIfNeeded(); });
-await scene(S, "course-new", async () => { await S.click('[data-act="new-course"]'); await S.waitForTimeout(1200); });
+await scene(S, "courses", async () => {
+  await S.goto(APP); await S.waitForSelector('button[data-tab="manage"]', { timeout: 45000 }); await tab(S, "manage");
+  const c = S.locator('[data-act="toggle-course-list"]'); if (await c.count() && /Show/.test(await c.first().innerText())) await c.first().click(); await S.waitForTimeout(800);
+  await S.locator("h2, .panel-title, .eyebrow, b", { hasText: /^Courses/ }).first().evaluate((e) => e.scrollIntoView({ block: "start" })); await S.waitForTimeout(500); }, "view");
+await scene(S, "course-new", async () => { await S.click('[data-act="new-course"]'); await S.waitForTimeout(1200);
+  await S.getByText("New course", { exact: false }).first().evaluate((e) => e.scrollIntoView({ block: "start" })); await S.waitForTimeout(500); }, "view");
 await scene(S, "cockpit", async () => { await S.goto(APP); await S.waitForSelector('button[data-tab="admin"]', { timeout: 45000 }); await tab(S, "admin"); await S.waitForTimeout(2500); });
 await scene(S, "members", async () => { await S.click('[data-act="admin-tab"][data-id="members"]'); await S.waitForTimeout(1500); });
 await scene(S, "group-settings", async () => { await S.click('[data-act="admin-tab"][data-id="settings"]'); await S.waitForTimeout(1500); });
-await scene(S, "delete-account", async () => { await S.locator('[data-act="delete-account"]').first().click(); await text(S, "Delete your account"); });
+await scene(S, "delete-account", async () => { await S.locator('[data-act="delete-account"]').first().click(); await text(S, "Delete your account"); }, "sheet");
 await closeSheet(S);
-await scene(S, "switcher", async () => { await S.goto(APP); await S.waitForSelector('button[data-tab="enter"]', { timeout: 45000 }); await S.click("#brandSub"); await text(S, "Your groups"); });
+await scene(S, "switcher", async () => { await S.goto(APP); await S.waitForSelector('button[data-tab="enter"]', { timeout: 45000 }); await S.click("#brandSub"); await text(S, "Your groups"); }, "sheet");
 await scene(S, "applications", async () => {
   await S.click('[data-goto-group="PUBLIC"]'); await S.waitForTimeout(2500);
   await tab(S, "admin"); await S.click('[data-act="admin-tab"][data-id="applications"]'); await text(S, "Alex Morgan"); });
