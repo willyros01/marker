@@ -1,0 +1,139 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  emulators:[22m[39m Detected demo project ID "demo-scorecard", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+[33m[1m⚠ [22m[39m It appears you are running in a CI environment. You can avoid downloading the Firestore Emulator repeatedly by caching the /home/runner/.cache/firebase/emulators directory.
+[36m[1mi  firestore:[22m[39m downloading cloud-firestore-emulator-v1.22.0.jar...
+
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m✔  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m✔  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mbash -c 'PROJECT=demo-scorecard node test/ui/doc-server.mjs > /tmp/doc-server.log 2>&1 & sleep 2; node test/ui/sc-doc-shots.mjs'[22m
+(node:3503) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///home/runner/work/marker/marker/sc/model.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /home/runner/work/marker/marker/sc/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+seeded: 8 golfers, 6 courses, 125 rounds, 4 games
+time zone for the day look: Pacific/Honolulu
+ok - signin
+ok - choose
+ok - apply
+ok - code
+ok - member-enter
+ok - member-course
+ok - member-score
+ok - member-rounds
+ok - marker-card
+ok - member-summary
+ok - admin-enter
+ok - course-search
+ok - admin-history
+ok - round-edit
+ok - rankings
+ok - games
+ok - game-board
+ok - new-game
+ok - golfers
+MISSING invite: page.waitForFunction: Timeout 20000ms exceeded.
+--- the screen showed:
+The Scorecard
+
+CEDAR BROOK GOLFERS ▾
+
+SAM CARTER · OWNER
+
+A+
+Auto · day
+Golfers in this group · 8
+Hide
+Dana Brooks
+index 21.3 · 13 rounds
+Invite
+Index
+···
+Jordan Diaz
+index 18.9 · 15 rounds
+Invite
+Index
+···
+Lee Park ✓
+index 6.5 · 18 rounds
+Index
+···
+Morgan Ellis
+index 11.8 · 16 rounds
+Invite
+Index
+···
+Pat Kelly
+index 8.8 · 17 rounds
+Invite
+Index
+···
+Robin Hayes
+index 9.8 · 15 rounds
+Invite
+Index
+···
+Sam Carter ✓
+index 12.5 · 17 rounds
+Index
+···
+Terry Quinn
+index 15.1 · 14 rounds
+Invite
+Index
+···
+Add golfer
+Add from my other groups
+
+Rename changes that person in every group. Remove takes them off this group's roster only — their rounds and handicap stay.
+
+Index sets a starting handicap for somebody who has not played three rounds with you yet. It greys out once their own rounds take over.
+
+Courses · 6
+Show
+Add a course
+The Scorecard v2.31.4
+125 rounds · 8 golfers · 6 courses
+Connected · World Handicap System, best 8 of last 20
+User guide · Support · Privacy · Terms
+Delete my account
+✎
+Enter
+≡
+History
+▤
+Summary
+⚑
+Games
+⚙
+Manage
+★
+Admin
+Invite Dana Brooks
+Close
+
+The link names them, so they tap it once and they are in — nothing to type, and no chance of a misspelled second record.
+
+THEY JOIN AS
+Guest — posts their own rounds, sees results. No password.
+Admin — also manages the roster and posts for anybody. Sets a password.
+
+A guest link keeps working for that same person on another device. An admin link works once.
+
+Choose how to send it
+---
+ok - courses
+ok - course-new
+ok - cockpit
+ok - members
+ok - group-settings
+ok - delete-account
+ok - switcher
+ok - applications
+PICTURES TAKEN, MISSING: invite
+[32m[1m✔ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
