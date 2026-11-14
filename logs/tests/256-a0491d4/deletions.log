@@ -1,0 +1,82 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  emulators:[22m[39m Detected demo project ID "demo-marker", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m✔  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m✔  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnode --test --test-concurrency=1 test/deletions.e2e.test.mjs[22m
+TAP version 13
+# Subtest: SEC1-SEC3 a forged request naming B's group, golfer and invitations harms nobody; A's own records go
+ok 1 - SEC1-SEC3 a forged request naming B's group, golfer and invitations harms nobody; A's own records go
+  ---
+  duration_ms: 2064.49178
+  type: 'test'
+  ...
+# Subtest: SEC4 the owner of two groups: nothing deleted, request marked blocked
+ok 2 - SEC4 the owner of two groups: nothing deleted, request marked blocked
+  ---
+  duration_ms: 130.212574
+  type: 'test'
+  ...
+# Subtest: SEC5 Firebase does not confirm the sign-in is gone: the request is kept, marked
+ok 3 - SEC5 Firebase does not confirm the sign-in is gone: the request is kept, marked
+  ---
+  duration_ms: 169.227563
+  type: 'test'
+  ...
+# Subtest: SEC6 a failed Firebase lookup is never taken as gone: the request stays
+ok 4 - SEC6 a failed Firebase lookup is never taken as gone: the request stays
+  ---
+  duration_ms: 147.175303
+  type: 'test'
+  ...
+# Subtest: SEC7 a request younger than 5 minutes is left for the app
+ok 5 - SEC7 a request younger than 5 minutes is left for the app
+  ---
+  duration_ms: 89.17671
+  type: 'test'
+  ...
+# Subtest: PUB-DEL1 Pat plays only in the Public group (the app finished its part): deleted for good, with a backup; Zoe, named in the request, untouched; within 50 calls
+ok 6 - PUB-DEL1 Pat plays only in the Public group (the app finished its part): deleted for good, with a backup; Zoe, named in the request, untouched; within 50 calls
+  ---
+  duration_ms: 271.553567
+  type: 'test'
+  ...
+# Subtest: PUB-DEL2 Quinn plays in the Public group AND a club (the app stopped early): only off the Public list; golfer and every round kept
+ok 7 - PUB-DEL2 Quinn plays in the Public group AND a club (the app stopped early): only off the Public list; golfer and every round kept
+  ---
+  duration_ms: 240.785888
+  type: 'test'
+  ...
+# Subtest: PUB-DEL3 a request set to auth-deleting on its own proves nothing
+ok 8 - PUB-DEL3 a request set to auth-deleting on its own proves nothing
+  ---
+  duration_ms: 203.271837
+  type: 'test'
+  ...
+# Subtest: PUB-DEL4 backups older than 30 days are removed; newer ones kept
+ok 9 - PUB-DEL4 backups older than 30 days are removed; newer ones kept
+  ---
+  duration_ms: 24.198625
+  type: 'test'
+  ...
+# Subtest: ONE-PER-RUN two deletions waiting: one per run, the second on the next run; the run is recorded
+ok 10 - ONE-PER-RUN two deletions waiting: one per run, the second on the next run; the run is recorded
+  ---
+  duration_ms: 162.198395
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3551.169353
+[32m[1m✔ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
