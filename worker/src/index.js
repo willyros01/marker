@@ -43,7 +43,7 @@ import * as search from "./search.js";
 import * as fix from "./correct.js";
 import { Refusal } from "./post.js";
 import { cleanGolfers, cleanLiveCards, cleanupStatus, noteDeletedAccounts } from "./cleanup.js";
-import { finishDeletions, purgeBackups, authAdmin } from "./deletions.js";
+import { finishDeletions, purgeBackups, authAdmin, STATE as DELETION_STATE } from "./deletions.js";
 import * as caddie from "./caddie.js";
 import * as follow from "./follow.js";
 import * as game from "./game.js";
@@ -85,6 +85,14 @@ export default {
       if (url.pathname === "/health") return reply({ ok: true, version: env.VERSION || "" }, 200, h);
       if (url.pathname === "/cleanup-status" && req.method === "GET") {
         const st = await cleanupStatus(fsFor(env));
+        /* The 5-minute deletion job too (13 Nov 2026): stale after 2 hours. */
+        const dj = await fsFor(env).get(DELETION_STATE);
+        const last = dj && Date.parse(dj.data.lastRun);
+        const minutesAgo = last ? Math.round((Date.now() - last) / 60000) : null;
+        const deletionsOk = minutesAgo !== null && minutesAgo < 120;
+        st.deletions = { ok: deletionsOk, lastRun: dj ? dj.data.lastRun : null, minutesAgo,
+          failedLastRun: dj ? Number(dj.data.failed) || 0 : 0, waiting: dj ? Number(dj.data.waiting) || 0 : 0 };
+        if (!deletionsOk) { st.ok = false; st.why = [st.why, minutesAgo === null ? "the deletion job has not run yet" : `the deletion job last ran ${minutesAgo} minutes ago`].filter(Boolean).join("; "); }
         return reply(st, st.ok ? 200 : 503, h);   /* 503 makes the watchdog send its email */
       }
 
@@ -213,7 +221,7 @@ export default {
       catch (e) { console.log("sweep failed:", e && e.message); }
       try { const r = await noteDeletedAccounts(fs); if (r.requests) console.log("deleted accounts", JSON.stringify(r)); }
       catch (e) { console.log("deleted-account note failed, nothing changed:", e && e.message); }
-      if (!s || s.posted || s.refused || s.left) return;
+      if (s && (s.posted || s.refused || s.left)) return;   /* a card used this run's calls */
       try { const r = await finishDeletions(fs, authFor(env), { log }); if (r.requests) console.log("deletions", JSON.stringify(r)); }
       catch (e) { console.log("deletion job failed, tried again in 5 minutes:", e && e.message); }
     })());
