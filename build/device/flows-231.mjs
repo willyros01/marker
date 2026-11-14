@@ -27,7 +27,10 @@ async function joinAs(d, email, password, golferId, snap) {
   await d.press('[data-act="create-account"]');
   for (let i = 0; i < 45; i++) {
     const t = await d.appText();
-    if (/Joining as/.test(t) && /accept-named/.test(await d.js(`document.body.innerHTML`))) { await d.press('[data-act="accept-named"]'); }
+    /* 2.31 joins by itself right after Join, so the button can vanish between
+       looking and tapping (F4 failed that way once, 13 Nov): tap it only if it
+       is still there at that moment, in one step. */
+    if (/Joining as/.test(t)) await d.js(`(() => { const b = document.querySelector('[data-act="accept-named"]:not([disabled])'); if (b) b.click(); return !!b; })()`);
     const acct = await accountByEmail(email);
     if (acct && (await getDoc(`associations/G1/members/${acct.localId}`))) break;
     await d.sleep(1000);
