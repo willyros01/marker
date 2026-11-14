@@ -1,0 +1,162 @@
+
+F1  Invitation for Ivy on a fresh phone: Terms, create account, 'Yes, that's me — join', lands in Saturday Group
+adb: error: listener 'tcp:9222' not found
+    screenshot 01-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 02-invited-create-account.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 03-joining-as-ivy.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 04-in-the-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  F1
+
+F2  Application on a fresh phone (Auto): apply in the app, open the approval link, Create your password, lands in the public group
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 05-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 06-apply-form.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 07-check-your-email.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 08-create-your-password.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 09-in-the-public-group.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    database: Pat is a member of the public group
+PASS  F2
+
+F3  Someone else (Rex) is signed in; an invitation for Jay arrives: the app asks whether it is for him
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+      note: io.github.willyros01.scorecard was not running (stopped by the system); started again once
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 10-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 11-rex-signed-in.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 12-is-this-for-you.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  F3
+
+F4  item 1: Rex (plays as his own golfer) is signed in; an invitation for Jay arrives: signed out by itself, no question; Jay joins
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 13-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 14-rex-signed-in.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 15-signed-out-by-itself.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 16-joined.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  F4
+
+F5  item 8: the group owner (no golfer of his own) is signed in; invitation; 'No, it's for someone else': no box over Join; the new person joins
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 17-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 18-is-this-for-you.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 19-welcome-no-box.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 20-joined.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  F5
+
+F6  item 7: signed in with a box open; an invitation link arrives: the box closes and the link's screen shows
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 21-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 22-box-open.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 23-link-screen.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  F6
+
+F7  item 11: applying with a wrong email: a pop-up in the middle stays until OK; then the email box is outlined
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 24-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 25-pop-up.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 26-after-ok.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  F7
+
+F8  Public only: Pia deletes her account on the phone (Summary, Delete my account); after the deletion job her golfer, name and rounds are gone, with a backup
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 27-terms.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 28-pia-signed-in.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 29-delete-warning.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+    screenshot 30-after-delete.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  F8
+
+RESULT: 8 passed, 0 failed
+
+M1  The Marker: Rex signs in, scores 18 holes for himself and Jay, and posts the card
+args: [-p, io.github.willyros01.marker, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.marker"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.marker"
+data="android.intent.category.LAUNCHER"
+    screenshot 101-marker-start.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 102-marker-signed-in.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 103-marker-setup.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 104-marker-players.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 105-marker-hole-9.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 106-marker-totals.png  (in front: io.github.willyros01.marker/.MainActivity)
+    screenshot 107-marker-posted.png  (in front: io.github.willyros01.marker/.MainActivity)
+PASS  M1
+
+M2  The worker posts the card into The Scorecard: two rounds, gross 90 and 108, in one commit
+    worker: card mwfw… posted
+    worker result: {"posted":1,"refused":0,"left":0}
+    database: Rex gross 90, Jay gross 108, entered via marker
+PASS  M2
+
+M3  Rex opens The Scorecard: the Marker round is in his rounds
+args: [-p, io.github.willyros01.scorecard, -c, android.intent.category.LAUNCHER, 1]
+ arg: "-p"
+ arg: "io.github.willyros01.scorecard"
+ arg: "-c"
+ arg: "android.intent.category.LAUNCHER"
+ arg: "1"
+data="io.github.willyros01.scorecard"
+data="android.intent.category.LAUNCHER"
+    screenshot 108-scorecard-my-rounds.png  (in front: io.github.willyros01.scorecard/.MainActivity)
+PASS  M3
+
+MARKER RESULT: 3 passed, 0 failed
