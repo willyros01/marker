@@ -109,8 +109,12 @@ export async function flows231(ctx) {
     await d.waitApp(/Only in the Public group:[\s\S]*deleted too/, 20000); snap("delete-warning");
     await d.fill('[name="delete-password"]', pia.password);
     await d.press('[data-del="go"]');
-    await d.waitApp(/Sign in|deleted/i, 60000); await d.sleep(2000); snap("after-delete");
-    if (await accountByEmail(pia.email)) throw new Error("the sign-in still exists after Delete my account");
+    /* The warning itself says "deleted", so wait for the account to be gone,
+       not for a word on the screen. */
+    for (let i = 0; i < 60 && (await accountByEmail(pia.email)); i++) await d.sleep(1000);
+    await d.sleep(2000); snap("after-delete");
+    if (await accountByEmail(pia.email)) throw new Error("the sign-in still exists 60 seconds after Delete my account");
+    if (!/Sign in/.test(await d.appText())) throw new Error("the app is not back at Sign in after the deletion");
     const run = spawnSync("bash", [job], { encoding: "utf8", env: { ...process.env, ACCESS_TOKEN: "owner", PROJECT: "demo-scorecard",
       FS_BASE: "http://127.0.0.1:8080/v1", AUTH_BASE: "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1", MIN_AGE_SECONDS: "0" } });
     if (run.status !== 0) throw new Error(`the deletion job failed: ${(run.stdout + run.stderr).slice(-300)}`);
