@@ -1,0 +1,49 @@
+
+I1  iPhone: invitation for Ivy on a fresh phone — Terms, create account, 'Yes, that's me', lands in Saturday Group
+    screenshot 201-terms.png
+    screenshot 202-invited-create-account.png
+    screenshot 203-joining-as-ivy.png
+    screenshot 204-in-the-group.png
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  I1
+
+I2  iPhone: application on a fresh phone (Auto) — apply, approval link, Create your password, lands in the public group
+    screenshot 205-terms.png
+    screenshot 206-apply-form.png
+    screenshot 207-check-your-email.png
+    screenshot 208-create-your-password.png
+    screenshot 209-in-the-public-group.png
+    database: Pia is a member of the public group
+PASS  I2
+
+I3  iPhone: Rex is signed in; an invitation for Jay arrives — the app asks whether it is for him
+    screenshot 210-terms.png
+    screenshot 211-rex-signed-in.png
+    screenshot 212-is-this-for-you.png
+PASS  I3
+
+I4  item 1: Rex (plays as his own golfer) is signed in; an invitation for Jay arrives: signed out by itself, no question; Jay joins
+    screenshot 213-terms.png
+    screenshot 214-I4-failed.png
+FAIL  I4  —  waited for /Enter[\s\S]*Summary/; the app shows: The Scorecard GETTING STARTED A+ Auto · night You're offline Your groups appear when you reconnect. Nothing has been lost. This screen updates by itself once there is a connection. The Scorecard v2.31.5 0 rounds · 0 golfers · 0 courses Connected · World Handicap System, best 8 of last 20 User guide · Support · Privacy · Terms Delete my account 
+
+I5  item 8: the group owner (no golfer of his own) is signed in; invitation; 'No, it's for someone else': no box over Join; the new person joins
+    screenshot 215-terms.png
+    screenshot 216-is-this-for-you.png
+    screenshot 217-welcome-no-box.png
+    screenshot 218-joined.png
+PASS  I5
+
+I6  item 7: signed in with a box open; an invitation link arrives: the box closes and the link's screen shows
+    screenshot 219-terms.png
+    screenshot 220-box-open.png
+    screenshot 221-link-screen.png
+PASS  I6
+
+I7  item 11: applying with a wrong email: a pop-up in the middle stays until OK; then the email box is outlined
+    screenshot 222-terms.png
+    screenshot 223-pop-up.png
+    screenshot 224-after-ok.png
+PASS  I7
+
+RESULT: 6 passed, 1 failed
