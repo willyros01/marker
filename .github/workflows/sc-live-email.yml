@@ -11,13 +11,13 @@ on:
   workflow_dispatch:
     inputs:
       ios_ref:
-        description: The Scorecard branch for the iPhone app (empty = skip)
+        description: The Scorecard branch for the iPhone app (type skip to leave it out)
         default: v2
       android_ref:
-        description: The Scorecard branch for the Android app (empty = skip)
+        description: The Scorecard branch for the Android app (type skip to leave it out)
         default: android
       web_ref:
-        description: The Scorecard branch for the web app (empty = skip)
+        description: The Scorecard branch for the web app (type skip to leave it out)
         default: main
 
 permissions:
@@ -29,7 +29,7 @@ env:
 
 jobs:
   web:
-    if: inputs.web_ref != ''
+    if: inputs.web_ref != '' && inputs.web_ref != 'skip'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -68,7 +68,7 @@ jobs:
           retention-days: 7
 
   android:
-    if: inputs.android_ref != ''
+    if: inputs.android_ref != '' && inputs.android_ref != 'skip'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -117,7 +117,7 @@ jobs:
           retention-days: 7
 
   iphone:
-    if: inputs.ios_ref != ''
+    if: inputs.ios_ref != '' && inputs.ios_ref != 'skip'
     runs-on: macos-26
     timeout-minutes: 60
     steps:
