@@ -89,10 +89,8 @@ export async function flows231(ctx) {
      their account is deleted from it for good (the deletion job; 30-day
      backup). Tapped through on the phone, then the job runs as it does live. */
   await flow(`${P}8`, "Public only: Pia deletes her account on the phone (Summary, Delete my account); after the deletion job her golfer, name and rounds are gone, with a backup", async () => {
-    const site = ["sca", "sc"].map((s) => path.resolve(s)).find((s) => fs.existsSync(`${s}/.github/scripts/finish-deletions.sh`));
-    if (!site) throw new Error("the deletion job of the version under test was not found");
-    const job = `${site}/.github/scripts/finish-deletions.sh`;
-    if (!/5b\. The Public group/.test(fs.readFileSync(job, "utf8"))) throw new Error("this version's deletion job has no Public step");
+    /* The deletion job is the helper's own (worker/src/deletions.js, every 5 minutes). */
+    const job = path.resolve("build/device/finish-deletions.mjs");
     const pia = { email: "pia@example.com", password: "pia-pass-1" };
     const uid = await signUp(pia.email, pia.password);
     await put("golfers/gPia", { name: "Pia Public", nameKey: "pia-public", linkedUid: uid, groups: ["PUBLIC"], handicapIndex: 18 });
@@ -130,8 +128,7 @@ export async function flows231(ctx) {
     } else if (await accountByEmail(pia.email)) {
       throw new Error("the app says deleted but the sign-in still exists");
     }
-    const run = spawnSync("bash", [job], { encoding: "utf8", env: { ...process.env, ACCESS_TOKEN: "owner", PROJECT: "demo-scorecard",
-      FS_BASE: "http://127.0.0.1:8080/v1", AUTH_BASE: "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1", MIN_AGE_SECONDS: "0" } });
+    const run = spawnSync("node", [job], { encoding: "utf8" });
     if (run.status !== 0) throw new Error(`the deletion job failed: ${(run.stdout + run.stderr).slice(-300)}`);
     const left = [];
     if (await accountByEmail(pia.email)) left.push("the sign-in");
