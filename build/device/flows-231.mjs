@@ -3,7 +3,10 @@
  *   ctx.start()   a fresh install, started, Terms accepted
  *   ctx.link(url) hands a link to the running app the way the phone does
  * Each flow checks the screen AND the test database. */
-import { put, invitation, getDoc, accountByEmail, W, R1 } from "./seed.mjs";
+import fs from "node:fs";
+import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { put, invitation, getDoc, accountByEmail, signUp, W, R1 } from "./seed.mjs";
 
 async function golfer(id, name) {
   const key = name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -80,5 +83,44 @@ export async function flows231(ctx) {
     await d.press("[data-pop-ok]"); await d.sleep(1200); snap("after-ok");
     if (await d.js(`!document.getElementById("popmsg").hidden`)) throw new Error("the pop-up did not close with OK");
     if (!(await d.js(`document.querySelector('[name="apply-email"]').classList.contains("needs-fix")`))) throw new Error("the email box is not outlined");
+  });
+
+  /* Willy, 13 Nov 2026: whoever plays only in the Public group and deletes
+     their account is deleted from it for good (the deletion job; 30-day
+     backup). Tapped through on the phone, then the job runs as it does live. */
+  await flow(`${P}8`, "Public only: Pia deletes her account on the phone (Summary, Delete my account); after the deletion job her golfer, name and rounds are gone, with a backup", async () => {
+    const site = ["sca", "sc"].map((s) => path.resolve(s)).find((s) => fs.existsSync(`${s}/.github/scripts/finish-deletions.sh`));
+    if (!site) throw new Error("the deletion job of the version under test was not found");
+    const job = `${site}/.github/scripts/finish-deletions.sh`;
+    if (!/5b\. The Public group/.test(fs.readFileSync(job, "utf8"))) throw new Error("this version's deletion job has no Public step");
+    const pia = { email: "pia@example.com", password: "pia-pass-1" };
+    const uid = await signUp(pia.email, pia.password);
+    await put("golfers/gPia", { name: "Pia Public", nameKey: "pia-public", linkedUid: uid, groups: ["PUBLIC"], handicapIndex: 18 });
+    await put("golferNames/pia-public", { golferId: "gPia", name: "Pia Public" });
+    await put("associations/PUBLIC/roster/gPia", { golferId: "gPia" });
+    await put("associations/PUBLIC/directory/gPia", { golferId: "gPia", displayName: "Pia Public", handicapIndex: 18 });
+    await put(`associations/PUBLIC/members/${uid}`, { uid, role: "member", displayName: "Pia Public", golferId: "gPia" });
+    await put(`userGroups/${uid}/groups/PUBLIC`, { assocId: "PUBLIC", name: "PUBLIC" });
+    await put(`accountEmails/${pia.email}`, { at: "seeded" });
+    await put("associations/PUBLIC/rounds/r-pia1", { id: "r-pia1", golferId: "gPia", assocId: "PUBLIC", date: "2026-11-01", differential: 20, gross: 95 });
+    await start(); await signIn(d, pia); snap("pia-signed-in");
+    await d.press('button[data-tab="summary"]'); await d.sleep(1200);
+    await d.press('[data-act="delete-account"]');
+    await d.waitApp(/Only in the Public group:[\s\S]*deleted too/, 20000); snap("delete-warning");
+    await d.fill('[name="delete-password"]', pia.password);
+    await d.press('[data-del="go"]');
+    await d.waitApp(/Sign in|deleted/i, 60000); await d.sleep(2000); snap("after-delete");
+    if (await accountByEmail(pia.email)) throw new Error("the sign-in still exists after Delete my account");
+    const run = spawnSync("bash", [job], { encoding: "utf8", env: { ...process.env, ACCESS_TOKEN: "owner", PROJECT: "demo-scorecard",
+      FS_BASE: "http://127.0.0.1:8080/v1", AUTH_BASE: "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1", MIN_AGE_SECONDS: "0" } });
+    if (run.status !== 0) throw new Error(`the deletion job failed: ${(run.stdout + run.stderr).slice(-300)}`);
+    const left = [];
+    if (await getDoc("golfers/gPia")) left.push("the golfer");
+    if (await getDoc("associations/PUBLIC/roster/gPia")) left.push("the Public list place");
+    if (await getDoc("associations/PUBLIC/directory/gPia")) left.push("the ranking entry");
+    if (await getDoc("associations/PUBLIC/rounds/r-pia1")) left.push("the round");
+    if (await getDoc("golferNames/pia-public")) left.push("the name");
+    if (left.length) throw new Error(`still there after the job: ${left.join(", ")}`);
+    if (!/deleted from the Public group for good \(1 rounds\); backup kept 30 days/.test(run.stdout)) throw new Error(`the job did not report the backup: ${run.stdout.slice(-300)}`);
   });
 }
