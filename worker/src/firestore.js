@@ -106,6 +106,25 @@ export function client({ project, token, base = "https://firestore.googleapis.co
       return rows.filter((r) => r.document).map((r) => asDoc(r.document));
     },
 
+    /* Documents exactly as Firestore stores them ({name, fields, updateTime}),
+       types untouched — for backups that must restore byte for byte.
+       Same order as `paths`; null where a document is not there. */
+    async getRaw(paths) {
+      const out = new Map();
+      for (let i = 0; i < paths.length; i += 100) {
+        const part = [...new Set(paths.slice(i, i + 100))];
+        const rows = await call("POST", `${base}/${root}:batchGet`, { documents: part.map(name) });
+        for (const r of Array.isArray(rows) ? rows : []) if (r.found) out.set(r.found.name.slice(root.length + 1), r.found);
+      }
+      return paths.map((p) => out.get(p) || null);
+    },
+
+    /* The names of the collections under one document. */
+    async listCollectionIds(path) {
+      const r = await call("POST", `${base}/${name(path)}:listCollectionIds`, {});
+      return Array.isArray(r.collectionIds) ? r.collectionIds : [];
+    },
+
     /* Every write in one go: all happen or none do. */
     async commit(writes) {
       return call("POST", `${base}/${root}:commit`, { writes });

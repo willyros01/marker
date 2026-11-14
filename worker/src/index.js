@@ -43,6 +43,7 @@ import * as search from "./search.js";
 import * as fix from "./correct.js";
 import { Refusal } from "./post.js";
 import { cleanGolfers, cleanLiveCards, cleanupStatus, noteDeletedAccounts } from "./cleanup.js";
+import { finishDeletions, purgeBackups, authAdmin } from "./deletions.js";
 import * as caddie from "./caddie.js";
 import * as follow from "./follow.js";
 import * as game from "./game.js";
@@ -51,6 +52,7 @@ import * as game from "./game.js";
 const DAILY = "0 7 * * *";
 
 const fsFor = (env) => client({ project: env.PROJECT, token: () => accessToken(env.SA_KEY) });
+const authFor = (env) => authAdmin({ project: env.PROJECT, token: () => accessToken(env.SA_KEY) });
 
 function cors(req, env) {
   const origin = req.headers.get("Origin") || "";
@@ -195,11 +197,25 @@ export default {
       ctx.waitUntil(cleanLiveCards(fsFor(env), { log: (m) => console.log(m) })
         .then((r) => console.log("live card clean-up", JSON.stringify(r)))
         .catch((e) => console.log("live card clean-up failed, nothing deleted:", e && e.message)));
+      ctx.waitUntil(purgeBackups(fsFor(env), { log: (m) => console.log(m) })
+        .catch((e) => console.log("backup clean-up failed, nothing deleted:", e && e.message)));
       return;
     }
-    ctx.waitUntil(sweep(fsFor(env), { log: (m) => console.log(m) }).then((r) => console.log("sweep", JSON.stringify(r))));
-    ctx.waitUntil(noteDeletedAccounts(fsFor(env))
-      .then((r) => { if (r.requests) console.log("deleted accounts", JSON.stringify(r)); })
-      .catch((e) => console.log("deleted-account note failed, nothing changed:", e && e.message)));
+    /* One after the other, so the run stays within Cloudflare's 50 calls:
+       the card sweep first; then the deleted-account note; then, only if no
+       card was worked on in this run, one account deletion (Willy, 13 Nov 2026:
+       moved here from The Scorecard's GitHub job). */
+    ctx.waitUntil((async () => {
+      const fs = fsFor(env);
+      const log = (m) => console.log(m);
+      let s = null;
+      try { s = await sweep(fs, { log }); console.log("sweep", JSON.stringify(s)); }
+      catch (e) { console.log("sweep failed:", e && e.message); }
+      try { const r = await noteDeletedAccounts(fs); if (r.requests) console.log("deleted accounts", JSON.stringify(r)); }
+      catch (e) { console.log("deleted-account note failed, nothing changed:", e && e.message); }
+      if (!s || s.posted || s.refused || s.left) return;
+      try { const r = await finishDeletions(fs, authFor(env), { log }); if (r.requests) console.log("deletions", JSON.stringify(r)); }
+      catch (e) { console.log("deletion job failed, tried again in 5 minutes:", e && e.message); }
+    })());
   },
 };

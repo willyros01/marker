@@ -33,12 +33,16 @@ jobs:
         run: |
           set -o pipefail
           npm run -s test:rules 2>&1 | tee rules.log
+      - name: Deletion job tests (emulator)
+        run: |
+          set -o pipefail
+          npm run -s test:deletions 2>&1 | tee deletions.log
       - name: Save the logs to the ci-logs branch
         if: always()
         run: |
           set -e
           dir="logs/tests/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
-          mkdir -p "/tmp/$dir"; cp unit.log rules.log "/tmp/$dir/" 2>/dev/null || true
+          mkdir -p "/tmp/$dir"; cp unit.log rules.log deletions.log "/tmp/$dir/" 2>/dev/null || true
           git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
           git fetch origin ci-logs 2>/dev/null && git checkout -q -B ci-logs origin/ci-logs || git checkout -q --orphan ci-logs
           git rm -rq --cached . 2>/dev/null || true
