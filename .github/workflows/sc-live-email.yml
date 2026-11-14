@@ -30,8 +30,8 @@ env:
 jobs:
   web:
     if: inputs.web_ref != ''
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -43,10 +43,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install the test browsers
+      - name: Install the test browsers (same version and retry as The Scorecard's own tests)
         run: |
-          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y > /dev/null && npm install --no-audit --no-fund playwright@1.48.2 > /tmp/pw.log 2>&1 || { tail -20 /tmp/pw.log; exit 1; }
-          npx playwright install --with-deps chromium webkit > /tmp/pwi.log 2>&1 || { tail -20 /tmp/pwi.log; exit 1; }
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y > /dev/null && npm install --no-audit --no-fund playwright@1.63.0 > /tmp/pw.log 2>&1 || { tail -20 /tmp/pw.log; exit 1; }
+          bash "$GITHUB_WORKSPACE/scw/.github/scripts/install-browsers.sh"
           cp "$GITHUB_WORKSPACE/build/device/live-email-web.mjs" /tmp/pw/
       - name: Web app (Chrome and Safari engines) - Forgot password, then the inbox
         env:
