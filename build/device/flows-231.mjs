@@ -114,7 +114,9 @@ export async function flows231(ctx) {
     for (let i = 0; i < 60 && (await accountByEmail(pia.email)); i++) await d.sleep(1000);
     await d.sleep(2000); snap("after-delete");
     if (await accountByEmail(pia.email)) throw new Error("the sign-in still exists 60 seconds after Delete my account");
-    if (!/Sign in/.test(await d.appText())) throw new Error("the app is not back at Sign in after the deletion");
+    const after = await d.appText();
+    if (!/Your account has been deleted/.test(after)) throw new Error("no 'Your account has been deleted' message");
+    if (/refused/i.test(after)) throw new Error("an error box shows after the deletion: " + after.replace(/\s+/g, " ").slice(0, 160));
     const run = spawnSync("bash", [job], { encoding: "utf8", env: { ...process.env, ACCESS_TOKEN: "owner", PROJECT: "demo-scorecard",
       FS_BASE: "http://127.0.0.1:8080/v1", AUTH_BASE: "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1", MIN_AGE_SECONDS: "0" } });
     if (run.status !== 0) throw new Error(`the deletion job failed: ${(run.stdout + run.stderr).slice(-300)}`);
