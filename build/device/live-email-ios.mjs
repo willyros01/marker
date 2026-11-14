@@ -22,7 +22,7 @@ try {
   await s.press('[data-act="reset-password"]');
   const t = await s.waitApp(/Link sent to|Couldn.t send/, 60000);
   snap("after-forgot-password");
-  if (!/Choose a new password for The Scorecard/.test(t)) throw new Error(`the helper did not send it: ${t.replace(/\s+/g, " ").slice(0, 300)}`);
+  if (!/Choose a new password for The Scorecard/.test(t)) throw new Error(/Sign in to The Scorecard"/.test(t) ? "the screen names the wrong email title (Sign in to The Scorecard); the inbox check below shows which email really came" : `no confirmation on screen: ${t.replace(/\s+/g, " ").slice(0, 300)}`);
   console.log('PASS iphone: the app says the email "Choose a new password for The Scorecard" was sent (sent by the helper)');
 } catch (e) {
   try { snap("failed"); } catch {}

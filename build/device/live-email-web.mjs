@@ -33,7 +33,7 @@ try {
   await page.waitForFunction(() => /Link sent to|Couldn.t send/.test(document.body.innerText), null, { timeout: 60000 });
   await shot("after-forgot-password");
   const t = await page.evaluate(() => document.body.innerText);
-  if (!/Choose a new password for The Scorecard/.test(t)) throw new Error(`the helper did not send it: ${t.replace(/\s+/g, " ").slice(0, 300)}`);
+  if (!/Choose a new password for The Scorecard/.test(t)) throw new Error(/Sign in to The Scorecard"/.test(t) ? "the screen names the wrong email title (Sign in to The Scorecard); the inbox check below shows which email really came" : `no confirmation on screen: ${t.replace(/\s+/g, " ").slice(0, 300)}`);
   console.log(`PASS ${NAME}: the web app says the email "Choose a new password for The Scorecard" was sent (sent by the helper)`);
 } catch (e) {
   try { await shot("failed"); } catch {}
