@@ -1,0 +1,20 @@
+name: Helper status (read only)
+
+# Reads the helper's public status page (/cleanup-status): when the daily
+# clean-up and the 5-minute deletion job last ran. Changes nothing.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Read the status page
+        run: |
+          code=$(curl -s -o s.json -w '%{http_code}' --max-time 30 https://marker.willyros01.workers.dev/cleanup-status)
+          echo "HTTP $code"; jq . s.json
+          { echo '### Helper status'; echo '```'; jq . s.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
