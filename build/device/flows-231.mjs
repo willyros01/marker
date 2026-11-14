@@ -111,16 +111,30 @@ export async function flows231(ctx) {
     await d.press('[data-del="go"]');
     /* The warning itself says "deleted", so wait for the account to be gone,
        not for a word on the screen. */
-    for (let i = 0; i < 60 && (await accountByEmail(pia.email)); i++) await d.sleep(1000);
-    await d.sleep(2000); snap("after-delete");
-    if (await accountByEmail(pia.email)) throw new Error("the sign-in still exists 60 seconds after Delete my account");
-    const after = await d.appText();
-    if (!/Your account has been deleted/.test(after)) throw new Error("no 'Your account has been deleted' message");
+    /* Two correct endings: the app finishes it ("Your account has been
+       deleted"), or it stops safely, signs out and leaves the rest to the job
+       ("This account is being deleted"). Either way the job must finish it. */
+    let after = "";
+    for (let i = 0; i < 60; i++) {
+      after = await d.appText();
+      if (/Your account has been deleted|This account is being deleted/.test(after)) break;
+      await d.sleep(1000);
+    }
+    await d.sleep(2000); snap("after-delete"); after = await d.appText();
     if (/refused/i.test(after)) throw new Error("an error box shows after the deletion: " + after.replace(/\s+/g, " ").slice(0, 160));
+    if (/This account is being deleted/.test(after)) {
+      const req = await getDoc(`accountDeletions/${uid}`);
+      console.log(`    note: the app stopped safely and left the rest to the job — step "${req && req.appStep}", reason: ${req && req.appError}`);
+    } else if (!/Your account has been deleted/.test(after)) {
+      throw new Error("neither 'Your account has been deleted' nor 'This account is being deleted' shows: " + after.replace(/\s+/g, " ").slice(0, 160));
+    } else if (await accountByEmail(pia.email)) {
+      throw new Error("the app says deleted but the sign-in still exists");
+    }
     const run = spawnSync("bash", [job], { encoding: "utf8", env: { ...process.env, ACCESS_TOKEN: "owner", PROJECT: "demo-scorecard",
       FS_BASE: "http://127.0.0.1:8080/v1", AUTH_BASE: "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1", MIN_AGE_SECONDS: "0" } });
     if (run.status !== 0) throw new Error(`the deletion job failed: ${(run.stdout + run.stderr).slice(-300)}`);
     const left = [];
+    if (await accountByEmail(pia.email)) left.push("the sign-in");
     if (await getDoc("golfers/gPia")) left.push("the golfer");
     if (await getDoc("associations/PUBLIC/roster/gPia")) left.push("the Public list place");
     if (await getDoc("associations/PUBLIC/directory/gPia")) left.push("the ranking entry");
