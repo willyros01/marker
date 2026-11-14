@@ -1,36 +1,76 @@
-name: Scorecard live email test (Android phone and web)
+name: Scorecard live email test (iPhone, Android, web)
 
 # Willy, 13 Nov 2026: every fix is tested the way a golfer uses it. This run
-# takes a Scorecard branch (read-only), and on an Android phone (emulator) and
-# in phone-sized browsers (Chrome and Safari engines) taps Forgot the password
-# against the LIVE Firebase and the live Cloudflare helper. Each email goes to
-# the apps' own Gmail (thescorecard.marker+<test>@gmail.com, same inbox), and
-# the inbox is then checked: title, sender, and the button's link.
-# No golfer gets anything; nothing is published; the branch is not changed.
+# takes Scorecard branches (read-only), and on the iPhone simulator, an Android
+# phone (emulator) and phone-sized browsers (Chrome and Safari engines) taps
+# Forgot the password against the LIVE Firebase and the live Cloudflare helper.
+# Each email goes to the apps' own Gmail (thescorecard.marker+<test>@gmail.com,
+# same inbox), and the inbox is then checked: title, sender, the button's link.
+# No golfer gets anything; nothing is published; the branches are not changed.
 on:
   workflow_dispatch:
     inputs:
+      ios_ref:
+        description: The Scorecard branch for the iPhone app (empty = skip)
+        default: v2
       android_ref:
-        description: The Scorecard branch for the Android app
+        description: The Scorecard branch for the Android app (empty = skip)
         default: android
       web_ref:
-        description: The Scorecard branch for the web app
+        description: The Scorecard branch for the web app (empty = skip)
         default: main
 
 permissions:
-  contents: write   # only to save the screenshots to the ci-logs branch
-
-concurrency:
-  group: sc-live-email
-  cancel-in-progress: false
+  contents: read
 
 env:
   GMAIL_USER: thescorecard.marker@gmail.com
+  SUBJECT: Choose a new password for The Scorecard
 
 jobs:
-  live:
+  web:
+    if: inputs.web_ref != ''
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: willyros01/scorecard
+          ref: ${{ inputs.web_ref }}
+          path: scw
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install the test browsers
+        run: |
+          mkdir -p /tmp/pw && cd /tmp/pw && npm init -y > /dev/null && npm install --no-audit --no-fund playwright@1.48.2 > /tmp/pw.log 2>&1 || { tail -20 /tmp/pw.log; exit 1; }
+          npx playwright install --with-deps chromium webkit > /tmp/pwi.log 2>&1 || { tail -20 /tmp/pwi.log; exit 1; }
+          cp "$GITHUB_WORKSPACE/build/device/live-email-web.mjs" /tmp/pw/
+      - name: Web app (Chrome and Safari engines) - Forgot password, then the inbox
+        env:
+          GMAIL_PASS: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          set -o pipefail; mkdir -p out; rc=0
+          for b in chromium webkit; do
+            to="thescorecard.marker+web-$b-${GITHUB_RUN_ID}@gmail.com"; t0=$(date +%s)
+            node /tmp/pw/live-email-web.mjs out "$b" "$to" 2>&1 | tee -a run.log || rc=1
+            python3 build/device/inbox.py "$to" "$SUBJECT" "$t0" 2>&1 | sed "s/^/  [web $b inbox] /" | tee -a run.log || rc=1
+          done
+          grep -E 'PASS|FAIL|RESULT' run.log >> "$GITHUB_STEP_SUMMARY" || true
+          exit $rc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-screens
+          path: out/
+          retention-days: 7
+
+  android:
+    if: inputs.android_ref != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
@@ -38,12 +78,6 @@ jobs:
           repository: willyros01/scorecard
           ref: ${{ inputs.android_ref }}
           path: sca
-          persist-credentials: false
-      - uses: actions/checkout@v4
-        with:
-          repository: willyros01/scorecard
-          ref: ${{ inputs.web_ref }}
-          path: scw
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
@@ -54,23 +88,11 @@ jobs:
           node-version: "22"
       - name: Build the Android app as golfers get it (live)
         run: bash build/device/build-live-apk.sh 2>&1 | tail -8
-      - name: Web app (Chrome and Safari engines) - Forgot password
-        env:
-          GMAIL_PASS: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: |
-          mkdir -p out
-          npm install --no-save --no-audit --no-fund playwright@1.48.2 > /dev/null 2>&1
-          npx playwright@1.48.2 install --with-deps chromium webkit > /dev/null 2>&1
-          for b in chromium webkit; do
-            to="thescorecard.marker+web-$b-${GITHUB_RUN_ID}@gmail.com"; t0=$(date +%s)
-            node build/device/live-email-web.mjs out "$b" "$to" 2>&1 | tee -a run.log
-            python3 build/device/inbox.py "$to" "Choose a new password for The Scorecard" "$t0" 2>&1 | sed "s/^/  [$b inbox] /" | tee -a run.log
-          done
       - name: Allow the emulator to use hardware acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
-      - name: Android phone - Forgot password
+      - name: Android phone - Forgot password, then the inbox
         uses: reactivecircus/android-emulator-runner@v2
         env:
           GMAIL_PASS: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -82,25 +104,51 @@ jobs:
           profile: pixel_6
           ram-size: 4096M
           script: |
-            to="thescorecard.marker+android-${GITHUB_RUN_ID}@gmail.com"; t0=$(date +%s); node build/device/live-email-android.mjs out sca/android/app/build/outputs/apk/debug/app-debug.apk "$to" 2>&1 | tee -a run.log; python3 build/device/inbox.py "$to" "Choose a new password for The Scorecard" "$t0" 2>&1 | sed "s/^/  [android inbox] /" | tee -a run.log
+            to="thescorecard.marker+android-${GITHUB_RUN_ID}@gmail.com"; t0=$(date +%s); node build/device/live-email-android.mjs out sca/android/app/build/outputs/apk/debug/app-debug.apk "$to" 2>&1 | tee -a run.log; python3 build/device/inbox.py "$to" "$SUBJECT" "$t0" 2>&1 | sed "s/^/  [android inbox] /" | tee -a run.log
       - name: Result
         run: |
-          echo '### Scorecard live email test' >> "$GITHUB_STEP_SUMMARY"
-          sed 's/^/    /' run.log | grep -E 'PASS|FAIL|RESULT' >> "$GITHUB_STEP_SUMMARY" || true
-          if grep -q 'FAIL' run.log || [ "$(grep -c 'RESULT: all passed' run.log)" != 3 ]; then echo "::error::A live email test failed (see FAIL above)"; exit 1; fi
-          echo "ALL LIVE EMAIL TESTS PASSED"
-      - name: Save the report and screenshots to the ci-logs branch
+          grep -E 'PASS|FAIL|RESULT' run.log >> "$GITHUB_STEP_SUMMARY" || true
+          if grep -q 'FAIL' run.log || ! grep -q 'RESULT: all passed' run.log; then echo "::error::The Android live email test failed (see FAIL above)"; exit 1; fi
+      - uses: actions/upload-artifact@v4
         if: always()
+        with:
+          name: android-screens
+          path: out/
+          retention-days: 7
+
+  iphone:
+    if: inputs.ios_ref != ''
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: willyros01/scorecard
+          ref: ${{ inputs.ios_ref }}
+          path: sc
+          persist-credentials: false
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Web Inspector bridge
+        run: brew install ios-webkit-debug-proxy > /dev/null 2>&1 || brew install ios-webkit-debug-proxy
+      - name: iPhone simulator - Forgot password, then the inbox
+        env:
+          GMAIL_PASS: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
-          set -e
-          dir="logs/sc-live-email/${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
-          mkdir -p "/tmp/$dir"; cp out/*.png "/tmp/$dir/" 2>/dev/null || true; cp run.log "/tmp/$dir/" 2>/dev/null || true
-          git config user.name "marker-ci"; git config user.email "marker-ci@users.noreply.github.com"
-          for try in 1 2 3; do
-            git fetch -q origin ci-logs && git checkout -q -B ci-logs origin/ci-logs
-            git rm -rq --cached . 2>/dev/null || true
-            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name logs -exec rm -rf {} +
-            mkdir -p "$dir"; cp -R /tmp/$dir/. "$dir/"
-            git add logs && git commit -qm "sc-live-email ${GITHUB_RUN_NUMBER}" && git push -q origin ci-logs && break
-            sleep 5
-          done
+          set -o pipefail; rc=0
+          to="thescorecard.marker+iphone-${GITHUB_RUN_ID}@gmail.com"; t0=$(date +%s)
+          bash build/device/live-email-ios.sh "$to" 2>&1 | tee -a run.log || rc=1
+          python3 build/device/inbox.py "$to" "$SUBJECT" "$t0" 2>&1 | sed "s/^/  [iphone inbox] /" | tee -a run.log || rc=1
+          grep -E 'PASS|FAIL|RESULT' run.log >> "$GITHUB_STEP_SUMMARY" || true
+          exit $rc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: iphone-screens
+          path: out/
+          retention-days: 7
