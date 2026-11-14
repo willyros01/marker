@@ -1,0 +1,59 @@
+
+I1  iPhone: invitation for Ivy on a fresh phone — Terms, create account, 'Yes, that's me', lands in Saturday Group
+    screenshot 201-terms.png
+    screenshot 202-invited-create-account.png
+    screenshot 203-joining-as-ivy.png
+    screenshot 204-in-the-group.png
+    database: Ivy is a member of Saturday Group, linked to her golfer
+PASS  I1
+
+I2  iPhone: application on a fresh phone (Auto) — apply, approval link, Create your password, lands in the public group
+    screenshot 205-terms.png
+    screenshot 206-apply-form.png
+    screenshot 207-check-your-email.png
+    screenshot 208-create-your-password.png
+    screenshot 209-in-the-public-group.png
+    database: Pia is a member of the public group
+PASS  I2
+
+I3  iPhone: Rex is signed in; an invitation for Jay arrives — the app asks whether it is for him
+    screenshot 210-terms.png
+    screenshot 211-rex-signed-in.png
+    screenshot 212-is-this-for-you.png
+PASS  I3
+
+I4  item 1: Rex (plays as his own golfer) is signed in; an invitation for Jay arrives: signed out by itself, no question; Jay joins
+    screenshot 213-terms.png
+    screenshot 214-rex-signed-in.png
+    screenshot 215-signed-out-by-itself.png
+    screenshot 216-joined.png
+PASS  I4
+
+I5  item 8: the group owner (no golfer of his own) is signed in; invitation; 'No, it's for someone else': no box over Join; the new person joins
+    screenshot 217-terms.png
+    screenshot 218-is-this-for-you.png
+    screenshot 219-welcome-no-box.png
+    screenshot 220-joined.png
+PASS  I5
+
+I6  item 7: signed in with a box open; an invitation link arrives: the box closes and the link's screen shows
+    screenshot 221-terms.png
+    screenshot 222-box-open.png
+    screenshot 223-link-screen.png
+PASS  I6
+
+I7  item 11: applying with a wrong email: a pop-up in the middle stays until OK; then the email box is outlined
+    screenshot 224-terms.png
+    screenshot 225-pop-up.png
+    screenshot 226-after-ok.png
+PASS  I7
+
+I8  Public only: Pia deletes her account on the phone (Summary, Delete my account); after the deletion job her golfer, name and rounds are gone, with a backup
+    screenshot 227-terms.png
+    screenshot 228-pia-signed-in.png
+    screenshot 229-delete-warning.png
+    screenshot 230-after-delete.png
+    screenshot 231-I8-failed.png
+FAIL  I8  —  the sign-in still exists 60 seconds after Delete my account
+
+RESULT: 7 passed, 1 failed
