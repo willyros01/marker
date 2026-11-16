@@ -61,13 +61,15 @@ text = ""
 for part in msg.walk():
     if part.get_content_type() == "text/plain":
         text = part.get_payload(decode=True).decode("utf-8", "replace")
-links = [l.replace("&amp;", "&") for l in re.findall(r'href="([^"]+)"', html)]
+links = [l.replace("&amp;", "&") for l in re.findall(r'href=["\']([^"\']+)["\']', html, re.I)]
 links += [l for l in re.findall(r'https://[^\s"<>]+', text) if "oobCode=" in l]   # a plain-text email
 links = [l for l in links if "oobCode=" in l] or links
 link = links[0] if links else ""
 if not links:   # say what the email holds (addresses only, never a code)
     print("INFO parts:", [p.get_content_type() for p in msg.walk()])
     print("INFO addresses in it:", sorted(set(re.findall(r'https?://[^/\s"<>]+[^\s"<>?]*', html + text)))[:10])
+    for l in re.findall(r'https?://[^\s"\'<>]+', html + text):
+        print("INFO a link:", l.split("?")[0], "| its values:", sorted(parse_qs(urlparse(l.replace("&amp;", "&")).query).keys()))
 u = urlparse(link)
 q = parse_qs(u.query)
 check(link.startswith(JOIN), f"the button opens the Cuberoot join page ({link[:60]}...)")
