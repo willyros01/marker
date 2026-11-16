@@ -100,7 +100,10 @@ export default {
         st.deletions = { ok: deletionsOk, lastRun: dj ? dj.data.lastRun : null, minutesAgo,
           failedLastRun: dj ? Number(dj.data.failed) || 0 : 0, waiting: dj ? Number(dj.data.waiting) || 0 : 0 };
         if (!deletionsOk) { st.ok = false; st.why = [st.why, minutesAgo === null ? "the deletion job has not run yet" : `the deletion job last ran ${minutesAgo} minutes ago`].filter(Boolean).join("; "); }
-        return reply(st, st.ok ? 200 : 503, h);   /* 503 makes the watchdog send its email */
+        /* 16 Nov 2026: ?view=1 always answers 200 (still showing "ok": false inside), so the daily
+           Scorecard check can read the details. The plain address keeps the 503 the watchdog needs. */
+        const view = url.searchParams.get("view") === "1";
+        return reply(st, st.ok || view ? 200 : 503, h);   /* 503 makes the watchdog send its email */
       }
 
       /* The Scorecard's sign-in emails (sendlink.js): nobody is signed in yet. */
