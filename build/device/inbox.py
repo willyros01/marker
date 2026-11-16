@@ -65,6 +65,9 @@ links = [l.replace("&amp;", "&") for l in re.findall(r'href="([^"]+)"', html)]
 links += [l for l in re.findall(r'https://[^\s"<>]+', text) if "oobCode=" in l]   # a plain-text email
 links = [l for l in links if "oobCode=" in l] or links
 link = links[0] if links else ""
+if not links:   # say what the email holds (addresses only, never a code)
+    print("INFO parts:", [p.get_content_type() for p in msg.walk()])
+    print("INFO addresses in it:", sorted(set(re.findall(r'https?://[^/\s"<>]+[^\s"<>?]*', html + text)))[:10])
 u = urlparse(link)
 q = parse_qs(u.query)
 check(link.startswith(JOIN), f"the button opens the Cuberoot join page ({link[:60]}...)")
