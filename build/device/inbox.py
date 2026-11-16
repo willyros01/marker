@@ -48,8 +48,11 @@ def check(ok, name):
     bad += 0 if ok else 1
 title = str(email.header.make_header(email.header.decode_header(msg["Subject"])))
 check(box == "INBOX", f"the email landed in the inbox (found in {box})")
-check(title == subject, f'the title is "{title}" (expected "{subject}")')
-check(msg["From"] and "thescorecard.marker@gmail.com" in msg["From"], f"it comes from The Scorecard's Gmail ({msg['From']})")
+if subject == "*":   # Firebase's own email (the backup route, and the App Store 2.31.4 app)
+    print(f'INFO the title is "{title}", from {msg["From"]}')
+else:
+    check(title == subject, f'the title is "{title}" (expected "{subject}")')
+    check(msg["From"] and "thescorecard.marker@gmail.com" in msg["From"], f"it comes from The Scorecard's Gmail ({msg['From']})")
 html = ""
 for part in msg.walk():
     if part.get_content_type() == "text/html":

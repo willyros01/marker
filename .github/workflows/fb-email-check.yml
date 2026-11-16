@@ -1,0 +1,39 @@
+name: Firebase's own email check (as the App Store app sends it)
+
+# Willy, 16 Nov 2026: Google changed Firebase's locked Action URL to the
+# Cuberoot join page. This asks Firebase to send its OWN sign-in email exactly
+# as The Scorecard 2.31.4 (App Store) does, to the apps' Gmail
+# (thescorecard.marker+firebase-<run>@gmail.com), then checks in that inbox
+# that the button opens the join page directly. Changes nothing.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GMAIL_USER: thescorecard.marker@gmail.com
+  API_KEY: AIzaSyA5qWtnz3QHco5YSAlHb7TXmCNg1kUdVhA   # the apps' public web key (in firebase-config.js)
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Firebase sends its own email, then the inbox is checked
+        env:
+          GMAIL_PASS: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          set -o pipefail
+          to="thescorecard.marker+firebase-${GITHUB_RUN_ID}@gmail.com"; t0=$(date +%s)
+          enc=$(jq -rn --arg e "$to" '$e|@uri')
+          jq -n --arg e "$to" --arg u "https://www.cuberoot-systems.com/scorecard/join/?apply=1&e=${enc}&reset=1" \
+            '{requestType:"EMAIL_SIGNIN", email:$e, continueUrl:$u, canHandleCodeInApp:true}' > req.json
+          code=$(curl -s -o res.json -w '%{http_code}' -H 'Content-Type: application/json' \
+            -H 'Referer: https://willyros01.github.io/scorecard/' \
+            --data-binary @req.json "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${API_KEY}")
+          echo "Firebase answered HTTP $code: $(jq -c . res.json)"
+          [ "$code" = 200 ] || exit 1
+          python3 build/device/inbox.py "$to" "*" "$t0" | tee result.log
+          { echo '### Firebase email check'; echo '```'; cat result.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
