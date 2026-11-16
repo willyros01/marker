@@ -57,13 +57,19 @@ html = ""
 for part in msg.walk():
     if part.get_content_type() == "text/html":
         html = part.get_payload(decode=True).decode("utf-8")
+text = ""
+for part in msg.walk():
+    if part.get_content_type() == "text/plain":
+        text = part.get_payload(decode=True).decode("utf-8", "replace")
 links = [l.replace("&amp;", "&") for l in re.findall(r'href="([^"]+)"', html)]
+links += [l for l in re.findall(r'https://[^\s"<>]+', text) if "oobCode=" in l]   # a plain-text email
+links = [l for l in links if "oobCode=" in l] or links
 link = links[0] if links else ""
 u = urlparse(link)
 q = parse_qs(u.query)
 check(link.startswith(JOIN), f"the button opens the Cuberoot join page ({link[:60]}...)")
 check(q.get("mode") == ["signIn"] and bool(q.get("oobCode")), "the link carries Firebase's one-time sign-in code")
-check("firebaseapp.com" not in html, "no Firebase page in the email")
+check("/__/auth/action" not in html + text, "no Firebase page in the email")
 if "password" in subject.lower():
     cont = parse_qs(urlparse(q.get("continueUrl", [""])[0]).query)
     check(cont.get("reset") == ["1"], "the link is marked as a password change (reset=1)")
