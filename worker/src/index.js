@@ -83,6 +83,13 @@ export default {
     const url = new URL(req.url);
     try {
       if (url.pathname === "/health") return reply({ ok: true, version: env.VERSION || "" }, 200, h);
+      /* 16 Nov 2026: without this, /robots.txt fell through to the sign-in check and answered 401,
+         which readers take as "keep out of everything", so the daily Scorecard check could not
+         read /cleanup-status. Only the two public, no-names pages are open; the rest stays closed. */
+      if (url.pathname === "/robots.txt") {
+        return new Response("User-agent: *\nAllow: /cleanup-status\nAllow: /health\nDisallow: /\n",
+          { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8", ...h } });
+      }
       if (url.pathname === "/cleanup-status" && req.method === "GET") {
         const st = await cleanupStatus(fsFor(env));
         /* The 5-minute deletion job too (13 Nov 2026): stale after 2 hours. */
