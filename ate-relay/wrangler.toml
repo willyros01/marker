@@ -1,0 +1,7 @@
+# ATE (Another Text Editor) GitHub sign-in relay. Not part of The Marker.
+# Kept here only because this repository already holds the Cloudflare key.
+# Source of truth: willyros01/clear-page relay/worker.js
+name = "ate-github-login"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+workers_dev = true

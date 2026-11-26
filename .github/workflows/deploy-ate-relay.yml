@@ -1,0 +1,50 @@
+name: Deploy ATE sign-in relay (not part of The Marker)
+# Puts ATE's tiny GitHub sign-in relay (ate-relay/) on Willy's Cloudflare account,
+# using the Cloudflare key this repository already has. Touches nothing of The Marker.
+on:
+  push:
+    branches: [main]
+    paths: ['ate-relay/**', '.github/workflows/deploy-ate-relay.yml']
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency: {group: ate-relay, cancel-in-progress: false}
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - name: Find the Cloudflare account
+        id: cf
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          id=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/accounts | jq -r '.result[0].id // empty')
+          [ -n "$id" ] || { echo "::error::The Cloudflare token sees no account."; exit 1; }
+          sub=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$id/workers/subdomain" | jq -r '.result.subdomain // empty')
+          echo "account=$id" >> "$GITHUB_OUTPUT"
+          echo "url=https://ate-github-login.$sub.workers.dev" >> "$GITHUB_OUTPUT"
+      - name: Deploy
+        working-directory: ate-relay
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ steps.cf.outputs.account }}
+        run: npx -y wrangler@4.146.0 deploy --message "ate relay ${GITHUB_SHA::7}"
+      - name: Check it answers
+        env:
+          URL: ${{ steps.cf.outputs.url }}
+        run: |
+          set -euo pipefail
+          echo "Relay address: $URL"
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /tmp/r.json -w '%{http_code}' -X POST -H 'Origin: https://www.cuberoot-systems.com' -H 'Content-Type: application/json' -d '{}' "$URL/device/code") || code=000
+            [ "$code" = "200" ] && break; sleep 5
+          done
+          [ "$code" = "200" ] || { echo "::error::Relay did not answer ($code)."; cat /tmp/r.json || true; exit 1; }
+          jq -e '.user_code and .device_code and (.verification_uri|startswith("https://github.com/"))' /tmp/r.json >/dev/null || { echo "::error::GitHub did not give a sign-in code."; cat /tmp/r.json; exit 1; }
+          [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Origin: https://evil.example' -d '{}' "$URL/device/code")" = "403" ] || { echo "::error::Relay answered another website."; exit 1; }
+          echo "PASS: relay up at $URL, GitHub gives sign-in codes, other websites refused."
