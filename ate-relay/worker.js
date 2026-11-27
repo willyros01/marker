@@ -3,7 +3,9 @@
 // This passes exactly two sign-in calls through. It holds no secrets, stores nothing and
 // never sees anyone's code: only the public app ID, the sign-in code and the resulting pass.
 const CLIENT_ID='Iv23li8BSDes04NZkw1o';
-const ALLOWED=['https://www.cuberoot-systems.com','https://cuberoot-systems.com'];
+// The ATE web page, plus the installed apps' own built-in pages: iPhone/iPad (capacitor://localhost),
+// Android (https://localhost), Mac and Linux (tauri://localhost) and Windows (http(s)://tauri.localhost).
+const ALLOWED=['https://www.cuberoot-systems.com','https://cuberoot-systems.com','capacitor://localhost','https://localhost','tauri://localhost','http://tauri.localhost','https://tauri.localhost'];
 export default {
   async fetch(request){
     const origin=request.headers.get('Origin')||'';
