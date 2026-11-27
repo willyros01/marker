@@ -47,4 +47,8 @@ jobs:
           [ "$code" = "200" ] || { echo "::error::Relay did not answer ($code)."; cat /tmp/r.json || true; exit 1; }
           jq -e '.user_code and .device_code and (.verification_uri|startswith("https://github.com/"))' /tmp/r.json >/dev/null || { echo "::error::GitHub did not give a sign-in code."; cat /tmp/r.json; exit 1; }
           [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Origin: https://evil.example' -d '{}' "$URL/device/code")" = "403" ] || { echo "::error::Relay answered another website."; exit 1; }
-          echo "PASS: relay up at $URL, GitHub gives sign-in codes, other websites refused."
+          for o in capacitor://localhost https://localhost tauri://localhost http://tauri.localhost https://tauri.localhost; do
+            c=$(curl -s -o /tmp/n.json -D /tmp/n.h -w '%{http_code}' -X POST -H "Origin: $o" -H 'Content-Type: application/json' -d '{}' "$URL/device/code")
+            [ "$c" = "200" ] && grep -qi "access-control-allow-origin: $o" /tmp/n.h || { echo "::error::Installed app origin $o refused ($c)."; exit 1; }
+          done
+          echo "PASS: relay up at $URL, GitHub gives sign-in codes to the web page and the installed apps, other websites refused."
