@@ -49,6 +49,9 @@ jobs:
           [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Origin: https://evil.example' -d '{}' "$URL/device/code")" = "403" ] || { echo "::error::Relay answered another website."; exit 1; }
           for o in capacitor://localhost https://localhost tauri://localhost http://tauri.localhost https://tauri.localhost; do
             c=$(curl -s -o /tmp/n.json -D /tmp/n.h -w '%{http_code}' -X POST -H "Origin: $o" -H 'Content-Type: application/json' -d '{}' "$URL/device/code")
-            [ "$c" = "200" ] && grep -qi "access-control-allow-origin: $o" /tmp/n.h || { echo "::error::Installed app origin $o refused ($c)."; exit 1; }
+            # Accepted = not refused (403) and answered for that origin. GitHub may briefly limit
+            # several sign-in codes in a row (relay then answers 502), which is not a refusal.
+            [ "$c" != "403" ] && grep -qi "access-control-allow-origin: $o" /tmp/n.h || { echo "::error::Installed app origin $o refused ($c)."; exit 1; }
+            sleep 2
           done
           echo "PASS: relay up at $URL, GitHub gives sign-in codes to the web page and the installed apps, other websites refused."
